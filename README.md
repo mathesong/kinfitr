@@ -54,7 +54,7 @@ All the parameter output values are in data frames, and are thus easily manipula
 2.  Each observation forms a row.
 3.  Each type of observational unit forms a table.
 
-Thus, I can create a tidy dataframe from a list of TAC dataframes for each individual
+Thus, I can create a tidy dataframe from a list of TAC dataframes for each individual (these steps are dependent on the state of your data in its raw form. In this case, it is stored in a named list of lists, each of which contains a dataframe called *tacdf*, and where the name of each element of the list is *Acronym\_PETNumber\_results*).
 
 ``` r
 library(tidyverse)
