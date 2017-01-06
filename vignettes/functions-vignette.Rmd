@@ -10,7 +10,7 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, fig.width = 8, fig.height = 6)
 ```
 
 \newpage
@@ -167,7 +167,7 @@ refLogan_tstar(times, reftac, taclow, tacmed, tachigh, k2prime = k2prime, 'demon
 ```
 
 \newpage
-![refLogan tstar finder](demonstration_refLogan.jpeg)
+![refLogan tstar finder](demonstration_refLogan.jpeg){width=600px}
 \newpage
 
 Using this information, we see that we should probably use 9 included frames for the fit.
@@ -446,7 +446,7 @@ refpatlakout <- refPatlak(times, reftac, roitac,
 
 ### Parameters
 
-```{r refPatlak par}
+```{r refPatlak par, results = "asis"}
 pandoc.table(refpatlakout$par, digits=4)
 ```
 
@@ -717,8 +717,8 @@ loganout <- Loganplot(t_tac, tac, input, 10, weights, inpshift = onetcmout$par$i
 
 ### Parameters
 
-```{r logan par}
-loganout$par
+```{r logan par, results = "asis"}
+pandoc.table(loganout$par, digits=3)
 ```
 
 
@@ -782,7 +782,7 @@ ma1_tstar(t_tac, lowroi, medroi, highroi, input, filename='demonstration',
           inpshift = onetcmout$par$inpshift, gridbreaks=4)
 ```
 \newpage
-![MA1 tstar finder](demonstration_MA1.jpeg)
+![MA1 tstar finder](demonstration_MA1.jpeg){width=600px}
 \newpage
 
 
@@ -794,8 +794,8 @@ ma1out <- ma1(t_tac, tac, input, 11, weights, inpshift = onetcmout$par$inpshift)
 
 ### Parameters
 
-```{r ma1 par}
-ma1out$par
+```{r ma1 par, results = "asis"}
+pandoc.table(ma1out$par, digits=3)
 ```
 
 
@@ -1068,7 +1068,7 @@ tacdf <- data.frame(GM = inptacdata$GM,
                     CER = inptacdata$gmCER, 
                     PUT = inptacdata$PUT)
 
-Vndgrid <- seq(from=0, to=5, by=0.1)
+Vndgrid <- seq(from=0, to=4, by=0.1)
 
 SIMEout <-  SIME(t_tac, tacdf, input, Vndgrid, weights = weights, 
     inpshift = onetcmout$par$inpshift, vB = 0.05, twotcmstart = 1)
@@ -1104,18 +1104,18 @@ pandoc.table(summary(SIMEout))
 Alternatively, this model can be implemented in a faster manner of sequentially refining its results:
 
 ```{r SIME_alt, eval=F}
-Vndgrid <- seq(from=0, to=5, by=1)
-
+# Precision of 1
+Vndgrid <- seq(from=0, to=4, by=1)
 SIMEout1 <-  SIME(t_tac, tacdf, input, Vndgrid, weights = weights, 
     inpshift = onetcmout$par$inpshift)
 
-Vndgrid <- seq(from=SIMEout1$par$Vnd-1, to=SIMEout1$par$Vnd+1, length.out = 10)
-
+# Precision of 0.1
+Vndgrid <- seq(from=SIMEout1$par$Vnd-1, to=SIMEout1$par$Vnd+1, by=0.1)
 SIMEout2 <-  SIME(t_tac, tacdf, input, Vndgrid, weights = weights, 
     inpshift = onetcmout$par$inpshift)
 
-Vndgrid <- seq(from=SIMEout2$par$Vnd-0.2, to=SIMEout2$par$Vnd+0.2, length.out = 10)
-
+# Precision of 0.05
+Vndgrid <- seq(from=SIMEout2$par$Vnd-0.2, to=SIMEout2$par$Vnd+0.2, by=0.05)
 SIMEout3 <-  SIME(t_tac, tacdf, input, Vndgrid, weights = weights, 
     inpshift = onetcmout$par$inpshift)
 ```
