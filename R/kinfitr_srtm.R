@@ -21,6 +21,9 @@
 #' @param bp.start Optional. Starting parameter for fitting of bp. Default is 1.5.
 #' @param bp.lower Optional. Lower bound for the fitting of bp. Default is -10.
 #' @param bp.upper Optional. Upper bound for the fitting of bp. Default is 15.
+#' @param printvals Optional. This displays the parameter values for each iteration of the 
+#' model. This is useful for debugging and changing starting values and upper and lower 
+#' bounds for parameters.
 #'
 #' @return A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit},
 #' the model weights \code{out$weights}, and a dataframe containing the TACs both of the data and the fitted 
@@ -39,7 +42,8 @@
 srtm <- function(t_tac, reftac, roitac, weights, frameStartEnd,
                  R1.start = 1 , R1.lower = 0 , R1.upper = 10 ,
                  k2.start=0.1 , k2.lower = 0 , k2.upper=1 ,
-                 bp.start=1.5 , bp.lower=-10 , bp.upper=15) {
+                 bp.start=1.5 , bp.lower=-10 , bp.upper=15,
+                 printvals=F) {
   
   
   # Tidying
@@ -64,7 +68,8 @@ srtm <- function(t_tac, reftac, roitac, weights, frameStartEnd,
         start =  c(R1=R1_pars$start, k2 = k2_pars$start, bp = bp_pars$start),
         lower = c(R1=R1_pars$lower, k2 = k2_pars$lower, bp = bp_pars$lower),
         upper = c(R1=R1_pars$upper, k2 = k2_pars$upper, bp = bp_pars$upper),
-        weights=weights, control = minpack.lm::nls.lm.control(maxiter = 200))
+        weights=weights, control = minpack.lm::nls.lm.control(maxiter = 200),
+        trace=printvals)
   
   # Output
   

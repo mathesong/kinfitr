@@ -19,10 +19,10 @@
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20). 
 #' This is to assess time stability.
 #' @param K1.start Optional. Starting parameter for fitting of K1. Default is 0.1.
-#' @param K1.lower Optional. Lower bound for the fitting of K1. Default is 0.
+#' @param K1.lower Optional. Lower bound for the fitting of K1. Default is 0.0001.
 #' @param K1.upper Optional. Upper bound for the fitting of K1. Default is 0.5.
 #' @param k2.start Optional. Starting parameter for fitting of k2. Default is 0.1.
-#' @param k2.lower Optional. Lower bound for the fitting of k2. Default is 0.
+#' @param k2.lower Optional. Lower bound for the fitting of k2. Default is 0.0001.
 #' @param k2.upper Optional. Upper bound for the fitting of k2. Default is 0.5.
 #' @param inpshift.start Optional. Starting parameter for fitting of inpshift. Default is 0.
 #' @param inpshift.lower Optional. Lower bound for the fitting of inpshift. Default is -0.5.
@@ -30,6 +30,9 @@
 #' @param vB.start Optional. Starting parameter for fitting of vB. Default is 0.05.
 #' @param vB.lower Optional. Lower bound for the fitting of vB. Default is 0.01.
 #' @param vB.upper Optional. Upper bound for the fitting of vB. Default is 0.1.
+#' @param printvals Optional. This displays the parameter values for each iteration of the 
+#' model. This is useful for debugging and changing starting values and upper and lower 
+#' bounds for parameters.
 #' 
 #'
 #' @return A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit}, 
@@ -47,10 +50,11 @@
 #' @export
 
 onetcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
-                   K1.start = 0.1 , K1.lower = 0 , K1.upper = 0.5 ,
-                   k2.start = 0.1 , k2.lower = 0 , k2.upper = 0.5 ,
+                   K1.start = 0.1 , K1.lower = 0.0001 , K1.upper = 0.5 ,
+                   k2.start = 0.1 , k2.lower = 0.0001 , k2.upper = 0.5 ,
                    inpshift.start = 0 , inpshift.lower= -0.5 , inpshift.upper = 0.5 ,
-                   vB.start = 0.05 , vB.lower = 0.01 , vB.upper = 0.1 ) {
+                   vB.start = 0.05 , vB.lower = 0.01 , vB.upper = 0.1 , 
+                   printvals=F) {
   
   # Tidying
   
@@ -88,7 +92,8 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
                   start =  c(K1=K1_pars$start, k2 = k2_pars$start, vB = vB_pars$start),
                   lower = c(K1=K1_pars$lower, k2 = k2_pars$lower, vB = vB_pars$lower),
                   upper = c(K1=K1_pars$upper, k2 = k2_pars$upper, vB = vB_pars$upper),
-                  weights=weights, control = minpack.lm::nls.lm.control(maxiter = 200))
+                  weights=weights, control = minpack.lm::nls.lm.control(maxiter = 200), 
+                  trace=printvals)
   }
   
   # Solution - Fitting the Delay
@@ -101,7 +106,7 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
                     start =  c(K1=K1_pars$start, k2 = k2_pars$start, inpshift = inpshift_pars$start, vB = vB_pars$start),
                     lower = c(K1=K1_pars$lower, k2 = k2_pars$lower, inpshift = inpshift_pars$lower, vB = vB_pars$lower),
                     upper = c(K1=K1_pars$upper, k2 = k2_pars$upper, inpshift = inpshift_pars$upper, vB = vB_pars$upper),
-                    weights=weights, control = minpack.lm::nls.lm.control(maxiter = 200))
+                    weights=weights, control = minpack.lm::nls.lm.control(maxiter = 200), trace=printvals)
   }
   
   # Output
@@ -141,7 +146,6 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
 #' @param K1 Parameter value for K1
 #' @param k2 Parameter value for k2
 #' @param vB Parameter value for vB
-#' @param printvals Optional. Option to display parameter values through each iteration. Can be used for debugging.
 #'
 #' @return A numeric vector of the predicted values of the TAC in the target region.
 #'
@@ -153,9 +157,7 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
 #' @export
 
 
-onetcm_model <- function(t_tac, input, K1, k2, vB, printvals=F) {
-  
-  if(printvals) print(paste(round(K1,3), round(k2,3), round(vB,3)))
+onetcm_model <- function(t_tac, input, K1, k2, vB) {
   
   interptime <- input$Time
   step <- interptime[2] - interptime[1]
@@ -193,7 +195,6 @@ onetcm_model <- function(t_tac, input, K1, k2, vB, printvals=F) {
 #' @param k2 Parameter value for k2
 #' @param inpshift Parameter value for inpshift, the delay.
 #' @param vB Parameter value for vB
-#' @param printvals Optional. Option to display parameter values through each iteration. Can be used for debugging.
 #'
 #' @return A numeric vector of the predicted values of the TAC in the target region.
 #'
@@ -204,9 +205,7 @@ onetcm_model <- function(t_tac, input, K1, k2, vB, printvals=F) {
 #'
 #' @export
 
-onetcm_fitDelay_model <- function(t_tac, input, K1, k2, inpshift, vB, printvals = F) {
-  
-  if(printvals) print(paste(round(K1,3), round(k2,3), round(inpshift,3), round(vB,3)))
+onetcm_fitDelay_model <- function(t_tac, input, K1, k2, inpshift, vB) {
   
   newvals <- shift_timings(t_tac, rep(1,length(t_tac)), input, inpshift) # Using ones instead of tac as don't need it
   
@@ -288,7 +287,7 @@ plot_1tcmfit <- function(onetcmout, roiname) {
   outplot = ggplot(plotdf, aes(x=Time, y=Radioactivity, colour=Region)) + colScale + 
     geom_point(data=subset(plotdf, plotdf$Region == paste0(roiname, '.Measured')), aes(shape='a', size=Weights)) + 
     geom_line(data=subset(plotdf, plotdf$Region != paste0(roiname, '.Measured'))) + 
-    guides(shape=FALSE, color=guide_legend(order=1)) + scale_size(range=c(1,3)) + ylim(c(0,max(tac)*1.5))
+    guides(shape=FALSE, color=guide_legend(order=1)) + scale_size(range=c(1,3)) + ylim(c(0,max(measureddf$Radioactivity)*1.5))
   
   #print(outplot)
   return(outplot)
