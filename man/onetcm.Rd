@@ -5,10 +5,10 @@
 \title{One Tissue Compartment Model}
 \usage{
 onetcm(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
-  K1.start = 0.1, K1.lower = 0, K1.upper = 0.5, k2.start = 0.1,
-  k2.lower = 0, k2.upper = 0.5, inpshift.start = 0,
+  K1.start = 0.1, K1.lower = 1e-04, K1.upper = 0.5, k2.start = 0.1,
+  k2.lower = 1e-04, k2.upper = 0.5, inpshift.start = 0,
   inpshift.lower = -0.5, inpshift.upper = 0.5, vB.start = 0.05,
-  vB.lower = 0.01, vB.upper = 0.1)
+  vB.lower = 0.01, vB.upper = 0.1, printvals = F)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a 
@@ -35,13 +35,13 @@ This is to assess time stability.}
 
 \item{K1.start}{Optional. Starting parameter for fitting of K1. Default is 0.1.}
 
-\item{K1.lower}{Optional. Lower bound for the fitting of K1. Default is 0.}
+\item{K1.lower}{Optional. Lower bound for the fitting of K1. Default is 0.0001.}
 
 \item{K1.upper}{Optional. Upper bound for the fitting of K1. Default is 0.5.}
 
 \item{k2.start}{Optional. Starting parameter for fitting of k2. Default is 0.1.}
 
-\item{k2.lower}{Optional. Lower bound for the fitting of k2. Default is 0.}
+\item{k2.lower}{Optional. Lower bound for the fitting of k2. Default is 0.0001.}
 
 \item{k2.upper}{Optional. Upper bound for the fitting of k2. Default is 0.5.}
 
@@ -56,6 +56,10 @@ This is to assess time stability.}
 \item{vB.lower}{Optional. Lower bound for the fitting of vB. Default is 0.01.}
 
 \item{vB.upper}{Optional. Upper bound for the fitting of vB. Default is 0.1.}
+
+\item{printvals}{Optional. This displays the parameter values for each iteration of the 
+model. This is useful for debugging and changing starting values and upper and lower 
+bounds for parameters.}
 }
 \value{
 A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit}, 

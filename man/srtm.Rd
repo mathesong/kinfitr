@@ -6,7 +6,8 @@
 \usage{
 srtm(t_tac, reftac, roitac, weights, frameStartEnd, R1.start = 1,
   R1.lower = 0, R1.upper = 10, k2.start = 0.1, k2.lower = 0,
-  k2.upper = 1, bp.start = 1.5, bp.lower = -10, bp.upper = 15)
+  k2.upper = 1, bp.start = 1.5, bp.lower = -10, bp.upper = 15,
+  printvals = F)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a 
@@ -41,6 +42,10 @@ This is to assess time stability.}
 \item{bp.lower}{Optional. Lower bound for the fitting of bp. Default is -10.}
 
 \item{bp.upper}{Optional. Upper bound for the fitting of bp. Default is 15.}
+
+\item{printvals}{Optional. This displays the parameter values for each iteration of the 
+model. This is useful for debugging and changing starting values and upper and lower 
+bounds for parameters.}
 }
 \value{
 A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit},

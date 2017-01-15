@@ -4,7 +4,7 @@
 \alias{onetcm_fitDelay_model}
 \title{Model: One Tissue Compartment Model with Delay}
 \usage{
-onetcm_fitDelay_model(t_tac, input, K1, k2, inpshift, vB, printvals = F)
+onetcm_fitDelay_model(t_tac, input, K1, k2, inpshift, vB)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a zero.}
@@ -19,8 +19,6 @@ using the \code{blood_interp} function.}
 \item{inpshift}{Parameter value for inpshift, the delay.}
 
 \item{vB}{Parameter value for vB}
-
-\item{printvals}{Optional. Option to display parameter values through each iteration. Can be used for debugging.}
 }
 \value{
 A numeric vector of the predicted values of the TAC in the target region.

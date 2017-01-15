@@ -4,7 +4,7 @@
 \alias{twotcm_model}
 \title{Model: Two Tissue Compartment Model}
 \usage{
-twotcm_model(t_tac, input, K1, k2, k3, k4, vB, printvals = F)
+twotcm_model(t_tac, input, K1, k2, k3, k4, vB)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a zero.}
@@ -21,8 +21,6 @@ using the \code{blood_interp} function.}
 \item{k4}{Parameter value for k4}
 
 \item{vB}{Parameter value for vB}
-
-\item{printvals}{Optional. Option to display parameter values through each iteration. Can be used for debugging.}
 }
 \value{
 A numeric vector of the predicted values of the TAC in the target region.
