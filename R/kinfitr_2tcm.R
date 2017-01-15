@@ -131,6 +131,8 @@ twotcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
   
   par = as.data.frame(as.list(coef(output)))
   
+  if(inpshift_fitted == F) par$inpshift=inpshift
+  
   par.se = as.data.frame(as.list(sqrt(abs(vcov(output)[,1]))))
   names(par.se) = paste0(names(par.se), '.se')
   
