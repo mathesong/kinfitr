@@ -166,19 +166,12 @@ shift_timings <- function(t_tac, tac, input, inpshift, shifttac=T) {
     input <- rbind(c(0,0,0,1), input)
   }
   
-  if(max(input$Time) != max(tacdf$Time)) {
-    
-    #     if(regressFinal == T) {
-    #     tailinp <- subset(input, input$Time > 0.5*max(input$Time))
-    #     coef <- lm(tailinp$Value ~ tailinp$Time)$coef
-    #     
-    #     input <- rbind( input, c(max(tacdf$Time), as.numeric(coef[1] + max(tacdf$Time)*coef[2])))
-    #     } else { 
-    input <- rbind( input, c(max(tacdf$Time),  as.numeric(tail(input, 1)[2:4]))) 
-    # }
-    
-    input <- subset(input, input$Time <= max(tacdf$Time))
-    
+  if(max(input$Time) > max(tacdf$Time)) {
+    last_n <- which( input$Time > max(tacdf$Time) )[1]
+    input <- input[1:last_n,]
+    input$Time[last_n] <- max(tacdf$Time)
+  } else if(max(input$Time) < max(tacdf$Time)) {
+    input <- rbind( input, c(max(tacdf$Time),  as.numeric(tail(input, 1)[2:4])))
   }
   
   # Interpolating everything to the same time space
@@ -268,19 +261,12 @@ shift_timings_df <- function(t_tac, tacsdf, input, inpshift, shifttac=T) {
     input <- rbind(c(0,0,0,1), input)
   }
   
-  if(max(input$Time) != max(tacdf$Time)) {
-    
-    #     if(regressFinal == T) {
-    #     tailinp <- subset(input, input$Time > 0.5*max(input$Time))
-    #     coef <- lm(tailinp$Value ~ tailinp$Time)$coef
-    #     
-    #     input <- rbind( input, c(max(tacdf$Time), as.numeric(coef[1] + max(tacdf$Time)*coef[2])))
-    #     } else { 
-    input <- rbind( input, c(max(tacdf$Time),  as.numeric(tail(input, 1)[2:4]))) 
-    # }
-    
-    input <- subset(input, input$Time <= max(tacdf$Time))
-    
+  if(max(input$Time) > max(tacdf$Time) ) {
+    last_n <- which( input$Time > max(tacdf$Time) )[1]
+    input <- input[1:last_n,]
+    input$Time[last_n] <- max(tacdf$Time)
+  } else if(max(input$Time) < max(tacdf$Time)) {
+    input <- rbind( input, c(max(tacdf$Time),  as.numeric(tail(input, 1)[2:4])))
   }
   
   
@@ -334,7 +320,7 @@ plot_inptac_timings <- function(t_tac, tac, input, inpshift, zoomTime=5) {
   # t_tac <- newvals$t_tac
   # tac <- newvals$tac
   inp <- newvals$input$plasma * newvals$input$parentfrac
-  interptime = newvals$input$Time
+  interptime <- newvals$input$Time
   i_tac <- newvals$i_tac
   
   # if(min(t_tac) < 0) {
@@ -396,4 +382,59 @@ plot_inptac_timings <- function(t_tac, tac, input, inpshift, zoomTime=5) {
   
   inptiming <- gridExtra::arrangeGrob(inptiming_overall, inptiming_close, ncol=1)
   #return(inptiming)
+}
+
+
+
+#' Plot the Timings of the TAC and Arterial Input Function from a Fit Object
+#'
+#' Function to compare the timings of the the TAC and the Arterial Input Function (AIF) to see whether they are aligned
+#' from a kinetic fit object.  The fit needs to be a model utilising AIF (i.e. cannot be a reference region)
+#'
+#' @param fitout The output object of a fitting procedure which utilises arterial input function, e.g. \code{twotcm}.
+#' @param roiname Optional. The name of the Target Region to see it on the plot.
+#' @param zoomTime Optional. The number of minutes to show for the match between the TAC and AIF. Default is 5.
+#'
+#' @return A ggplot2 object of the plot.
+#'
+#' @examples
+#' plot_inptac_fit(twotcmout)
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#' 
+#' @import ggplot2
+#'
+#' @export
+
+plot_inptac_fit <- function(fitout, roiname, zoomTime=5) {
+  
+  if(missing(roiname)) {roiname = 'ROI'}
+  
+  if(!('input' %in% names(fitout))) {
+    stop('No input object found in fit output')
+  }
+  
+  measureddf <- data.frame(Time = fitout$tacs$Time,
+                           Radioactivity = fitout$tacs$Target,
+                           Region=paste0(roiname, '.Measured'))
+  
+  inputdf <- data.frame(Time = fitout$input$Time,
+                        Radioactivity = fitout$input$plasma*fitout$input$parentfrac,
+                        Region='AIF')
+  
+  plotdf <- rbind(inputdf, measureddf)
+  plotdf <- dplyr::filter(plotdf, Time < zoomTime)
+  
+  plotdf$Region <- forcats::fct_inorder(factor(plotdf$Region) )
+  
+  myColors <- RColorBrewer::brewer.pal(3,"Set1")
+  names(myColors) <- levels( plotdf$Region )
+  colScale <- scale_colour_manual(name = "Region",values = myColors)
+  
+  outplot = ggplot(plotdf, aes(x=Time, y=Radioactivity, colour=Region)) + colScale + 
+    geom_point(data=subset(plotdf, plotdf$Region == paste0(roiname, '.Measured')), aes(shape='a')) + 
+    geom_line() + 
+    guides(shape=FALSE, color=guide_legend(order=1)) + scale_size(range=c(1,3)) + ylim(c(0,max(measureddf$Radioactivity)*1.5))
+  
+  return(outplot)
 }
