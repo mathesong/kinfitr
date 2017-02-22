@@ -302,7 +302,7 @@ shift_timings_df <- function(t_tac, tacsdf, input, inpshift, shifttac=T) {
 #' @param inpshift The number of minutes by which the times of the input data frame should be adjusted.
 #' @param zoomTime The number of minutes to show for the close-up of the match between the TAC and AIF.
 #'
-#' @return Plots the two-panel figure 
+#' @return A ggplot2 object of the plot.
 #'
 #' @examples
 #' plot_inptac_timings(t_tac, tac, input, inpshift=0.25, zoomTime=5)
@@ -317,47 +317,9 @@ plot_inptac_timings <- function(t_tac, tac, input, inpshift, zoomTime=5) {
   
   newvals <- shift_timings(t_tac, tac, input, inpshift)
   
-  # t_tac <- newvals$t_tac
-  # tac <- newvals$tac
   inp <- newvals$input$plasma * newvals$input$parentfrac
   interptime <- newvals$input$Time
   i_tac <- newvals$i_tac
-  
-  # if(min(t_tac) < 0) {
-  #   stop('There are negative times in the TAC')
-  # }
-  # 
-  # if(min(t_tac) > 0) {
-  #   t_tac = c(0, t_tac)
-  #   tac = c(0, tac)
-  # }
-  # 
-  # tacdf <- data.frame(Time = t_tac, Value = tac)
-  # input <- data.frame(Time = t_inp, Value = inp)
-  # 
-  # input$Time <- input$Time + inpshift
-  # 
-  # if(min(input$Time) < 0) {
-  #   beforezerodelay = min(input$Time)
-  #   
-  #   tacdf$Time <- tacdf$Time-beforezerodelay
-  #   tacdf <- rbind(c(0,0), tacdf)
-  #   
-  #   input$Time <- input$Time-beforezerodelay
-  # }
-  
-  # if(min(input$Time) > 0) {
-  #   input <- rbind(c(0,0), input)
-  # }
-  # 
-  # input <- subset(input, input$Time < max(tacdf$Time))
-  # input <- rbind(input, c(max(tacdf$Time), tail(input$Value,1)))
-  
-  # i_time <- seq(0, max(tacdf$Time), by=max(tacdf$Time)/4096)
-  # i_tac <- pracma::interp1(tacdf$Time, tacdf$Value, i_time)
-  # i_inp <- pracma::interp1(input$Time, input$Value, i_time)
-  
-  # i_tac <- pracma::interp1(t_tac, tac, interptime)
   
   i_df <- data.frame(interptime, TAC = i_tac, AIF = inp)
   
@@ -370,18 +332,11 @@ plot_inptac_timings <- function(t_tac, tac, input, inpshift, zoomTime=5) {
   names(myColors) <- levels(Curve)
   colScale <- scale_colour_manual(name = "Curve",values = myColors)
   
-  inptiming_overall <- ggplot(i_df_tidy, aes(x = interptime, y = Radioactivity, colour = Curve)) + 
-    geom_line() + xlim(0,max(t_tac)) + ylim(0,max(inp)) + xlab('Time (min)') +
-    colScale
-  inptiming_close <- ggplot(i_df_tidy, aes(x = interptime, y = Radioactivity, colour = Curve)) + 
-    geom_line() + ylim(0,max(inp)/2) + xlab('Time (min)') +
-    scale_x_continuous(breaks=seq(0,zoomTime, by = 1), limits = c(0,zoomTime)) +
-    colScale
+  outplot <- ggplot(i_df_tidy, aes(x = interptime, y = Radioactivity, colour = Curve)) + 
+    geom_line() + xlab('Time (min)') +
+    colScale + coord_cartesian(ylim=c(0,max(inp)/2), xlim=c(0,zoomTime))
   
-  gridExtra::grid.arrange(inptiming_overall, inptiming_close, ncol=1)
-  
-  inptiming <- gridExtra::arrangeGrob(inptiming_overall, inptiming_close, ncol=1)
-  #return(inptiming)
+  return(outplot)
 }
 
 
@@ -423,7 +378,6 @@ plot_inptac_fit <- function(fitout, roiname, zoomTime=5) {
                         Region='AIF')
   
   plotdf <- rbind(inputdf, measureddf)
-  plotdf <- dplyr::filter(plotdf, Time < zoomTime)
   
   plotdf$Region <- forcats::fct_inorder(factor(plotdf$Region) )
   
@@ -434,7 +388,8 @@ plot_inptac_fit <- function(fitout, roiname, zoomTime=5) {
   outplot = ggplot(plotdf, aes(x=Time, y=Radioactivity, colour=Region)) + colScale + 
     geom_point(data=subset(plotdf, plotdf$Region == paste0(roiname, '.Measured')), aes(shape='a')) + 
     geom_line() + 
-    guides(shape=FALSE, color=guide_legend(order=1)) + scale_size(range=c(1,3)) + ylim(c(0,max(measureddf$Radioactivity)*1.5))
+    guides(shape=FALSE, color=guide_legend(order=1)) + 
+    coord_cartesian(ylim=c(0,max(measureddf$Radioactivity)*1.5), xlim=c(0,zoomTime))
   
   return(outplot)
 }

@@ -15,6 +15,9 @@
 #' if not included, it is added. If not specified, uniform weights will be used.
 #' @param inpshift Optional. The number of minutes by which to shift the timing of the input data frame forwards or backwards.
 #' If not specified, this will be set to 0. This can be fitted using 1TCM or 2TCM.
+#' @param vB Optional. The blood volume fraction.  If not specified, this will be ignored and assumed to be 0%. If specified, it
+#' will be corrected for prior to parameter estimation using the following equation: 
+#' \deqn{C_{T}(t) = \frac{C_{Measured}(t) - vB\times C_{B}(t)}{1-vB}}
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20). 
 #' This is to assess time stability.
 #'
@@ -22,7 +25,8 @@
 #' @return A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit}, 
 #' a dataframe containing the TACs of the data \code{out$tacs}, a dataframe containing the fitted values \code{out$fitvals},
 #' the blood input data frame after time shifting \code{input}, a vector of the weights \code{out$weights}, 
-#' the inpshift value used \code{inpshift}, and the specified tstarIncludedFrames value \code{out$tstarIncludedFrames}.
+#' the inpshift value used \code{inpshift}, the specified vB value \code{out$vB}, and the specified tstarIncludedFrames 
+#' value \code{out$tstarIncludedFrames}.
 #'
 #' @examples
 #' Patlakplot(t_tac, tac, input, 10, weights, inpshift = onetcmout$par$inpshift)
@@ -33,7 +37,7 @@
 #'
 #' @export
 
-Patlakplot <- function(t_tac, tac, input, tstarIncludedFrames, weights, inpshift = 0, frameStartEnd) {
+Patlakplot <- function(t_tac, tac, input, tstarIncludedFrames, weights, inpshift = 0, vB = 0, frameStartEnd) {
   
   
   # Tidying
@@ -66,8 +70,8 @@ Patlakplot <- function(t_tac, tac, input, tstarIncludedFrames, weights, inpshift
   interptime <- newvals$input$Time
   i_tac <- pracma::interp1(t_tac, tac, interptime, method="linear")
   
-    # # Blood Volume Correction (nothing happens if vB = 0)
-    # i_tac <- ( i_tac - vB*blood ) / ( 1 - vB )
+    # Blood Volume Correction (nothing happens if vB = 0)
+    i_tac <- ( i_tac - vB*blood ) / ( 1 - vB )
   
   patlak_roi = i_tac / corrplasma
   patlak_plasma = as.numeric( ( pracma::cumtrapz(interptime, corrplasma) ) / corrplasma )
@@ -100,7 +104,7 @@ Patlakplot <- function(t_tac, tac, input, tstarIncludedFrames, weights, inpshift
   
   out <- list(par = par, par.se = par.se, fit = patlak_model, tacs = tacs, 
               fitvals = fitvals, input = input, weights = weights,
-              inpshift = inpshift, tstarIncludedFrames = tstarIncludedFrames)
+              inpshift = inpshift, vB = vB, tstarIncludedFrames = tstarIncludedFrames)
   return(out)
   
 }

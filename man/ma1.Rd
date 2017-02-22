@@ -4,7 +4,7 @@
 \alias{ma1}
 \title{Ichise Multilinear Analysis 1}
 \usage{
-ma1(t_tac, tac, input, tstarIncludedFrames, weights, inpshift = 0,
+ma1(t_tac, tac, input, tstarIncludedFrames, weights, inpshift = 0, vB = 0,
   frameStartEnd)
 }
 \arguments{
@@ -27,6 +27,10 @@ if not included, it is added. If not specified, uniform weights will be used.}
 \item{inpshift}{Optional. The number of minutes by which to shift the timing of the input data frame forwards or backwards.
 If not specified, this will be set to 0. This can be fitted using 1TCM or 2TCM.}
 
+\item{vB}{Optional. The blood volume fraction.  If not specified, this will be ignored and assumed to be 0%. If specified, it
+will be corrected for prior to parameter estimation using the following equation: 
+\deqn{C_{T}(t) = \frac{C_{Measured}(t) - vB\times C_{B}(t)}{1-vB}}}
+
 \item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20). 
 This is to assess time stability.}
 }
@@ -34,7 +38,8 @@ This is to assess time stability.}
 A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit}, 
 a dataframe containing the TACs of the data \code{out$tacs}, a dataframe containing the fitted values \code{out$fitvals},
 the blood input data frame after time shifting \code{input}, a vector of the weights \code{out$weights}, 
-the inpshift value used \code{inpshift}, and the specified tstarIncludedFrames value \code{out$tstarIncludedFrames}.
+the inpshift value used \code{inpshift}, the specified vB value \code{out$vB} and the specified tstarIncludedFrames 
+value \code{out$tstarIncludedFrames}.
 }
 \description{
 Function to fit the MA1 of Ichise et al (2002) to data.

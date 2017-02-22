@@ -12,13 +12,16 @@
 #' if not included, it is added. If not specified, uniform weights will be used.
 #' @param inpshift Optional. The number of minutes by which to shift the timing of the input data frame forwards or backwards.
 #' If not specified, this will be set to 0. This can be fitted using 1TCM or 2TCM.
+#' @param vB Optional. The blood volume fraction.  If not specified, this will be ignored and assumed to be 0%. If specified, it
+#' will be corrected for prior to parameter estimation using the following equation: 
+#' \deqn{C_{T}(t) = \frac{C_{Measured}(t) - vB\times C_{B}(t)}{1-vB}}
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20). 
 #' This is to assess time stability.
 #'
 #' @return A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit}, 
 #' a dataframe containing the TACs of the data \code{out$tacs}, a dataframe containing the fitted values \code{out$fitvals},
 #' the blood input data frame after time shifting \code{input}, a vector of the weights \code{out$weights}, 
-#' and the inpshift value used \code{inpshift}.
+#' the inpshift value used \code{inpshift} and the specified vB value \code{out$vB}.
 #'
 #' @examples
 #' ma2(t_tac, tac, input, weights, inpshift = onetcmout$par$inpshift)
@@ -30,7 +33,7 @@
 #' @export
 
 
-ma2 <- function(t_tac, tac, input, weights, inpshift = 0, frameStartEnd) {
+ma2 <- function(t_tac, tac, input, weights, inpshift = 0, vB = 0, frameStartEnd) {
   
   
   # Tidying
@@ -63,6 +66,9 @@ ma2 <- function(t_tac, tac, input, weights, inpshift = 0, frameStartEnd) {
   interptime <- newvals$input$Time
   
   i_tac <- pracma::interp1(t_tac, tac, interptime, method="linear")
+  
+    # Blood Volume Correction (nothing happens if vB = 0)
+    i_tac <- ( i_tac - vB*blood ) / ( 1 - vB )
   
   term1 = as.numeric( pracma::cumtrapz( pracma::cumtrapz(interptime, corrplasma) ) )
   term2 = as.numeric( pracma::cumtrapz( pracma::cumtrapz(interptime, i_tac) ) )
@@ -113,7 +119,7 @@ ma2 <- function(t_tac, tac, input, weights, inpshift = 0, frameStartEnd) {
   
   out <- list(par = par, fit = ma2_model, tacs = tacs, 
               fitvals = fitvals, input = input, weights = weights,
-              inpshift = inpshift, model="ma2")
+              inpshift = inpshift, vB = vB, model="ma2")
   return(out)
   
 }

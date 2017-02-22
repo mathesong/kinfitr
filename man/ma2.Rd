@@ -4,7 +4,7 @@
 \alias{ma2}
 \title{Ichise Multilinear Analysis 2}
 \usage{
-ma2(t_tac, tac, input, weights, inpshift = 0, frameStartEnd)
+ma2(t_tac, tac, input, weights, inpshift = 0, vB = 0, frameStartEnd)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a 
@@ -22,6 +22,10 @@ if not included, it is added. If not specified, uniform weights will be used.}
 \item{inpshift}{Optional. The number of minutes by which to shift the timing of the input data frame forwards or backwards.
 If not specified, this will be set to 0. This can be fitted using 1TCM or 2TCM.}
 
+\item{vB}{Optional. The blood volume fraction.  If not specified, this will be ignored and assumed to be 0%. If specified, it
+will be corrected for prior to parameter estimation using the following equation: 
+\deqn{C_{T}(t) = \frac{C_{Measured}(t) - vB\times C_{B}(t)}{1-vB}}}
+
 \item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20). 
 This is to assess time stability.}
 }
@@ -29,7 +33,7 @@ This is to assess time stability.}
 A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit}, 
 a dataframe containing the TACs of the data \code{out$tacs}, a dataframe containing the fitted values \code{out$fitvals},
 the blood input data frame after time shifting \code{input}, a vector of the weights \code{out$weights}, 
-and the inpshift value used \code{inpshift}.
+the inpshift value used \code{inpshift} and the specified vB value \code{out$vB}.
 }
 \description{
 Function to fit the MA2 of Ichise et al (2002) to data.

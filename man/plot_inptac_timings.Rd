@@ -21,7 +21,7 @@ using the \code{blood_interp} function.}
 \item{zoomTime}{The number of minutes to show for the close-up of the match between the TAC and AIF.}
 }
 \value{
-Plots the two-panel figure
+A ggplot2 object of the plot.
 }
 \description{
 Function to compare the timings of the the TAC and the Arterial Input Function (AIF) to see whether they are aligned. 
