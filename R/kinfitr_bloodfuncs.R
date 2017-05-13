@@ -16,7 +16,7 @@
 #'
 #' @description This function sorts out all the blood, plasma and parent fraction measurements into
 #' one convenient data frame for arterial models. It makes several 'editorial decisions' in the process. 
-#' i) The data is interpolated into 4096 points. This is a good number of points for Fast Fourier Transform as
+#' i) The data is interpolated into 6000 points. This is a good number of points for Fast Fourier Transform as
 #' it is a power of 2, and it is sufficiently many to have a sufficient level of detail. Get in touch if there
 #' is a good reason to change this value. ii) The different measurements are set to have the same times, thus
 #' if one measurement is taken for a shorter period than the others, the others are extended to that time point.
@@ -51,7 +51,7 @@ blood_interp <- function(t_blood, blood, t_plasma, plasma, t_parentfrac, parentf
       ******************************************************************************')
   }
   
-  interpPoints = 4096
+  interpPoints = 6000
   
   blooddf <- data.frame(Time=t_blood, Value=blood, Measure='Blood')
   plasmadf <- data.frame(Time=t_plasma, Value=plasma, Measure='Plasma')
@@ -111,7 +111,7 @@ blood_interp <- function(t_blood, blood, t_plasma, plasma, t_parentfrac, parentf
 #' ii) If the input is shifted, and is subsequently shorter than the TAC, an extra measurement will be
 #' added at \code{max(t_tac)} with the same value as the last measurement. iii) If the input is shifted positively,
 #' all interpolated times will be shifted by the specified amount, but an extra measurement is added at time=0 of 
-#' 0,0,1 for blood, plasma and parent fraction respectively (followed by interpolation into 4096 equally spaced time 
+#' 0,0,1 for blood, plasma and parent fraction respectively (followed by interpolation into 6000 equally spaced time 
 #' intervals in the new time window) i.e. not the same process as for the TACs: I figure that since the blood changes
 #' so quickly, this is likely more close to the true kinetics. Get in touch if you have suggestions for this.
 #' 
@@ -129,7 +129,7 @@ blood_interp <- function(t_blood, blood, t_plasma, plasma, t_parentfrac, parentf
 
 shift_timings <- function(t_tac, tac, input, inpshift, shifttac=T) {
   
-  interpPoints = 4096
+  interpPoints = 6000
   
   tacdf <- data.frame(Time = t_tac, Value = tac)
   
@@ -220,7 +220,7 @@ shift_timings <- function(t_tac, tac, input, inpshift, shifttac=T) {
 #' ii) If the input is shifted, and is subsequently shorter than the TAC, an extra measurement will be
 #' added at \code{max(t_tac)} with the same value as the last measurement. iii) If the input is shifted positively,
 #' all interpolated times will be shifted by the specified amount, but an extra measurement is added at time=0 of 
-#' 0,0,1 for blood, plasma and parent fraction respectively (followed by interpolation into 4096 equally spaced time 
+#' 0,0,1 for blood, plasma and parent fraction respectively (followed by interpolation into 6000 equally spaced time 
 #' intervals in the new time window) i.e. not the same process as for the TACs: I figure that since the blood changes
 #' so quickly, this is likely more close to the true kinetics. Get in touch if you have suggestions for this.
 #' 
@@ -238,7 +238,7 @@ shift_timings <- function(t_tac, tac, input, inpshift, shifttac=T) {
 
 shift_timings_df <- function(t_tac, tacsdf, input, inpshift, shifttac=T) {
   
-  interpPoints = 4096
+  interpPoints = 6000
   
   tacdf <- data.frame(Time = t_tac)
   tacdf <- cbind(tacdf, tacsdf)

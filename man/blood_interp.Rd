@@ -26,7 +26,7 @@ same times, with \code{interpPoints} number of points.
 \description{
 This function sorts out all the blood, plasma and parent fraction measurements into
 one convenient data frame for arterial models. It makes several 'editorial decisions' in the process. 
-i) The data is interpolated into 4096 points. This is a good number of points for Fast Fourier Transform as
+i) The data is interpolated into 6000 points. This is a good number of points for Fast Fourier Transform as
 it is a power of 2, and it is sufficiently many to have a sufficient level of detail. Get in touch if there
 is a good reason to change this value. ii) The different measurements are set to have the same times, thus
 if one measurement is taken for a shorter period than the others, the others are extended to that time point.
