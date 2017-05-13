@@ -155,7 +155,7 @@ plot_kinfit(onetcmout)
 
 #### Tidy and Arrange the Data
 
-I have found, through some trial and error, that the best way for iterating through TACs using these methods are using nested data frames. I was inspired to do this following a [really excellent talk](https://www.google.com) by Jenny Bryan from Plotcon 2016 - highly recommended if you are not familiar with (or skeptical of) such a data structure. For this purpose, we aim to chunk the data into a tidy format for which the size of each chunk which we want to work with at each stage: whether that is one TAC per person, or all TACs.
+I have found, through some trial and error, that the best way for iterating through TACs using these methods are using nested data frames. I was inspired to do this following a [really excellent talk](https://www.youtube.com/watch?v=4MfUCX_KpdE) by Jenny Bryan from Plotcon 2016 - highly recommended if you are not familiar with (or skeptical of) such a data structure. For this purpose, we aim to chunk the data into a tidy format for which the size of each chunk which we want to work with at each stage: whether that is one TAC per person, or all TACs.
 
 So, first we arrange and nest the data:
 
