@@ -54,10 +54,9 @@ Function to obtain the cost for a given ROI and Vnd for a TAC.
 SIMEroi(t_tac, tac, input, Vnd=5, vB=0.05, weights = weights)
 
 }
-\author{
-Granville J Matheson, \email{mathesong@gmail.com}
-}
 \references{
 Ogden RT, Zanderigo F, Parsey RV. Estimation of in vivo nonspecific binding in positron emission tomography studies without requiring a reference region. NeuroImage. 2015 Mar 31;108:234-42.
 }
-
+\author{
+Granville J Matheson, \email{mathesong@gmail.com}
+}

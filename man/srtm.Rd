@@ -60,10 +60,9 @@ srtm(t_tac, reftac, roitac)
 srtm(t_tac, reftac, roitac, weights, frameStartEnd = c(1,11), bp.upper=1)
 
 }
-\author{
-Granville J Matheson, \email{mathesong@gmail.com}
-}
 \references{
 Lammertsma AA, Hume SP. Simplified reference tissue model for PET receptor studies. Neuroimage. 1996 Dec 31;4(3):153-8.
 }
-
+\author{
+Granville J Matheson, \email{mathesong@gmail.com}
+}

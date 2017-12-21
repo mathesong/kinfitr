@@ -46,10 +46,9 @@ high-binding region to obtain an estimate of k2prime, and this k2prime value is 
 mrtm2(t_tac, reftac, roitac, k2prime=mrtm1out$par$k2prime, weights=weights)
 
 }
-\author{
-Granville J Matheson, \email{mathesong@gmail.com}
-}
 \references{
 @references Ichise M, Liow JS, Lu JQ, Takano A, Model K, Toyama H, Suhara T, Suzuki K, Innis RB, Carson RE. Linearized Reference Tissue Parametric Imaging Methods: Application to [11C]DASB Positron Emission Tomography Studies of the Serotonin Transporter in Human Brain. Journal of Cerebral Blood Flow & Metabolism. 2003 Sep 1;23(9):1096-112.
 }
-
+\author{
+Granville J Matheson, \email{mathesong@gmail.com}
+}

@@ -27,10 +27,9 @@ This is the SRTM model itself by which predicted values are generated.
 srtm_model(t_tac, reftac, R1=0.9, k2=0.1, bp=1.5)
 
 }
-\author{
-Granville J Matheson, \email{mathesong@gmail.com}
-}
 \references{
 Lammertsma AA, Hume SP. Simplified reference tissue model for PET receptor studies. Neuroimage. 1996 Dec 31;4(3):153-8.
 }
-
+\author{
+Granville J Matheson, \email{mathesong@gmail.com}
+}

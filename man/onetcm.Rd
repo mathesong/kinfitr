@@ -80,4 +80,3 @@ onetcm(t_tac, tac, input, weights=weights, inpshift=0.1, vB=0.05)
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

@@ -49,10 +49,9 @@ Loganplot(t_tac, tac, input, 10, weights)
 Loganplot(t_tac, tac, input, 10, weights, inpshift = onetcmout$par$inpshift, vB=0.05)
 
 }
-\author{
-Granville J Matheson, \email{mathesong@gmail.com}
-}
 \references{
 Logan J, Fowler JS, Volkow ND, Wolf AP, Dewey SL, Schlyer DJ, MacGregor RR, Hitzemann R, Bendriem B, Gatley SJ, Christman DR. Graphical Analysis of Reversible Radioligand Binding from Time-Activity Measurements Applied to [N-11C-Methyl]-(-)-Cocaine PET Studies in Human Subjects. Journal of Cerebral Blood Flow & Metabolism. 1990 Sep 1;10(5):740-7.
 }
-
+\author{
+Granville J Matheson, \email{mathesong@gmail.com}
+}

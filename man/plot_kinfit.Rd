@@ -32,4 +32,3 @@ plot_kinfit(srtmout, roiname = 'Putamen', refname = 'Cerebellum')
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

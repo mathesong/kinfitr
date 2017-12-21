@@ -27,4 +27,3 @@ plot_inptac_fit(twotcmout)
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

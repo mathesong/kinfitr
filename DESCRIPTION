@@ -9,7 +9,7 @@ Depends:
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1
 Imports:
     pracma,	minpack.lm, forcats, RColorBrewer, plyr, tidyr, grid,	gridExtra, magrittr, scales, ggplot2, dplyr
 Suggests:

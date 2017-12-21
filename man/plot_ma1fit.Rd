@@ -24,4 +24,3 @@ plot_ma1fit(ma1out)
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

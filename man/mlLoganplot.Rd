@@ -48,10 +48,9 @@ Function to fit the multilinear Logan Plot of Turkheimer et al (2003) to data.
 mlLoganplot(t_tac, tac, input, 10, weights, inpshift = onetcmout$par$inpshift)
 
 }
-\author{
-Granville J Matheson, \email{mathesong@gmail.com}
-}
 \references{
 Turkheimer FE, Aston JA, Banati RB, Riddell C, Cunningham VJ. A linear wavelet filter for parametric imaging with dynamic PET. IEEE transactions on medical imaging. 2003 Mar;22(3):289-301.
 }
-
+\author{
+Granville J Matheson, \email{mathesong@gmail.com}
+}

@@ -36,4 +36,3 @@ tidyinput_ref(t_tac, reftac, roitac, weights)
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

@@ -24,4 +24,3 @@ plot_refmlLoganfit(refmlloganoutout)
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

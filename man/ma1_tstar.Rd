@@ -43,4 +43,3 @@ ma1_tstar(t_tac, lowroi, medroi, highroi, input, filename='demonstration', inpsh
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-
