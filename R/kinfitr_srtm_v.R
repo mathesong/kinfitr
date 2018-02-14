@@ -21,11 +21,11 @@
 #'   final frame to use for modelling, e.g. c(1,20). This is to assess time
 #'   stability.
 #' @param R1.start Optional. Starting parameter for fitting of R1. Default is 1.
-#' @param R1.lower Optional. Lower bound for the fitting of R1. Default is 0.
+#' @param R1.lower Optional. Lower bound for the fitting of R1. Default is 0.0001.
 #' @param R1.upper Optional. Upper bound for the fitting of R1. Default is 10.
 #' @param k2.start Optional. Starting parameter for fitting of k2. Default is
 #'   0.1.
-#' @param k2.lower Optional. Lower bound for the fitting of k2. Default is 0.
+#' @param k2.lower Optional. Lower bound for the fitting of k2. Default is 0.0001.
 #' @param k2.upper Optional. Upper bound for the fitting of k2. Default is 1.
 #' @param bp.start Optional. Starting parameter for fitting of bp. Default is
 #'   1.5.
@@ -33,14 +33,22 @@
 #' @param bp.upper Optional. Upper bound for the fitting of bp. Default is 15.
 #' @param vBr.start Optional. Starting parameter for fitting of vBr. Default is
 #'   0.05.
-#' @param vBr.lower Optional. Lower bound for the fitting of vBr. Default is 0.
+#' @param vBr.lower Optional. Lower bound for the fitting of vBr. Default is 0.0001.
 #' @param vBr.upper Optional. Upper bound for the fitting of vBr. Default is
 #'   0.15.
 #' @param vBt.start Optional. Starting parameter for fitting of vBt. Default is
 #'   0.05.
-#' @param vBt.lower Optional. Lower bound for the fitting of vBt. Default is 0.
+#' @param vBt.lower Optional. Lower bound for the fitting of vBt. Default is 0.0001.
 #' @param vBt.upper Optional. Upper bound for the fitting of vBt. Default is
 #'   0.15.
+#' @param multstart_iter Number of iterations for starting parameters. Default is 1.
+#'   For more information, see \code{\link[nls.multstart]{nls_multstart}}. If
+#'   specified as 1 for any parameters, the original starting value will be
+#'   used, and the multstart_lower and multstart_upper values ignored.
+#' @param multstart_lower Optional. Lower bounds for starting parameters. Defaults
+#'   to halfway between start and lower starting parameters.
+#' @param multstart_upper Optional. Upper bounds for starting parameters. Defaults
+#'   to halfway between start and upper starting parameters.
 #' @param printvals Optional. This displays the parameter values for each
 #'   iteration of the model. This is useful for debugging and changing starting
 #'   values and upper and lower bounds for parameters.
@@ -64,11 +72,12 @@
 #' @export
 
 srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights, frameStartEnd,
-                 R1.start = 1 , R1.lower = 0 , R1.upper = 10 ,
-                 k2.start=0.1 , k2.lower = 0 , k2.upper=1 ,
+                 R1.start = 1 , R1.lower = 0.0001 , R1.upper = 10 ,
+                 k2.start=0.1 , k2.lower = 0.0001 , k2.upper=1 ,
                  bp.start=1.5 , bp.lower=-10 , bp.upper=15,
-                 vBr.start=0.05 , vBr.lower=0 , vBr.upper=0.15,
-                 vBt.start=0.05 , vBt.lower=0 , vBt.upper=0.15,
+                 vBr.start=0.05 , vBr.lower=0.0001 , vBr.upper=0.15,
+                 vBt.start=0.05 , vBt.lower=0.0001 , vBt.upper=0.15,
+                 multstart_iter=1, multstart_lower, multstart_upper,
                  printvals=F) {
 
 
@@ -86,20 +95,54 @@ srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights, frameStartEnd,
 
   # Parameters
 
-  R1_pars = list( start=R1.start  , lower= R1.lower , upper= R1.upper )
-  k2_pars = list( start=k2.start  , lower= k2.lower , upper= k2.upper  )
-  bp_pars = list( start=bp.start  , lower= bp.lower , upper= bp.upper )
-  vBr_pars = list( start=vBr.start  , lower= vBr.lower , upper= vBr.upper )
-  vBt_pars = list( start=vBt.start  , lower= vBt.lower , upper= vBt.upper )
+  start <- c( R1 = R1.start, k2 = k2.start, bp = bp.start, vBr = vBr.start, vBt = vBt.start)
+  lower <- c( R1 = R1.lower, k2 = k2.lower, bp = bp.lower, vBr = vBr.lower, vBt = vBt.lower)
+  upper <- c( R1 = R1.upper, k2 = k2.upper, bp = bp.upper, vBr = vBr.upper, vBt = vBt.upper)
+
+  if( length(multstart_iter) == length(start) || length(multstart_iter) == 1 ) {
+
+    ### Missing multstart boundaries
+    if(missing(multstart_lower)) {
+      multstart_lower = start - (start-lower)/2
+    }
+    if(missing(multstart_upper)) {
+      multstart_upper = start + (upper-start)/2
+    }
+
+    ### No multstart for some variables ###
+    if( any(multstart_iter==1) ) {
+      non_iterable <- which(multstart_iter==1)
+      multstart_lower[non_iterable] = start[non_iterable]
+      multstart_upper[non_iterable] = start[non_iterable]
+    }
+
+    ### Incorrect multstart boundaries
+    if( length(multstart_lower) != length(start) || length(multstart_upper) != length(start) ) {
+      stop('multstart_lower and multstart_upper should be the same length as the number of parameters')
+    }
+  } else {
+    stop('multstart_iter should be of length 1 of of the same length as the number of parameters')
+  }
+
+
 
   # Solution
 
-  output <- minpack.lm::nlsLM(roitac ~ srtm_v_model(t_tac, reftac, bloodtac, R1, k2, bp, vBr, vBt),
-        start =  c(R1=R1_pars$start, k2 = k2_pars$start, bp = bp_pars$start, vBr=vBr$start, vBt=vBt$start),
-        lower = c(R1=R1_pars$lower, k2 = k2_pars$lower, bp = bp_pars$lower, vBr=vBr$lower, vBt=vBt$lower),
-        upper = c(R1=R1_pars$upper, k2 = k2_pars$upper, bp = bp_pars$upper, vBr=vBr$upper, vBt=vBt$upper),
+  if( prod(multstart_iter) == 1 ) {
+
+    output <- minpack.lm::nlsLM(roitac ~ srtm_v_model(t_tac, reftac, bloodtac, R1, k2, bp, vBr, vBt),
+        start =  start, lower = lower, upper = upper,
         weights=weights, control = minpack.lm::nls.lm.control(maxiter = 200),
         trace=printvals)
+  } else {
+
+  output <- nls.multstart::nls_multstart(roitac ~ srtm_v_model(t_tac, reftac, bloodtac, R1, k2, bp, vBr, vBt),
+                              supp_errors = 'Y',
+                              start_lower = multstart_lower,
+                              start_upper = multstart_upper,
+                              iter = multstart_iter, convergence_count = FALSE,
+                              lower = lower, upper=upper,weights=weights)
+  }
 
   # Output
 
@@ -187,7 +230,7 @@ srtm_v_model <- function(t_tac, reftac, bloodtac, R1, k2, bp, vBr, vBt) {
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' plot_srtmvfit(srtmvout)
+#' plot_srtm_vfit(srtmvout)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -195,7 +238,7 @@ srtm_v_model <- function(t_tac, reftac, bloodtac, R1, k2, bp, vBr, vBt) {
 #'
 #' @export
 
-plot_srtmvfit <- function(srtmvout, roiname, refname) {
+plot_srtm_vfit <- function(srtmvout, roiname, refname) {
 
   measured <- data.frame(Time = srtmvout$tacs$Time,
                        Reference = srtmvout$tacs$Reference,

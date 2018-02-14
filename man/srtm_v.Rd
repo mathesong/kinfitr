@@ -5,10 +5,11 @@
 \title{Simplified Reference Tissue Model with Blood Volumes}
 \usage{
 srtm_v(t_tac, reftac, roitac, bloodtac, weights, frameStartEnd, R1.start = 1,
-  R1.lower = 0, R1.upper = 10, k2.start = 0.1, k2.lower = 0,
+  R1.lower = 1e-04, R1.upper = 10, k2.start = 0.1, k2.lower = 1e-04,
   k2.upper = 1, bp.start = 1.5, bp.lower = -10, bp.upper = 15,
-  vBr.start = 0.05, vBr.lower = 0, vBr.upper = 0.15, vBt.start = 0.05,
-  vBt.lower = 0, vBt.upper = 0.15, printvals = F)
+  vBr.start = 0.05, vBr.lower = 1e-04, vBr.upper = 0.15,
+  vBt.start = 0.05, vBt.lower = 1e-04, vBt.upper = 0.15,
+  multstart_iter = 1, multstart_lower, multstart_upper, printvals = F)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the
@@ -37,14 +38,14 @@ stability.}
 
 \item{R1.start}{Optional. Starting parameter for fitting of R1. Default is 1.}
 
-\item{R1.lower}{Optional. Lower bound for the fitting of R1. Default is 0.}
+\item{R1.lower}{Optional. Lower bound for the fitting of R1. Default is 0.0001.}
 
 \item{R1.upper}{Optional. Upper bound for the fitting of R1. Default is 10.}
 
 \item{k2.start}{Optional. Starting parameter for fitting of k2. Default is
 0.1.}
 
-\item{k2.lower}{Optional. Lower bound for the fitting of k2. Default is 0.}
+\item{k2.lower}{Optional. Lower bound for the fitting of k2. Default is 0.0001.}
 
 \item{k2.upper}{Optional. Upper bound for the fitting of k2. Default is 1.}
 
@@ -58,7 +59,7 @@ stability.}
 \item{vBr.start}{Optional. Starting parameter for fitting of vBr. Default is
 0.05.}
 
-\item{vBr.lower}{Optional. Lower bound for the fitting of vBr. Default is 0.}
+\item{vBr.lower}{Optional. Lower bound for the fitting of vBr. Default is 0.0001.}
 
 \item{vBr.upper}{Optional. Upper bound for the fitting of vBr. Default is
 0.15.}
@@ -66,10 +67,21 @@ stability.}
 \item{vBt.start}{Optional. Starting parameter for fitting of vBt. Default is
 0.05.}
 
-\item{vBt.lower}{Optional. Lower bound for the fitting of vBt. Default is 0.}
+\item{vBt.lower}{Optional. Lower bound for the fitting of vBt. Default is 0.0001.}
 
 \item{vBt.upper}{Optional. Upper bound for the fitting of vBt. Default is
 0.15.}
+
+\item{multstart_iter}{Number of iterations for starting parameters. Default is 1.
+For more information, see \code{\link[nls.multstart]{nls_multstart}}. If
+specified as 1 for any parameters, the original starting value will be
+used, and the multstart_lower and multstart_upper values ignored.}
+
+\item{multstart_lower}{Optional. Lower bounds for starting parameters. Defaults
+to halfway between start and lower starting parameters.}
+
+\item{multstart_upper}{Optional. Upper bounds for starting parameters. Defaults
+to halfway between start and upper starting parameters.}
 
 \item{printvals}{Optional. This displays the parameter values for each
 iteration of the model. This is useful for debugging and changing starting
