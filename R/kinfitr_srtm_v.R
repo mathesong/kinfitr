@@ -17,6 +17,8 @@
 #' @param weights Optional. Numeric vector of the weights assigned to each frame
 #'   in the fitting. We include zero at time zero: if not included, it is added.
 #'   If not specified, uniform weights will be used.
+#' @param vBr_fixed Optional. The blood volume fraction of the reference region.  If not
+#'   specified, this will be fitted. This parameter was fixed in the original article.
 #' @param frameStartEnd Optional. This allows one to specify the beginning and
 #'   final frame to use for modelling, e.g. c(1,20). This is to assess time
 #'   stability.
@@ -71,7 +73,7 @@
 #'
 #' @export
 
-srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights, frameStartEnd,
+srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights, vBr_fixed, frameStartEnd,
                  R1.start = 1 , R1.lower = 0.0001 , R1.upper = 10 ,
                  k2.start=0.1 , k2.lower = 0.0001 , k2.upper=1 ,
                  bp.start=1.5 , bp.lower=-10 , bp.upper=15,
@@ -99,6 +101,12 @@ srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights, frameStartEnd,
   lower <- c( R1 = R1.lower, k2 = k2.lower, bp = bp.lower, vBr = vBr.lower, vBt = vBt.lower)
   upper <- c( R1 = R1.upper, k2 = k2.upper, bp = bp.upper, vBr = vBr.upper, vBt = vBt.upper)
 
+  if(!missing(vBr_fixed)) {
+    start[which(names(start)=='vBr')] <- vBr_fixed
+    lower[which(names(lower)=='vBr')] <- vBr_fixed
+    upper[which(names(upper)=='vBr')] <- vBr_fixed
+  }
+
   if( length(multstart_iter) == length(start) || length(multstart_iter) == 1 ) {
 
     ### Missing multstart boundaries
@@ -121,7 +129,7 @@ srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights, frameStartEnd,
       stop('multstart_lower and multstart_upper should be the same length as the number of parameters')
     }
   } else {
-    stop('multstart_iter should be of length 1 of of the same length as the number of parameters')
+    stop('multstart_iter should be of length 1 or of the same length as the number of parameters')
   }
 
 
@@ -141,7 +149,7 @@ srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights, frameStartEnd,
                               start_lower = multstart_lower,
                               start_upper = multstart_upper,
                               iter = multstart_iter, convergence_count = FALSE,
-                              lower = lower, upper=upper,weights=weights)
+                              lower = lower, upper=upper, modelweights=weights)
   }
 
   # Output

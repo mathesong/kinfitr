@@ -15,7 +15,7 @@
 #' If not specified, this will be fitted, however this takes longer to compute. Recommended to perform once on a large ROI for
 #' each measurement, and to specify this value for the remainder of the regions. Or perhaps even to use a simpler model, such as
 #' 1TCM.
-#' @param vB Optional. The blood volume fraction.  If not specified, this will be fitted. Recommended to perform once on a large ROI for
+#' @param vB_fixed Optional. The blood volume fraction.  If not specified, this will be fitted. Recommended to perform once on a large ROI for
 #' each measurement, and to specify this value for the remainder of the regions.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 #' This is to assess time stability.
@@ -37,6 +37,14 @@
 #' @param vB.start Optional. Starting parameter for fitting of vB. Default is 0.05.
 #' @param vB.lower Optional. Lower bound for the fitting of vB. Default is 0.01.
 #' @param vB.upper Optional. Upper bound for the fitting of vB. Default is 0.1.
+#' @param multstart_iter Number of iterations for starting parameters. Default is 1.
+#'   For more information, see \code{\link[nls.multstart]{nls_multstart}}. If
+#'   specified as 1 for any parameters, the original starting value will be
+#'   used, and the multstart_lower and multstart_upper values ignored.
+#' @param multstart_lower Optional. Lower bounds for starting parameters. Defaults
+#'   to halfway between start and lower starting parameters.
+#' @param multstart_upper Optional. Upper bounds for starting parameters. Defaults
+#'   to halfway between start and upper starting parameters.
 #' @param printvals Optional. This displays the parameter values for each iteration of the
 #' model. This is useful for debugging and changing starting values and upper and lower
 #' bounds for parameters.
@@ -45,23 +53,24 @@
 #' a dataframe containing the TACs both of the data and the fitted values \code{out$tacs},
 #' the blood input data frame after time shifting \code{input}, a vector of the weights \code{out$weights},
 #' a logical of whether the inpshift was fitted \code{inpshift_fitted} and a logical of whether the vB was
-#' fitted \code{vB}.
+#' fitted \code{vB_fixed}.
 #'
 #' @examples
 #' twotcm(t_tac, tac, input, weights=weights)
-#' twotcm(t_tac, tac, input, weights=weights, inpshift=0.1, vB=0.05)
+#' twotcm(t_tac, tac, input, weights=weights, inpshift=0.1, vB_fixed=0.05)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
 
-twotcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
+twotcm <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartEnd,
                    K1.start = 0.1 , K1.lower = 0.0001 , K1.upper = 0.5 ,
                    k2.start = 0.1 , k2.lower = 0.0001 , k2.upper = 0.5 ,
                    k3.start = 0.1 , k3.lower = 0.0001 , k3.upper = 0.5 ,
                    k4.start = 0.1 , k4.lower = 0.0001 , k4.upper = 0.5 ,
                    inpshift.start = 0 , inpshift.lower= -0.5 , inpshift.upper = 0.5 ,
                    vB.start = 0.05 , vB.lower = 0.01 , vB.upper = 0.1,
+                   multstart_iter=1, multstart_lower, multstart_upper,
                    printvals=F) {
 
   # Tidying
@@ -74,13 +83,6 @@ twotcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
 
   # Parameters
 
-  K1_pars       =  list(start = K1.start , lower = K1.lower , upper= K1.upper )
-  k2_pars       =  list(start = k2.start , lower = k2.lower , upper= k2.upper )
-  k3_pars       =  list(start = k3.start , lower = k3.lower , upper= k3.upper )
-  k4_pars       =  list(start = k4.start , lower = k4.lower , upper= k4.upper )
-  inpshift_pars =  list(start = inpshift.start , lower = inpshift.lower , upper= inpshift.upper )
-  vB_pars       =  list(start = vB.start , lower = vB.lower , upper= vB.upper )
-
   start <- c(K1 = K1.start, k2 = k2.start, k3 = k3.start, k4 = k4.start,
              inpshift = inpshift.start, vB = vB.start)
   lower <- c(K1 = K1.lower, k2 = k2.lower, k3 = k3.lower, k4 = k4.lower,
@@ -89,7 +91,38 @@ twotcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
              inpshift = inpshift.upper, vB = vB.upper)
 
   vB_fitted = T
-  if(!missing(vB)) { vB_fitted = F ; vB_pars = lapply(vB_pars, function(x) vB ) }
+  if(!missing(vB_fixed)) {
+    vB_fitted = F
+
+    start[which(names(start)=='vB')] <- vB_fixed
+    lower[which(names(lower)=='vB')] <- vB_fixed
+    upper[which(names(upper)=='vB')] <- vB_fixed
+  }
+
+  if( length(multstart_iter) == length(start) || length(multstart_iter) == 1 ) {
+
+    ### Missing multstart boundaries
+    if(missing(multstart_lower)) {
+      multstart_lower = start - (start-lower)/2
+    }
+    if(missing(multstart_upper)) {
+      multstart_upper = start + (upper-start)/2
+    }
+
+    ### No multstart for some variables ###
+    if( any(multstart_iter==1) ) {
+      non_iterable <- which(multstart_iter==1)
+      multstart_lower[non_iterable] = start[non_iterable]
+      multstart_upper[non_iterable] = start[non_iterable]
+    }
+
+    ### Incorrect multstart boundaries
+    if( length(multstart_lower) != length(start) || length(multstart_upper) != length(start) ) {
+      stop('multstart_lower and multstart_upper should be the same length as the number of parameters')
+    }
+  } else {
+    stop('multstart_iter should be of length 1 or of the same length as the number of parameters')
+  }
 
 
   # Solution - Delay Already Fitted
@@ -104,9 +137,27 @@ twotcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
     tac <- newvals$tac
     input <- newvals$input
 
-    output <- minpack.lm::nlsLM(tac ~ twotcm_model(t_tac, input, K1, k2, k3, k4, vB),
-                    start =  start, lower = lower, upper = upper,
-                    weights=weights, control = minpack.lm::nls.lm.control(maxiter = 200), trace=printvals)
+    start <- start[-which(names(start)=='inpshift')]
+    lower <- lower[-which(names(lower)=='inpshift')]
+    upper <- upper[-which(names(upper)=='inpshift')]
+
+    if( prod(multstart_iter) == 1 ) {
+
+      output <- minpack.lm::nlsLM(tac ~ twotcm_model(t_tac, input, K1, k2, k3, k4, vB),
+                      start =  start, lower = lower, upper = upper,
+                      weights=weights, control = minpack.lm::nls.lm.control(maxiter = 200),
+                      trace=printvals)
+
+    } else {
+
+      output <- nls.multstart::nls_multstart(tac ~ twotcm_model(t_tac, input, K1, k2, k3, k4, vB) ,
+                                             supp_errors = 'Y',
+                                             start_lower = multstart_lower,
+                                             start_upper = multstart_upper,
+                                             iter = multstart_iter, convergence_count = FALSE,
+                                             lower = lower, upper=upper, modelweights=weights)
+
+    }
   }
 
   # Solution - Fitting the Delay
@@ -115,11 +166,23 @@ twotcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
 
     inpshift_fitted = T
 
-    output <- minpack.lm::nlsLM(tac ~ twotcm_fitDelay_model(t_tac, input, K1, k2, k3, k4, inpshift, vB),
-                    start =  c(K1=K1_pars$start, k2 = k2_pars$start, k3 = k3_pars$start, k4 = k4_pars$start, inpshift = inpshift_pars$start, vB = vB_pars$start),
-                    lower = c(K1=K1_pars$lower, k2 = k2_pars$lower, k3 = k3_pars$lower, k4 = k4_pars$lower, inpshift = inpshift_pars$lower, vB = vB_pars$lower),
-                    upper = c(K1=K1_pars$upper, k2 = k2_pars$upper, k3 = k3_pars$upper, k4 = k4_pars$upper, inpshift = inpshift_pars$upper, vB = vB_pars$upper),
-                    weights=weights, control = minpack.lm::nls.lm.control(maxiter = 200), trace=printvals)
+    if( prod(multstart_iter) == 1 ) {
+
+      output <- minpack.lm::nlsLM(tac ~ twotcm_fitDelay_model(t_tac, input, K1, k2, k3, k4, inpshift, vB),
+                                  start =  start, lower = lower, upper = upper,
+                                  weights=weights, control = minpack.lm::nls.lm.control(maxiter = 200),
+                                  trace=printvals)
+
+    } else {
+
+      output <- nls.multstart::nls_multstart(tac ~ twotcm_fitDelay_model(t_tac, input, K1, k2, k3, k4, inpshift, vB),
+                                             supp_errors = 'Y',
+                                             start_lower = multstart_lower,
+                                             start_upper = multstart_upper,
+                                             iter = multstart_iter, convergence_count = FALSE,
+                                             lower = lower, upper=upper, modelweights=weights)
+
+    }
   }
 
 

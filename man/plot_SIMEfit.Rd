@@ -14,7 +14,7 @@ A ggplot2 object of the plot.
 }
 \description{
 The black line of this plot is the total cost function for the simultaneous estimation and is the true
-outcome for the SIME model. I have also included, in coloured points, the costs for the individual ROIs such that 
+outcome for the SIME model. I have also included, in coloured points, the costs for the individual ROIs such that
 one can visualise whether the overall estimated Vnd value is overly influenced by one ROI in particular, or whether
 one ROI shows a completely different pattern from the rest of the ROIs.
 }

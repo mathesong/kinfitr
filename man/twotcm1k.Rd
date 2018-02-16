@@ -4,13 +4,14 @@
 \alias{twotcm1k}
 \title{Two Tissue Compartment Model with Irreversible Trapping}
 \usage{
-twotcm1k(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
+twotcm1k(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartEnd,
   K1.start = 0.1, K1.lower = 1e-04, K1.upper = 0.5, k2.start = 0.1,
   k2.lower = 1e-04, k2.upper = 0.5, k3.start = 0.1, k3.lower = 1e-04,
   k3.upper = 0.5, k4.start = 0.1, k4.lower = 1e-04, k4.upper = 0.5,
   Kb.start = 0.25, Kb.lower = 1e-04, Kb.upper = 1, inpshift.start = 0,
   inpshift.lower = -0.5, inpshift.upper = 0.5, vB.start = 0.05,
-  vB.lower = 0.01, vB.upper = 0.1, printvals = F)
+  vB.lower = 0.01, vB.upper = 0.1, multstart_iter = 1, multstart_lower,
+  multstart_upper, printvals = F)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
@@ -30,7 +31,7 @@ If not specified, this will be fitted, however this takes longer to compute. Rec
 each measurement, and to specify this value for the remainder of the regions. Or perhaps even to use a simpler model, such as
 1TCM.}
 
-\item{vB}{Optional. The blood volume fraction.  If not specified, this will be fitted. Recommended to perform once on a large ROI for
+\item{vB_fixed}{Optional. The blood volume fraction.  If not specified, this will be fitted. Recommended to perform once on a large ROI for
 each measurement, and to specify this value for the remainder of the regions.}
 
 \item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
@@ -78,6 +79,17 @@ This is to assess time stability.}
 
 \item{vB.upper}{Optional. Upper bound for the fitting of vB. Default is 0.1.}
 
+\item{multstart_iter}{Number of iterations for starting parameters. Default is 1.
+For more information, see \code{\link[nls.multstart]{nls_multstart}}. If
+specified as 1 for any parameters, the original starting value will be
+used, and the multstart_lower and multstart_upper values ignored.}
+
+\item{multstart_lower}{Optional. Lower bounds for starting parameters. Defaults
+to halfway between start and lower starting parameters.}
+
+\item{multstart_upper}{Optional. Upper bounds for starting parameters. Defaults
+to halfway between start and upper starting parameters.}
+
 \item{printvals}{Optional. This displays the parameter values for each iteration of the
 model. This is useful for debugging and changing starting values and upper and lower
 bounds for parameters.}
@@ -87,7 +99,7 @@ A list with a data frame of the fitted parameters \code{out$par}, the model fit 
 a dataframe containing the TACs both of the data and the fitted values \code{out$tacs},
 the blood input data frame after time shifting \code{input}, a vector of the weights \code{out$weights},
 a logical of whether the inpshift was fitted \code{inpshift_fitted} and a logical of whether the vB was
-fitted \code{vB}.
+fitted \code{vB_fixed}.
 }
 \description{
 Function to fit the Two Tissue Compartment Model to data. An irreversible model can also be specified by setting the
@@ -95,7 +107,7 @@ starting value, upper and lower bounds of k4 to 0.
 }
 \examples{
 twotcm1k(t_tac, tac, input, weights=weights)
-twotcm1k(t_tac, tac, input, weights=weights, inpshift=0.1, vB=0.05)
+twotcm1k(t_tac, tac, input, weights=weights, inpshift=0.1, vB_fixed=0.05)
 
 }
 \references{

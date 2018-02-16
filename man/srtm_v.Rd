@@ -4,10 +4,10 @@
 \alias{srtm_v}
 \title{Simplified Reference Tissue Model with Blood Volumes}
 \usage{
-srtm_v(t_tac, reftac, roitac, bloodtac, weights, frameStartEnd, R1.start = 1,
-  R1.lower = 1e-04, R1.upper = 10, k2.start = 0.1, k2.lower = 1e-04,
-  k2.upper = 1, bp.start = 1.5, bp.lower = -10, bp.upper = 15,
-  vBr.start = 0.05, vBr.lower = 1e-04, vBr.upper = 0.15,
+srtm_v(t_tac, reftac, roitac, bloodtac, weights, vBr_fixed, frameStartEnd,
+  R1.start = 1, R1.lower = 1e-04, R1.upper = 10, k2.start = 0.1,
+  k2.lower = 1e-04, k2.upper = 1, bp.start = 1.5, bp.lower = -10,
+  bp.upper = 15, vBr.start = 0.05, vBr.lower = 1e-04, vBr.upper = 0.15,
   vBt.start = 0.05, vBt.lower = 1e-04, vBt.upper = 0.15,
   multstart_iter = 1, multstart_lower, multstart_upper, printvals = F)
 }
@@ -31,6 +31,9 @@ added.}
 \item{weights}{Optional. Numeric vector of the weights assigned to each frame
 in the fitting. We include zero at time zero: if not included, it is added.
 If not specified, uniform weights will be used.}
+
+\item{vBr_fixed}{Optional. The blood volume fraction of the reference region.  If not
+specified, this will be fitted. This parameter was fixed in the original article.}
 
 \item{frameStartEnd}{Optional. This allows one to specify the beginning and
 final frame to use for modelling, e.g. c(1,20). This is to assess time
