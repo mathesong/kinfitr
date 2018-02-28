@@ -79,6 +79,9 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
   }
   roiweights = roiweights / max(roiweights)
 
+  Regions <- data.frame(Region = names(tacdf),
+                        roiweights = roiweights, stringsAsFactors = F)
+
   if(length(roiweights) != ncol(tacdf)) {
     stop('The number of ROIs and roiweights do not match')
   }
@@ -131,55 +134,70 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
 
   tidytacs_nested <- tidyr::nest(tidytacs, -Vnd, -Region, .key='tacs')
 
-  fit_SIMEroi <- function(tacs, Vnd, input, vB_fixed, start, upper, lower) {
+  fit_SIMEroi <- function(tacs, input, Vnd, vB_fixed, start, upper, lower) {
 
-    fit <- SIMEroi(t_tac = tacs$Time, tac = tacs$Radioactivity, input = input, Vnd = Vnd,
-                   k2.start = start[1] , k2.lower = lower[1] , k2.upper = upper[1] ,
-                   k3.start = start[2] , k3.lower = lower[2] , k3.upper = upper[2] ,
-                   k4.start = start[3] , k4.lower = lower[3] , k4.upper = upper[3])
+    # fit <- SIMEroi(t_tac = tacs$Time, tac = tacs$Radioactivity, input = input, Vnd = Vnd,
+    #                k2.start = start[1] , k2.lower = lower[1] , k2.upper = upper[1] ,
+    #                k3.start = start[2] , k3.lower = lower[2] , k3.upper = upper[2] ,
+    #                k4.start = start[3] , k4.lower = lower[3] , k4.upper = upper[3])
+
+    tac <- tacs$Radioactivity
+    t_tac <- tacs$Time
+    weights <- tacs$weights
+
+    fit <- minpack.lm::nlsLM(tac ~ SIME_model(t_tac, input, Vnd, k2, k3, k4, vB=vB_fixed),
+                      start = start, lower = lower, upper = upper,
+                      weights=weights, control = minpack.lm::nls.lm.control(maxiter = 200))
+
+    output <- broom::glance(fit)
+    output$RSS <- sum( ( residuals(fit)*weights(fit) )^2)
+
+    return(output)
 
   }
 
+  fit_SIMEroi_possibly <- purrr::possibly(fit_SIMEroi, otherwise = NA, quiet = T)
+
 
   tidytacs_nested <- dplyr::mutate(tidytacs_nested, fit = purrr::pmap(list(tacs, Vnd),
-                                                                          fit_SIMEroi,
+                                                                          fit_SIMEroi_possibly,
                                                                           input=input,
                                                                           vB_fixed = vB_fixed,
                                                                           start = start,
                                                                           lower=lower,
                                                                           upper=upper) )
 
-  # Cost <- tidytacs %>%
-  #   dplyr::group_by(Vnd, Region) %>%
-  #   dplyr::do(gridCost = SIMEroi(t_tac=.$Time, tac=.$Radioactivity, input=input, Vnd=.$Vnd[1],
-  #                                vB_fixed=vB_fixed, weights = .$weights,
-  #             k2.start = start[1] , k2.lower = lower[1] , k2.upper = upper[1] ,
-  #             k3.start = start[2] , k3.lower = lower[2] , k3.upper = upper[2] ,
-  #             k4.start = start[3] , k4.lower = lower[3] , k4.upper = upper[3])) %>%
-  #   dplyr::mutate(gridCost = as.numeric(gridCost))
+  tidypars <- dplyr::mutate(tidytacs_nested,
+                                   success = purrr::map_lgl(fit, ~is.data.frame(.x)))
 
+  tidypars <- dplyr::filter(tidypars, success==T)
+  tidypars <- dplyr::select(tidypars, -tacs, -success)
+  tidypars <- tidyr::unnest(tidypars)
+  tidypars <- dplyr::left_join(Regions, tidypars, by='Region')
+  tidypars <- dplyr::mutate(tidypars, RSSw = RSS*roiweights)
 
 
   # Calculating SSmean
 
-  Cost_wide <- tidyr::spread(Cost, Region, gridCost)
-  roiweighting <- t(replicate(length(Vndgrid), roiweights))
+  SSmean <- dplyr::select(tidypars, Region, roiweights, Vnd, RSSw)
 
-  SSmean = rowMeans( Cost_wide[,-1] * roiweighting )
+  SSmean <- dplyr::group_by(SSmean, Vnd)
+  SSmean <- dplyr::summarise(SSmean, RSSw=mean(RSSw))
+  SSmean <- dplyr::ungroup(SSmean)
 
 
   # Output
 
-  Vnd = Vndgrid[which.min(SSmean)]
+  Vnd = SSmean$Vnd[which.min(SSmean$RSSw)]
 
   par = as.data.frame(list(Vnd = Vnd))
 
   tacs = data.frame(Time = t_tac)
   tacs <- cbind(tacs, tacdf)
 
-  fitvals = data.frame(Vnd = Vndgrid, SSmean = SSmean)
+  fitvals = SSmean
 
-  out <- list( par = par, tacs = tacs, fitvals = fitvals, roifits = Cost_wide, input = input,
+  out <- list( par = par, tacs = tacs, fitvals = fitvals, roifits = tidypars, input = input,
                weights=weights, roiweights = roiweights, inpshift = inpshift, vB = vB_fixed, model='SIME')
 
   return(out)
@@ -187,65 +205,6 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
 
 }
 
-#' Cost Function: SIME
-#'
-#' Function to obtain the cost for a given ROI and Vnd for a TAC.
-#'
-#' @param t_tac Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
-#' zero. If a time zero frame is not included, it will be added.
-#' @param tac Numeric vector of radioactivity concentrations in the target tissue for each frame including a zero at time
-#' zero.
-#' @param input Data frame containing the blood, plasma, and parent fraction concentrations over time.  This can be generated
-#' using the \code{blood_interp} function. It should already be shifted if a shift is desired, using \code{shift_timings}.
-#' @param Vnd The specified Vnd value to calculate the cost for for the given ROI.
-#' @param vB_fixed Optional. The blood volume fraction.  If not specified, this will be set to 0.05. This can be fitted using 1TCM or 2TCM.
-#' @param weights Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
-#' if not included, it is added. If not specified, uniform weights will be used.
-#' @param k2.start Optional. Starting parameter for fitting of k2. Default is 0.1.
-#' @param k2.lower Optional. Lower bound for the fitting of k2. Default is 0.
-#' @param k2.upper Optional. Upper bound for the fitting of k2. Default is 0.5.
-#' @param k3.start Optional. Starting parameter for fitting of k3. Default is 0.1.
-#' @param k3.lower Optional. Lower bound for the fitting of k3. Default is 0.
-#' @param k3.upper Optional. Upper bound for the fitting of k3. Default is 0.5.
-#' @param k4.start Optional. Starting parameter for fitting of k4. Default is 0.1.
-#' @param k4.lower Optional. Lower bound for the fitting of k4. Default is 0.
-#' @param k4.upper Optional. Upper bound for the fitting of k4. Default is 0.5.
-#'
-#' @return If the fit converged for the given Vnd value, the function will return the weighted sum of squares of the
-#' residuals. If the fit did not converge for the given Vnd value, the function will return NA.
-#'
-#'
-#' @examples
-#' SIMEroi(t_tac, tac, input, Vnd=5, vB_fixed=0.05, weights = weights)
-#'
-#' @author Granville J Matheson, \email{mathesong@@gmail.com}
-#'
-#' @references Ogden RT, Zanderigo F, Parsey RV. Estimation of in vivo nonspecific binding in positron emission tomography studies without requiring a reference region. NeuroImage. 2015 Mar 31;108:234-42.
-#'
-#' @export
-
-SIMEroi <- function(t_tac, tac, input, Vnd, vB_fixed, weights,
-                    k2.start = 0.1 , k2.lower = 0 , k2.upper = 0.5 ,
-                    k3.start = 0.1 , k3.lower = 0 , k3.upper = 0.5 ,
-                    k4.start = 0.1 , k4.lower = 0 , k4.upper = 0.5 ) {
-
-
-  start <- c(k2 = k2.start, k3 = k3.start, k4 = k4.start)
-  lower <- c(k2 = k2.lower, k3 = k3.lower, k4 = k4.lower)
-  upper <- c(k2 = k2.upper, k3 = k3.upper, k4 = k4.upper)
-
-  pred <-   #tryCatch( {
-    minpack.lm::nlsLM(tac ~ SIME_model(t_tac, input, Vnd, k2, k3, k4, vB=vB_fixed),
-                      start = start, lower = lower, upper = upper,
-                      weights=weights, control = minpack.lm::nls.lm.control(maxiter = 200))
-    #},
-    #error = function(e) NA )
-
-  if(is.na(pred[1])) {SSw = NA} else {
-    SSw <-  sum( weights(pred) * ( residuals(pred)^2 ) )
-    return(SSw)
-  }
-}
 
 #' Model: SIME
 #'
@@ -331,15 +290,15 @@ plot_SIMEfit <- function(SIMEout) {
 
   fitvals <- SIMEout$fitvals
 
-  roifit <- tidyr::gather(SIMEout$roifits, Region, Cost, -Vnd)
+  roifits <- SIMEout$roifits
 
-  minmax <- list(min = min(c(fitvals$SSmean, roifit$Cost)),
-                 max = max(c(fitvals$SSmean, roifit$Cost)) )
+  minmax <- list(min = min(roifits$RSSw),
+                 max = max(roifits$RSSw) )
 
 
-  outplot <- ggplot(roifit, aes(x = Vnd, y = Cost)) +
+  outplot <- ggplot(roifits, aes(x = Vnd, y = RSSw)) +
     geom_point(aes(colour = Region)) +
-    geom_line(data=fitvals, aes(x = Vnd, y = SSmean), size=1) +
+    geom_line(data=fitvals, aes(x = Vnd, y = RSSw), size=1) +
     geom_vline(xintercept = SIMEout$par$Vnd, linetype="dashed") +
     xlab(expression(V[ND])) +
     scale_y_log10("Cost",

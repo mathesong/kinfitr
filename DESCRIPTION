@@ -23,8 +23,19 @@ Imports:
     scales,
     ggplot2,
     dplyr,
-    nls.multstart
-Suggests:
-    knitr, devtools, roxygen2, testthat, pspline,	LambertW,	parallel, rmarkdown, broom, pander
+    nls.multstart,
+    tibble,
+    purrr,
+    broom
+Suggests: 
+    knitr,
+    devtools,
+    roxygen2,
+    testthat,
+    pspline,
+    LambertW,
+    parallel,
+    rmarkdown,
+    pander
 VignetteBuilder: knitr
 Remotes: padpadpadpad/nls.multstart
