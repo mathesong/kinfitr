@@ -136,11 +136,6 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
 
   fit_SIMEroi <- function(tacs, input, Vnd, vB_fixed, start, upper, lower) {
 
-    # fit <- SIMEroi(t_tac = tacs$Time, tac = tacs$Radioactivity, input = input, Vnd = Vnd,
-    #                k2.start = start[1] , k2.lower = lower[1] , k2.upper = upper[1] ,
-    #                k3.start = start[2] , k3.lower = lower[2] , k3.upper = upper[2] ,
-    #                k4.start = start[3] , k4.lower = lower[3] , k4.upper = upper[3])
-
     tac <- tacs$Radioactivity
     t_tac <- tacs$Time
     weights <- tacs$weights
@@ -150,7 +145,7 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
                       weights=weights, control = minpack.lm::nls.lm.control(maxiter = 200))
 
     output <- broom::glance(fit)
-    output$RSS <- sum( ( residuals(fit)*weights(fit) )^2)
+    output$RSS <- sum( weights(fit) * residuals(fit)^2 )
 
     return(output)
 
