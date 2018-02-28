@@ -129,14 +129,34 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
   tidytacs <- tidytacs[rep(1:nrow(tidytacs),times = length(Vndgrid)),]
   tidytacs$Vnd <- rep(Vndgrid, each=frames)
 
-  Cost <- tidytacs %>%
-    dplyr::group_by(Vnd, Region) %>%
-    dplyr::do(gridCost = SIMEroi(t_tac=.$Time, tac=.$Radioactivity, input=input, Vnd=.$Vnd[1],
-                                 vB_fixed=vB_fixed, weights = .$weights,
-              k2.start = start[1] , k2.lower = lower[1] , k2.upper = upper[1] ,
-              k3.start = start[2] , k3.lower = lower[2] , k3.upper = upper[2] ,
-              k4.start = start[3] , k4.lower = lower[3] , k4.upper = upper[3])) %>%
-    dplyr::mutate(gridCost = as.numeric(gridCost))
+  tidytacs_nested <- tidyr::nest(tidytacs, -Vnd, -Region, .key='tacs')
+
+  fit_SIMEroi <- function(tacs, Vnd, input, vB_fixed, start, upper, lower) {
+
+    fit <- SIMEroi(t_tac = tacs$Time, tac = tacs$Radioactivity, input = input, Vnd = Vnd,
+                   k2.start = start[1] , k2.lower = lower[1] , k2.upper = upper[1] ,
+                   k3.start = start[2] , k3.lower = lower[2] , k3.upper = upper[2] ,
+                   k4.start = start[3] , k4.lower = lower[3] , k4.upper = upper[3])
+
+  }
+
+
+  tidytacs_nested <- dplyr::mutate(tidytacs_nested, fit = purrr::pmap(list(tacs, Vnd),
+                                                                          fit_SIMEroi,
+                                                                          input=input,
+                                                                          vB_fixed = vB_fixed,
+                                                                          start = start,
+                                                                          lower=lower,
+                                                                          upper=upper) )
+
+  # Cost <- tidytacs %>%
+  #   dplyr::group_by(Vnd, Region) %>%
+  #   dplyr::do(gridCost = SIMEroi(t_tac=.$Time, tac=.$Radioactivity, input=input, Vnd=.$Vnd[1],
+  #                                vB_fixed=vB_fixed, weights = .$weights,
+  #             k2.start = start[1] , k2.lower = lower[1] , k2.upper = upper[1] ,
+  #             k3.start = start[2] , k3.lower = lower[2] , k3.upper = upper[2] ,
+  #             k4.start = start[3] , k4.lower = lower[3] , k4.upper = upper[3])) %>%
+  #   dplyr::mutate(gridCost = as.numeric(gridCost))
 
 
 
@@ -214,11 +234,12 @@ SIMEroi <- function(t_tac, tac, input, Vnd, vB_fixed, weights,
   lower <- c(k2 = k2.lower, k3 = k3.lower, k4 = k4.lower)
   upper <- c(k2 = k2.upper, k3 = k3.upper, k4 = k4.upper)
 
-  pred <-   tryCatch( {
+  pred <-   #tryCatch( {
     minpack.lm::nlsLM(tac ~ SIME_model(t_tac, input, Vnd, k2, k3, k4, vB=vB_fixed),
                       start = start, lower = lower, upper = upper,
-                      weights=weights, control = minpack.lm::nls.lm.control(maxiter = 200)) },
-    error = function(e) NA )
+                      weights=weights, control = minpack.lm::nls.lm.control(maxiter = 200))
+    #},
+    #error = function(e) NA )
 
   if(is.na(pred[1])) {SSw = NA} else {
     SSw <-  sum( weights(pred) * ( residuals(pred)^2 ) )
