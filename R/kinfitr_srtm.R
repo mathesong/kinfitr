@@ -26,9 +26,9 @@
 #'   specified as 1 for any parameters, the original starting value will be
 #'   used, and the multstart_lower and multstart_upper values ignored.
 #' @param multstart_lower Optional. Lower bounds for starting parameters. Defaults
-#'   to halfway between start and lower starting parameters.
+#'   to the lower bounds.
 #' @param multstart_upper Optional. Upper bounds for starting parameters. Defaults
-#'   to halfway between start and upper starting parameters.
+#'   to the upper bounds.
 #' @param printvals Optional. This displays the parameter values for each iteration of the
 #' model. This is useful for debugging and changing starting values and upper and lower
 #' bounds for parameters.
@@ -75,10 +75,10 @@ srtm <- function(t_tac, reftac, roitac, weights, frameStartEnd,
 
     ### Missing multstart boundaries
     if(missing(multstart_lower)) {
-      multstart_lower = start - (start-lower)/2
+      multstart_lower = lower
     }
     if(missing(multstart_upper)) {
-      multstart_upper = start + (upper-start)/2
+      multstart_upper = upper
     }
 
     ### No multstart for some variables ###
