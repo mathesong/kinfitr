@@ -34,4 +34,3 @@ plot_inptac_timings(t_tac, tac, input, inpshift=0.25, zoomTime=5)
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

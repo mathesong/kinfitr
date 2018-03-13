@@ -35,4 +35,3 @@ tidyinput_art(t_tac, tac, weights)
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

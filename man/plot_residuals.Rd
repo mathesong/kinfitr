@@ -24,4 +24,3 @@ plot_residuals(srtmout)
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

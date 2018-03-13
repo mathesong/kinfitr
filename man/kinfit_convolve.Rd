@@ -30,4 +30,3 @@ kinfit_convolve(a,b,stepsize)
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

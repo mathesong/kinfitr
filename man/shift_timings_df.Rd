@@ -54,4 +54,3 @@ input <- newValues$input
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

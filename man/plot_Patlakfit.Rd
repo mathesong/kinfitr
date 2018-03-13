@@ -24,4 +24,3 @@ plot_Patlakfit(patlakout)
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

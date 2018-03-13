@@ -43,4 +43,3 @@ mlLogan_tstar(t_tac, lowroi, medroi, highroi, input, filename='demonstration', i
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

@@ -48,10 +48,9 @@ Function to fit the Patlak Plot of of Patlak et al (1983) to data.
 Patlakplot(t_tac, tac, input, 10, weights, inpshift = onetcmout$par$inpshift)
 
 }
-\author{
-Granville J Matheson, \email{mathesong@gmail.com}
-}
 \references{
 Patlak CS, Blasberg RG, Fenstermacher JD. Graphical evaluation of blood-to-brain transfer constants from multiple-time uptake data. Journal of Cerebral Blood Flow & Metabolism. 1983 Mar 1;3(1):1-7.
 }
-
+\author{
+Granville J Matheson, \email{mathesong@gmail.com}
+}

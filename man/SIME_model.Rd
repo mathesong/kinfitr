@@ -7,7 +7,7 @@
 SIME_model(t_tac, input, Vnd, k2, k3, k4, vB)
 }
 \arguments{
-\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a 
+\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
 zero.}
 
 \item{input}{Data frame containing the blood, plasma, and parent fraction concentrations over time.  This can be generated
@@ -33,10 +33,9 @@ This is the SIME Model model itself by which predicted values are generated.
 SIME_model(t_tac, input, Vnd=5, k2=0.1, k3=0.05, k4=0.04, vB=0.05)
 
 }
-\author{
-Granville J Matheson, \email{mathesong@gmail.com}
-}
 \references{
 Ogden RT, Zanderigo F, Parsey RV. Estimation of in vivo nonspecific binding in positron emission tomography studies without requiring a reference region. NeuroImage. 2015 Mar 31;108:234-42.
 }
-
+\author{
+Granville J Matheson, \email{mathesong@gmail.com}
+}

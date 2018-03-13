@@ -24,4 +24,3 @@ plot_mlLoganfit(mlloganoutout)
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

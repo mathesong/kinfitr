@@ -34,4 +34,3 @@ SUV(t_tac, tac, injRad=150, bodymass=85)
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

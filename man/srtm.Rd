@@ -7,22 +7,22 @@
 srtm(t_tac, reftac, roitac, weights, frameStartEnd, R1.start = 1,
   R1.lower = 0, R1.upper = 10, k2.start = 0.1, k2.lower = 0,
   k2.upper = 1, bp.start = 1.5, bp.lower = -10, bp.upper = 15,
-  printvals = F)
+  multstart_iter = 1, multstart_lower, multstart_upper, printvals = F)
 }
 \arguments{
-\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a 
+\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
 zero. If a time zero frame is not included, it will be added.}
 
-\item{reftac}{Numeric vector of radioactivity concentrations in the reference tissue for each frame. We include zero at 
+\item{reftac}{Numeric vector of radioactivity concentrations in the reference tissue for each frame. We include zero at
 time zero: if not included, it is added.}
 
-\item{roitac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time 
+\item{roitac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
 zero: if not included, it is added.}
 
-\item{weights}{Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero: 
+\item{weights}{Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
 if not included, it is added. If not specified, uniform weights will be used.}
 
-\item{frameStartEnd}{Optional. This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20). 
+\item{frameStartEnd}{Optional. This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 This is to assess time stability.}
 
 \item{R1.start}{Optional. Starting parameter for fitting of R1. Default is 1.}
@@ -43,13 +43,24 @@ This is to assess time stability.}
 
 \item{bp.upper}{Optional. Upper bound for the fitting of bp. Default is 15.}
 
-\item{printvals}{Optional. This displays the parameter values for each iteration of the 
-model. This is useful for debugging and changing starting values and upper and lower 
+\item{multstart_iter}{Number of iterations for starting parameters. Default is 1.
+For more information, see \code{\link[nls.multstart]{nls_multstart}}. If
+specified as 1 for any parameters, the original starting value will be
+used, and the multstart_lower and multstart_upper values ignored.}
+
+\item{multstart_lower}{Optional. Lower bounds for starting parameters. Defaults
+to the lower bounds.}
+
+\item{multstart_upper}{Optional. Upper bounds for starting parameters. Defaults
+to the upper bounds.}
+
+\item{printvals}{Optional. This displays the parameter values for each iteration of the
+model. This is useful for debugging and changing starting values and upper and lower
 bounds for parameters.}
 }
 \value{
 A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit},
-the model weights \code{out$weights}, and a dataframe containing the TACs both of the data and the fitted 
+the model weights \code{out$weights}, and a dataframe containing the TACs both of the data and the fitted
 values \code{out$tacs}.
 }
 \description{
@@ -60,10 +71,9 @@ srtm(t_tac, reftac, roitac)
 srtm(t_tac, reftac, roitac, weights, frameStartEnd = c(1,11), bp.upper=1)
 
 }
-\author{
-Granville J Matheson, \email{mathesong@gmail.com}
-}
 \references{
 Lammertsma AA, Hume SP. Simplified reference tissue model for PET receptor studies. Neuroimage. 1996 Dec 31;4(3):153-8.
 }
-
+\author{
+Granville J Matheson, \email{mathesong@gmail.com}
+}

@@ -52,4 +52,3 @@ input <- blood_interp(t_blood = blooddata$Time.sec./60,
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

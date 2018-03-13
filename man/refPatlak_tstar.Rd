@@ -36,4 +36,3 @@ refPatlak_tstar(t_tac, reftac, taclow, tacmed, tachigh, 'demonstration')
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

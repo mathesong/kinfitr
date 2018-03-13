@@ -26,4 +26,3 @@ plot_mrtm1fit(mrtm1out)
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

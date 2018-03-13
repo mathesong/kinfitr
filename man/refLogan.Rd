@@ -43,10 +43,9 @@ Function to fit the non-invasive Logan plot model of Logan et al. (1996) to data
 refLogan(t_tac, reftac, roitac, k2prime=0.1, tstarIncludedFrames=10, weights=weights)
 
 }
-\author{
-Granville J Matheson, \email{mathesong@gmail.com}
-}
 \references{
 Logan J, Fowler JS, Volkow ND, Wang GJ, Ding YS, Alexoff DL. Distribution volume ratios without blood sampling from graphical analysis of PET data. Journal of Cerebral Blood Flow & Metabolism. 1996 Sep 1;16(5):834-40.
 }
-
+\author{
+Granville J Matheson, \email{mathesong@gmail.com}
+}

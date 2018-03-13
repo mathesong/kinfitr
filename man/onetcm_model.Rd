@@ -31,4 +31,3 @@ onetcm_model(t_tac, input, K1=0.1, k2=0.08, vB=0.05)
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

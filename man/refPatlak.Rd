@@ -38,10 +38,9 @@ Function to fit the Patlak Reference Tissue Model of Patlak & Blasbert (1985) to
 refPatlak(t_tac, reftac, roitac, tstarIncludedFrames=10, weights=weights)
 
 }
-\author{
-Granville J Matheson, \email{mathesong@gmail.com}
-}
 \references{
 Patlak CS, Blasberg RG. Graphical evaluation of blood-to-brain transfer constants from multiple-time uptake data. Generalizations. Journal of Cerebral Blood Flow & Metabolism. 1985 Dec 1;5(4):584-90.
 }
-
+\author{
+Granville J Matheson, \email{mathesong@gmail.com}
+}

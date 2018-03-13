@@ -42,10 +42,9 @@ Function to fit the MA2 of Ichise et al (2002) to data.
 ma2(t_tac, tac, input, weights, inpshift = onetcmout$par$inpshift)
 
 }
-\author{
-Granville J Matheson, \email{mathesong@gmail.com}
-}
 \references{
 Ichise M, Toyama H, Innis RB, Carson RE. Strategies to improve neuroreceptor parameter estimation by linear regression analysis. Journal of Cerebral Blood Flow & Metabolism. 2002 Oct 1;22(10):1271-81.
 }
-
+\author{
+Granville J Matheson, \email{mathesong@gmail.com}
+}

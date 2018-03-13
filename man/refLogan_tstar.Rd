@@ -39,4 +39,3 @@ refLogan_tstar(t_tac, reftac, taclow, tacmed, tachigh, k2prime = k2prime, 'demon
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

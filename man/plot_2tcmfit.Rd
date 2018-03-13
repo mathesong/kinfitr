@@ -24,4 +24,3 @@ plot_2tcmfit(twotcmout)
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

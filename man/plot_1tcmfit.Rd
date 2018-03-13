@@ -24,4 +24,3 @@ plot_1tcmfit(onetcmout)
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-

@@ -1,7 +1,7 @@
-#' One Tissue Compartment Model
+#' Two Tissue Compartment Model with Irreversible Trapping
 #'
-#' Function to fit the One Tissue Compartment Model to data. An irreversible model can also be specified by setting the
-#' starting value, upper and lower bounds of k2 to 0.
+#' Function to fit the Two Tissue Compartment Model to data. An irreversible model can also be specified by setting the
+#' starting value, upper and lower bounds of k4 to 0.
 #'
 #' @param t_tac Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
 #' zero. If a time zero frame is not included, it will be added.
@@ -13,7 +13,8 @@
 #' if not included, it is added. If not specified, uniform weights will be used.
 #' @param inpshift Optional. The number of minutes by which to shift the timing of the input data frame forwards or backwards.
 #' If not specified, this will be fitted, however this takes longer to compute. Recommended to perform once on a large ROI for
-#' each measurement, and to specify this value for the remainder of the regions.
+#' each measurement, and to specify this value for the remainder of the regions. Or perhaps even to use a simpler model, such as
+#' 1TCM.
 #' @param vB_fixed Optional. The blood volume fraction.  If not specified, this will be fitted. Recommended to perform once on a large ROI for
 #' each measurement, and to specify this value for the remainder of the regions.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
@@ -24,6 +25,15 @@
 #' @param k2.start Optional. Starting parameter for fitting of k2. Default is 0.1.
 #' @param k2.lower Optional. Lower bound for the fitting of k2. Default is 0.0001.
 #' @param k2.upper Optional. Upper bound for the fitting of k2. Default is 0.5.
+#' @param k3.start Optional. Starting parameter for fitting of k3. Default is 0.1.
+#' @param k3.lower Optional. Lower bound for the fitting of k3. Default is 0.0001.
+#' @param k3.upper Optional. Upper bound for the fitting of k3. Default is 0.5.
+#' @param k4.start Optional. Starting parameter for fitting of k4. Default is 0.1.
+#' @param k4.lower Optional. Lower bound for the fitting of k4. Default is 0.0001.
+#' @param k4.upper Optional. Upper bound for the fitting of k4. Default is 0.5.
+#' @param Kb.start Optional. Starting parameter for fitting of Kb. Default is 0.25.
+#' @param Kb.lower Optional. Lower bound for the fitting of Kb. Default is 0.0001.
+#' @param Kb.upper Optional. Upper bound for the fitting of Kb. Default is 1.
 #' @param inpshift.start Optional. Starting parameter for fitting of inpshift. Default is 0.
 #' @param inpshift.lower Optional. Lower bound for the fitting of inpshift. Default is -0.5.
 #' @param inpshift.upper Optional. Upper bound for the fitting of inpshift. Default is 0.5.
@@ -42,7 +52,6 @@
 #' model. This is useful for debugging and changing starting values and upper and lower
 #' bounds for parameters.
 #'
-#'
 #' @return A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit},
 #' a dataframe containing the TACs both of the data and the fitted values \code{out$tacs},
 #' the blood input data frame after time shifting \code{input}, a vector of the weights \code{out$weights},
@@ -50,18 +59,23 @@
 #' fitted \code{vB_fixed}.
 #'
 #' @examples
-#' onetcm(t_tac, tac, input, weights=weights)
-#' onetcm(t_tac, tac, input, weights=weights, inpshift=0.1, vB_fixed=0.05)
+#' twotcm1k(t_tac, tac, input, weights=weights)
+#' twotcm1k(t_tac, tac, input, weights=weights, inpshift=0.1, vB_fixed=0.05)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
+#' @references Rizzo, G., Veronese, M., Tonietto, M., Zanotti-Fregonara, P., Turkheimer, F. E., & Bertoldo, A. (2014). Kinetic modeling without accounting for the vascular component impairs the quantification of [11C] PBR28 brain PET data. Journal of Cerebral Blood Flow & Metabolism, 34(6), 1060-1069.
+#'
 #' @export
 
-onetcm <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartEnd,
+twotcm1k <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartEnd,
                    K1.start = 0.1 , K1.lower = 0.0001 , K1.upper = 0.5 ,
                    k2.start = 0.1 , k2.lower = 0.0001 , k2.upper = 0.5 ,
+                   k3.start = 0.1 , k3.lower = 0.0001 , k3.upper = 0.5 ,
+                   k4.start = 0.1 , k4.lower = 0.0001 , k4.upper = 0.5 ,
+                   Kb.start = 0.25 , Kb.lower = 0.0001 , Kb.upper = 1 ,
                    inpshift.start = 0 , inpshift.lower= -0.5 , inpshift.upper = 0.5 ,
-                   vB.start = 0.05 , vB.lower = 0.01 , vB.upper = 0.1 ,
+                   vB.start = 0.05 , vB.lower = 0.01 , vB.upper = 0.1,
                    multstart_iter=1, multstart_lower, multstart_upper,
                    printvals=F) {
 
@@ -73,12 +87,14 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartEnd
   tac  <- tidyinput$tac
   weights <- tidyinput$weights
 
-
   # Parameters
 
-  start <- c(K1 = K1.start, k2 = k2.start, inpshift = inpshift.start, vB = vB.start)
-  lower <- c(K1 = K1.lower, k2 = k2.lower, inpshift = inpshift.lower, vB = vB.lower)
-  upper <- c(K1 = K1.upper, k2 = k2.upper, inpshift = inpshift.upper, vB = vB.upper)
+  start <- c(K1 = K1.start, k2 = k2.start, k3 = k3.start, k4 = k4.start,
+             Kb = Kb.start, inpshift = inpshift.start, vB = vB.start)
+  lower <- c(K1 = K1.lower, k2 = k2.lower, k3 = k3.lower, k4 = k4.lower,
+             Kb = Kb.lower, inpshift = inpshift.lower, vB = vB.lower)
+  upper <- c(K1 = K1.upper, k2 = k2.upper, k3 = k3.upper, k4 = k4.upper,
+             Kb = Kb.upper, inpshift = inpshift.upper, vB = vB.upper)
 
   vB_fitted = T
   if(!missing(vB_fixed)) {
@@ -115,7 +131,6 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartEnd
   }
 
 
-
   # Solution - Delay Already Fitted
 
   if(!missing(inpshift)) {
@@ -128,17 +143,20 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartEnd
     tac <- newvals$tac
     input <- newvals$input
 
+    start <- start[-which(names(start)=='inpshift')]
+    lower <- lower[-which(names(lower)=='inpshift')]
+    upper <- upper[-which(names(upper)=='inpshift')]
+
     if( prod(multstart_iter) == 1 ) {
 
-      output <- minpack.lm::nlsLM(tac ~ onetcm_model(t_tac, input, K1, k2, vB),
+      output <- minpack.lm::nlsLM(tac ~ twotcm1k_model(t_tac, input, K1, k2, k3, k4, Kb, vB),
                                   start =  start, lower = lower, upper = upper,
-                                  weights=weights,
-                                  control = minpack.lm::nls.lm.control(maxiter = 200),
-                                  trace=printvals)
+                                  weights = weights, control = minpack.lm::nls.lm.control(maxiter = 200),
+                                  trace = printvals)
 
     } else {
 
-      output <- nls.multstart::nls_multstart(tac ~ onetcm_model(t_tac, input, K1, k2, vB) ,
+      output <- nls.multstart::nls_multstart(tac ~ twotcm1k_model(t_tac, input, K1, k2, k3, k4, Kb, vB),
                                              supp_errors = 'Y',
                                              start_lower = multstart_lower,
                                              start_upper = multstart_upper,
@@ -156,15 +174,14 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartEnd
 
     if( prod(multstart_iter) == 1 ) {
 
-      output <- minpack.lm::nlsLM(tac ~ onetcm_fitDelay_model(t_tac, input, K1, k2, inpshift, vB),
+      output <- minpack.lm::nlsLM(tac ~ twotcm1k_fitDelay_model(t_tac, input, K1, k2, k3, k4, Kb, inpshift, vB),
                                   start =  start, lower = lower, upper = upper,
-                                  weights=weights,
-                                  control = minpack.lm::nls.lm.control(maxiter = 200),
-                                  trace=printvals)
+                                  weights = weights, control = minpack.lm::nls.lm.control(maxiter = 200),
+                                  trace = printvals)
 
     } else {
 
-      output <- nls.multstart::nls_multstart(tac ~ onetcm_fitDelay_model(t_tac, input, K1, k2, inpshift, vB) ,
+      output <- nls.multstart::nls_multstart(tac ~ twotcm1k_fitDelay_model(t_tac, input, K1, k2, k3, k4, Kb, inpshift, vB),
                                              supp_errors = 'Y',
                                              start_lower = multstart_lower,
                                              start_upper = multstart_upper,
@@ -173,6 +190,7 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartEnd
 
     }
   }
+
 
   # Output
 
@@ -187,42 +205,52 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartEnd
 
   par = as.data.frame(as.list(coef(output)))
 
+  if(inpshift_fitted == F) par$inpshift=inpshift
+
   par.se = as.data.frame(as.list(sqrt(abs(vcov(output)[,1]))))
   names(par.se) = paste0(names(par.se), '.se')
 
-  par$Vt = par$K1 / par$k2
-  par.se$Vt.se = par$Vt * sqrt( (par.se$K1.se/par$K1)^2 + (par.se$k2.se/par$k2)^2 )
+  par$Vt = (par$K1 / par$k2) * (1 + par$k3/par$k4)
+
+  par.se$Vt.se = par$Vt * (par.se$K1.se/par$K1 + par.se$k2.se/par$k2) +
+    par$Vt * (par.se$K1.se/par$K1 + par.se$k2.se/par$k2 + par.se$k3.se/par$k3 + par.se$k4.se/par$k4)
+
+
 
   out <- list(par = par, par.se = par.se,
               fit = output, tacs = tacs, input = input, weights = weights,
-              inpshift_fitted = inpshift_fitted, vB_fitted = vB_fitted, model='1tcm')
+              inpshift_fitted = inpshift_fitted, vB_fitted = vB_fitted, model='2tcm1k')
 
   return(out)
 }
 
 
-#' Model: One Tissue Compartment Model
+#' Model: Two Tissue Compartment Model with Irreversible Trapping
 #'
-#' This is the One Tissue Compartment Model model itself by which predicted values are generated.
+#' This is the Two Tissue Compartment Model with Irreversible Trapping model itself by which predicted values are generated.
 #'
 #' @param t_tac Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a zero.
 #' @param input Data frame containing the blood, plasma, and parent fraction concentrations over time.  This can be generated
 #' using the \code{blood_interp} function.
 #' @param K1 Parameter value for K1
 #' @param k2 Parameter value for k2
+#' @param k3 Parameter value for k3
+#' @param k4 Parameter value for k4
+#' @param Kb Parameter value for Kb
 #' @param vB Parameter value for vB
 #'
 #' @return A numeric vector of the predicted values of the TAC in the target region.
 #'
 #' @examples
-#' onetcm_model(t_tac, input, K1=0.1, k2=0.08, vB=0.05)
+#' twotcm1k_model(t_tac, input, K1=0.1, k2=0.08, k3=0.05, k4=0.02, Kb=0.25, vB=0.05)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
+#' @references Rizzo, G., Veronese, M., Tonietto, M., Zanotti-Fregonara, P., Turkheimer, F. E., & Bertoldo, A. (2014). Kinetic modeling without accounting for the vascular component impairs the quantification of [11C] PBR28 brain PET data. Journal of Cerebral Blood Flow & Metabolism, 34(6), 1060-1069.
+#'
 #' @export
 
-
-onetcm_model <- function(t_tac, input, K1, k2, vB) {
+twotcm1k_model <- function(t_tac, input, K1, k2, k3, k4, Kb, vB) {
 
   interptime <- input$Time
   step <- interptime[2] - interptime[1]
@@ -232,15 +260,29 @@ onetcm_model <- function(t_tac, input, K1, k2, vB) {
   i_plasma <- input$plasma
   i_parentfrac <- input$parentfrac
 
-  i_inp <- i_plasma*i_parentfrac
+  i_inp <- i_plasma * i_parentfrac
 
-  a <- K1*exp(-k2*interptime)
-  b <- i_inp
+  alpha <- ( (k2 + k3+ k4) - sqrt( (k2+k3+k4)^2 - (4*k2*k4)) ) / 2
 
-  i_outtac <- kinfit_convolve(a,b,step)
+  beta <- ( (k2 + k3+ k4) + sqrt( (k2+k3+k4)^2 - (4*k2*k4)) ) / 2
 
-  # Correction for vB
-  i_outtac <- i_outtac*(1-vB) + vB*i_blood
+
+  A <- ( (k3+k4-alpha) / (beta-alpha) ) * exp(-alpha*interptime)
+
+  B <- ( (beta - k3 - k4) / (beta-alpha) ) * exp(-beta*interptime)
+
+  C <- vB * Kb * as.numeric(pracma::cumtrapz(interptime, i_inp))
+
+  D <- vB * i_blood
+
+
+  A_conv <- kinfit_convolve(A, i_inp, step)
+
+  B_conv <- kinfit_convolve(B, i_inp, step)
+
+
+
+  i_outtac <- (1-vB) * ( K1 * (A_conv + B_conv) ) + C + D
 
   outtac <- pracma::interp1(interptime, i_outtac, t_tac)
 
@@ -248,9 +290,9 @@ onetcm_model <- function(t_tac, input, K1, k2, vB) {
 }
 
 
-#' Model: One Tissue Compartment Model with Delay
+#' Model: Two Tissue Compartment Model with Irreversible Trapping with Delay Fitting
 #'
-#' This is the One Tissue Compartment Model model itself by which predicted values are generated, which includes fitting of the
+#' This is the Two Tissue Compartment Model with Irreversible Trapping model itself by which predicted values are generated, which includes fitting of the
 #' delay, inpshift.
 #'
 #' @param t_tac Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a zero.
@@ -258,21 +300,26 @@ onetcm_model <- function(t_tac, input, K1, k2, vB) {
 #' using the \code{blood_interp} function.
 #' @param K1 Parameter value for K1
 #' @param k2 Parameter value for k2
+#' @param k3 Parameter value for k3
+#' @param k4 Parameter value for k4
+#' @param Kb Parameter value for Kb
 #' @param inpshift Parameter value for inpshift, the delay.
 #' @param vB Parameter value for vB
 #'
 #' @return A numeric vector of the predicted values of the TAC in the target region.
 #'
 #' @examples
-#' onetcm_fitDelay_model(t_tac, input, K1=0.1, k2=0.08, inpshift = 0.1, vB=0.05)
+#' twotcm1k_fitDelay_model(t_tac, input, K1=0.1, k2=0.08, k3=0.05, k4=0.02, Kb=0.25, inpshift=0.1, vB=0.05)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
+#' @references Rizzo, G., Veronese, M., Tonietto, M., Zanotti-Fregonara, P., Turkheimer, F. E., & Bertoldo, A. (2014). Kinetic modeling without accounting for the vascular component impairs the quantification of [11C] PBR28 brain PET data. Journal of Cerebral Blood Flow & Metabolism, 34(6), 1060-1069.
+#'
 #' @export
 
-onetcm_fitDelay_model <- function(t_tac, input, K1, k2, inpshift, vB) {
+twotcm1k_fitDelay_model <- function(t_tac, input, K1, k2, k3, k4, Kb, inpshift, vB) {
 
-  newvals <- shift_timings(t_tac, rep(1,length(t_tac)), input, inpshift) # Using ones instead of tac as don't need it
+  newvals <- shift_timings(t_tac, rep(1,length(t_tac)), input, inpshift)
 
   t_tac <- newvals$t_tac
 
@@ -284,70 +331,86 @@ onetcm_fitDelay_model <- function(t_tac, input, K1, k2, inpshift, vB) {
   interptime <- newvals$input$Time
   step <- interptime[2] - interptime[1]
 
-  i_inp <- i_plasma*i_parentfrac
+  i_inp <- i_plasma * i_parentfrac
 
-  a <- K1*exp(-k2*interptime)
-  b <- i_inp
+  alpha <- ( (k2 + k3+ k4) - sqrt( (k2+k3+k4)^2 - (4*k2*k4)) ) / 2
 
-  i_outtac <- kinfit_convolve(a,b,step)
+  beta <- ( (k2 + k3+ k4) + sqrt( (k2+k3+k4)^2 - (4*k2*k4)) ) / 2
 
-  # Correction for vB
-  i_outtac <- i_outtac*(1-vB) + vB*i_blood
+
+  A <- ( (k3+k4-alpha) / (beta-alpha) ) * exp(-alpha*interptime)
+
+  B <- ( (beta - k3 - k4) / (beta-alpha) ) * exp(-beta*interptime)
+
+  C <- vB * Kb * pracma::cumtrapz(interptime, i_inp)
+
+  D <- vB * i_blood
+
+
+  A_conv <- kinfit_convolve(A, i_inp, step)
+
+  B_conv <- kinfit_convolve(B, i_inp, step)
+
+
+
+  i_outtac <- (1-vB) * ( K1 * (A_conv + B_conv) ) + C + D
 
   outtac <- pracma::interp1(interptime, i_outtac, t_tac)
 
   return(outtac)
 }
 
-#' Plot: One Tissue Compartment Model
+
+#' Plot: Two Tissue Compartment Model with Irreversible Trapping
 #'
-#' Function to visualise the fit of the One Tissue Compartment Model to data.
+#' Function to visualise the fit of the Two Tissue Compartment Model with Irreversible Trapping to data.
 #'
-#' @param onetcmout The output object of the 1TCM fitting procedure.
+#' @param twotcm1kout The output object of the 2TCM1k fitting procedure.
 #' @param roiname Optional. The name of the Target Region to see it on the plot.
 #'
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' plot_1tcmfit(onetcmout)
+#' plot_2tcm1kfit(twotcm1kout)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @references Rizzo, G., Veronese, M., Tonietto, M., Zanotti-Fregonara, P., Turkheimer, F. E., & Bertoldo, A. (2014). Kinetic modeling without accounting for the vascular component impairs the quantification of [11C] PBR28 brain PET data. Journal of Cerebral Blood Flow & Metabolism, 34(6), 1060-1069.
 #'
 #' @import ggplot2
 #'
 #' @export
 
-plot_1tcmfit <- function(onetcmout, roiname) {
+plot_2tcm1kfit <- function(twotcm1kout, roiname) {
 
   if(missing(roiname)) {roiname = 'ROI'}
 
-  measureddf <- data.frame(Time = onetcmout$tacs$Time,
-                       Radioactivity = onetcmout$tacs$Target,
-                       Weights = weights(onetcmout$fit),
-                       Region=paste0(roiname, '.Measured'))
+  measureddf <- data.frame(Time = twotcm1kout$tacs$Time,
+                           Radioactivity = twotcm1kout$tacs$Target,
+                           Weights = weights(twotcm1kout$fit),
+                           Region=paste0(roiname, '.Measured'))
 
-  inputdf <- data.frame(Time = onetcmout$input$Time,
-                        Radioactivity = onetcmout$input$plasma * onetcmout$input$parentfrac,
+  inputdf <- data.frame(Time = twotcm1kout$input$Time,
+                        Radioactivity = twotcm1kout$input$plasma*twotcm1kout$input$parentfrac,
                         Weights = 1,
-                        Region = 'AIF')
+                        Region='AIF')
 
-  i_fit <- predict(onetcmout$fit, newdata = list(t_tac = onetcmout$input$Time,
-                                                 tac = pracma::interp1(onetcmout$tacs$Time,
-                                                                       onetcmout$tacs$Target,
-                                                                       onetcmout$input$Time,
-                                                                       method="linear")))
+  i_fit <- predict(twotcm1kout$fit, newdata = list(t_tac = twotcm1kout$input$Time,
+                                                   tac = pracma::interp1(twotcm1kout$tacs$Time,
+                                                                         twotcm1kout$tacs$Target,
+                                                                         twotcm1kout$input$Time,
+                                                                         method = "linear")))
 
-  fitdf <- data.frame(Time = onetcmout$input$Time,
-                      Radioactivity = i_fit,
-                      Weights=1, Region=paste0(roiname, '.Fitted'))
+
+  fitdf <- data.frame(Time = twotcm1kout$input$Time, Radioactivity = i_fit,
+                      Weights = 1, Region = paste0(roiname, ".Fitted"))
 
   plotdf <- rbind(inputdf, measureddf, fitdf)
+  plotdf$Region <- forcats::fct_inorder(factor(plotdf$Region))
 
-  plotdf$Region <- forcats::fct_inorder(factor(plotdf$Region) )
-
-  myColors <- RColorBrewer::brewer.pal(3,"Set1")
-  names(myColors) <- levels( plotdf$Region )
-  colScale <- scale_colour_manual(name = "Region",values = myColors)
+  myColors <- RColorBrewer::brewer.pal(3, "Set1")
+  names(myColors) <- levels(plotdf$Region)
+  colScale <- scale_colour_manual(name = "Region", values = myColors)
 
   outplot = ggplot(plotdf, aes(x=Time, y=Radioactivity, colour=Region)) + colScale +
     geom_point(data=subset(plotdf, plotdf$Region == paste0(roiname, '.Measured')), aes(shape='a', size=Weights)) +

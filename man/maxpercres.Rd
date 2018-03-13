@@ -25,4 +25,3 @@ maxpercres(refloganout)
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
-
