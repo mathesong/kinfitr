@@ -4,8 +4,8 @@
 \alias{SIME}
 \title{Simultaneous Estimation of Non-Displaceable Binding (SIME)}
 \usage{
-SIME(t_tac, tacdf, input, Vndgrid, weights, roiweights, inpshift = 0,
-  vB_fixed, twotcmstart, frameStartEnd, k2.start = 0.1, k2.lower = 0,
+SIME(t_tac, tacdf, input, Vndgrid, weights, roiweights, inpshift = 0, vB,
+  twotcmstart, frameStartEnd, k2.start = 0.1, k2.lower = 0,
   k2.upper = 0.5, k3.start = 0.1, k3.lower = 0, k3.upper = 0.5,
   k4.start = 0.1, k4.lower = 0, k4.upper = 0.5)
 }
@@ -27,7 +27,7 @@ will be used.}
 \item{inpshift}{Optional. The number of minutes by which to shift the timing of the input data frame forwards or backwards.
 If not specified, this will be set to 0. This can be fitted using 1TCM or 2TCM.}
 
-\item{vB_fixed}{Optional. The blood volume fraction.  If not specified, this will be set to 0.05. This can be fitted using 1TCM or 2TCM.}
+\item{vB}{Optional. The blood volume fraction.  If not specified, this will be set to 0.05. This can be fitted using 1TCM or 2TCM.}
 
 \item{twotcmstart}{Optional. The function can fit a 2TCM model to one of the ROIs and use the estimated k2, k3 and k4 as starting
 parameters for the rest of the fits. If left alone, these parameters will be specified as below. If one wishes to run the 2TCM to
@@ -58,7 +58,7 @@ This is to assess time stability.}
 A list with a data frame of the fitted parameter \code{out$par}, the dataframe containing the times and TACs \code{out$tacs},
 the mean cost values after fitting (after ROI weighting) \code{out$fitvals}, the ROI cost values after fitting (before ROI
 weighting) \code{out$roifits}, the blood input data frame after time shifting \code{input}, a vector of the weights \code{out$weights},
-a vector of the ROI weights \code{out$roiweights}, the inpshift value used \code{inpshift} and the vB value used \code{out$vB_fixed}.
+a vector of the ROI weights \code{out$roiweights}, the inpshift value used \code{inpshift} and the vB value used \code{out$vB}.
 }
 \description{
 Function to fit the SIME Model of Ogden et al (2015) to data to estimate Vnd for a set of TACs.
@@ -66,7 +66,7 @@ Function to fit the SIME Model of Ogden et al (2015) to data to estimate Vnd for
 \examples{
 Vndgrid <- seq(from=0, to=5, by=0.1)
 SIMEout <-  SIME(t_tac, tacdf, input, Vndgrid, weights = weights,
-                 inpshift = onetcmout$par$inpshift, vB_fixed = onetcmout$par$vB)
+                 inpshift = onetcmout$par$inpshift, vB = onetcmout$par$vB)
 
 }
 \references{

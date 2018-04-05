@@ -13,7 +13,7 @@ plot_residuals(outputobject)
 A ggplot2 object of the residual plot
 }
 \description{
-Function to visualise the residuals of a model fit.  This function only works for model outputs for 
+Function to visualise the residuals of a model fit.  This function only works for model outputs for
 which a fit object is available called \code{outputobject$fit}.
 }
 \examples{

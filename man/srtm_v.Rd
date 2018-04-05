@@ -81,10 +81,12 @@ specified as 1 for any parameters, the original starting value will be
 used, and the multstart_lower and multstart_upper values ignored.}
 
 \item{multstart_lower}{Optional. Lower bounds for starting parameters. Defaults
-to the lower bounds.}
+to the lower bounds. Named list of whichever parameters' starting bounds should
+be altered.}
 
 \item{multstart_upper}{Optional. Upper bounds for starting parameters. Defaults
-to the upper bounds.}
+to the upper bounds. Named list of whichever parameters' starting bounds should
+be altered.}
 
 \item{printvals}{Optional. This displays the parameter values for each
 iteration of the model. This is useful for debugging and changing starting
