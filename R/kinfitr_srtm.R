@@ -50,9 +50,9 @@
 #' @export
 
 srtm <- function(t_tac, reftac, roitac, weights, frameStartEnd,
-                 R1.start = 1 , R1.lower = 0 , R1.upper = 10 ,
-                 k2.start=0.1 , k2.lower = 0 , k2.upper=1 ,
-                 bp.start=1.5 , bp.lower=-10 , bp.upper=15,
+                 R1.start = 1, R1.lower = 0, R1.upper = 10,
+                 k2.start=0.1, k2.lower = 0, k2.upper=1,
+                 bp.start=1.5, bp.lower=-10, bp.upper=15,
                  multstart_iter=1, multstart_lower, multstart_upper,
                  printvals=F) {
 
@@ -66,54 +66,57 @@ srtm <- function(t_tac, reftac, roitac, weights, frameStartEnd,
 
   # Parameters
 
-  start <- c( R1 = R1.start, k2 = k2.start, bp = bp.start)
-  lower <- c( R1 = R1.lower, k2 = k2.lower, bp = bp.lower)
-  upper <- c( R1 = R1.upper, k2 = k2.upper, bp = bp.upper)
+  start <- c(R1 = R1.start, k2 = k2.start, bp = bp.start)
+  lower <- c(R1 = R1.lower, k2 = k2.lower, bp = bp.lower)
+  upper <- c(R1 = R1.upper, k2 = k2.upper, bp = bp.upper)
 
-  multstart_pars <- fix_multstartpars(start, lower, upper, multstart_iter,
-                                      multstart_lower, multstart_upper)
+  multstart_pars <- fix_multstartpars(
+    start, lower, upper, multstart_iter,
+    multstart_lower, multstart_upper
+  )
   multstart_upper <- multstart_pars$multstart_upper
   multstart_lower <- multstart_pars$multstart_lower
 
 
   # Solution
 
-  if( prod(multstart_iter) == 1 ) {
-
-    output <- minpack.lm::nlsLM(roitac ~ srtm_model(t_tac, reftac, R1, k2, bp),
-                                data=modeldata,
-                                start =  start, lower = lower, upper = upper,
-                                weights=weights,
-                                control = minpack.lm::nls.lm.control(maxiter = 200),
-                                trace=printvals)
-
+  if (prod(multstart_iter) == 1) {
+    output <- minpack.lm::nlsLM(
+      roitac ~ srtm_model(t_tac, reftac, R1, k2, bp),
+      data = modeldata,
+      start = start, lower = lower, upper = upper,
+      weights = weights,
+      control = minpack.lm::nls.lm.control(maxiter = 200),
+      trace = printvals
+    )
   } else {
-
-    output <- nls.multstart::nls_multstart(roitac ~ srtm_model(t_tac, reftac, R1, k2, bp),
-                                          data=modeldata,
-                                          supp_errors = 'Y',
-                                          start_lower = multstart_lower,
-                                          start_upper = multstart_upper,
-                                          iter = multstart_iter, convergence_count = FALSE,
-                                          lower = lower, upper=upper, modelweights=weights)
-
+    output <- nls.multstart::nls_multstart(
+      roitac ~ srtm_model(t_tac, reftac, R1, k2, bp),
+      data = modeldata,
+      supp_errors = "Y",
+      start_lower = multstart_lower,
+      start_upper = multstart_upper,
+      iter = multstart_iter, convergence_count = FALSE,
+      lower = lower, upper = upper, modelweights = weights
+    )
   }
 
   # Output
 
-  tacs <- data.frame(Time = t_tac, Reference = reftac, Target = roitac, Target_fitted=as.numeric(fitted(output)))
+  tacs <- data.frame(Time = t_tac, Reference = reftac, Target = roitac, Target_fitted = as.numeric(fitted(output)))
 
-  par = as.data.frame(as.list(coef(output)))
+  par <- as.data.frame(as.list(coef(output)))
 
-  par.se = as.data.frame(as.list(sqrt(abs(vcov(output)[,1]))))
-  names(par.se) = paste0(names(par.se), '.se')
+  par.se <- as.data.frame(as.list(sqrt(abs(vcov(output)[, 1]))))
+  names(par.se) <- paste0(names(par.se), ".se")
 
-  out <- list(par = par, par.se = par.se,
-              fit = output, weights = weights, tacs = tacs,
-              model='srtm')
+  out <- list(
+    par = par, par.se = par.se,
+    fit = output, weights = weights, tacs = tacs,
+    model = "srtm"
+  )
 
   return(out)
-
 }
 
 
@@ -140,18 +143,17 @@ srtm <- function(t_tac, reftac, roitac, weights, frameStartEnd,
 
 
 srtm_model <- function(t_tac, reftac, R1, k2, bp) {
-
-  interptime <- pracma::linspace( min(t_tac) , max(t_tac) , 1024 )
+  interptime <- pracma::linspace(min(t_tac), max(t_tac), 1024)
   step <- interptime[2] - interptime[1]
 
-  iref <- pracma::interp1(t_tac, reftac, interptime, method="linear")
+  iref <- pracma::interp1(t_tac, reftac, interptime, method = "linear")
 
-  a <- (k2-(R1*k2/(1+bp)))*iref
-  b <- exp((-k2/(1+bp))*interptime)
+  a <- (k2 - (R1 * k2 / (1 + bp))) * iref
+  b <- exp((-k2 / (1 + bp)) * interptime)
 
-  ND <- R1*iref
-  BOUND <- kinfit_convolve(a,b,step)
-  tmp <- ND+BOUND
+  ND <- R1 * iref
+  BOUND <- kinfit_convolve(a, b, step)
+  tmp <- ND + BOUND
 
   outtac <- pracma::interp1(interptime, tmp, t_tac)
 
@@ -179,42 +181,55 @@ srtm_model <- function(t_tac, reftac, R1, k2, bp) {
 #' @export
 
 plot_srtmfit <- function(srtmout, roiname, refname) {
+  measured <- data.frame(
+    Time = srtmout$tacs$Time,
+    Reference = srtmout$tacs$Reference,
+    ROI.measured = srtmout$tacs$Target,
+    Weights = weights(srtmout$fit)
+  )
 
-  measured <- data.frame(Time = srtmout$tacs$Time,
-                       Reference = srtmout$tacs$Reference,
-                       ROI.measured = srtmout$tacs$Target,
-                       Weights = weights(srtmout$fit))
+  fitted <- data.frame(
+    Time = srtmout$tacs$Time,
+    ROI.fitted = srtmout$tacs$Target_fitted,
+    Weights = weights(srtmout$fit)
+  )
 
-  fitted <- data.frame(Time = srtmout$tacs$Time,
-                         ROI.fitted = srtmout$tacs$Target_fitted,
-                         Weights = weights(srtmout$fit))
+  if (missing(roiname)) {
+    roiname <- "ROI"
+  }
+  if (missing(refname)) {
+    refname <- "Reference"
+  }
 
-  if(missing(roiname)) {roiname = 'ROI'}
-  if(missing(refname)) {refname = 'Reference'}
+  measured <- plyr::rename(measured, c(
+    "ROI.measured" = paste0(roiname, ".measured"),
+    "Reference" = refname
+  ))
 
-  measured = plyr::rename(measured, c('ROI.measured' = paste0(roiname, '.measured'),
-                                      'Reference' = refname))
+  fitted <- plyr::rename(fitted, c("ROI.fitted" = paste0(roiname, ".fitted")))
 
-  fitted = plyr::rename(fitted, c('ROI.fitted' = paste0(roiname, '.fitted')) )
+  tidymeasured <- tidyr::gather(
+    measured, key = Region, value = Radioactivity,
+    -Time, -Weights, factor_key = F
+  )
 
-  tidymeasured <- tidyr::gather(measured, key=Region, value=Radioactivity,
-                                -Time, -Weights, factor_key = F)
+  tidyfitted <- tidyr::gather(
+    fitted, key = Region, value = Radioactivity,
+    -Time, -Weights, factor_key = F
+  )
 
-  tidyfitted <- tidyr::gather(fitted, key=Region, value=Radioactivity,
-                              -Time, -Weights, factor_key = F)
 
+  Region <- forcats::fct_inorder(factor(c(tidymeasured$Region, tidyfitted$Region)))
 
-  Region <- forcats::fct_inorder(factor(c(tidymeasured$Region, tidyfitted$Region)) )
-
-  myColors <- RColorBrewer::brewer.pal(3,"Set1")
+  myColors <- RColorBrewer::brewer.pal(3, "Set1")
   names(myColors) <- levels(Region)
-  colScale <- scale_colour_manual(name = "Region",values = myColors)
+  colScale <- scale_colour_manual(name = "Region", values = myColors)
 
-  outplot <- ggplot(tidymeasured, aes(x=Time, y=Radioactivity, colour=Region)) +
-    geom_point(data=tidymeasured, aes(shape='a', size=Weights)) +
-    geom_line(data=tidyfitted) +
-    guides(shape=FALSE, color=guide_legend(order=1)) + colScale +
-    scale_size(range=c(1,3))
+  outplot <- ggplot(tidymeasured, aes(x = Time, y = Radioactivity, colour = Region)) +
+    geom_point(data = tidymeasured, aes(shape = "a", size = Weights)) +
+    geom_line(data = tidyfitted) +
+    guides(shape = FALSE, color = guide_legend(order = 1)) + colScale +
+    scale_size(range = c(1, 3))
 
   return(outplot)
 }

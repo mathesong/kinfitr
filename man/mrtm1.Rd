@@ -7,34 +7,34 @@
 mrtm1(t_tac, reftac, roitac, weights, tstarIncludedFrames, frameStartEnd)
 }
 \arguments{
-\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a 
+\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
 zero. If a time zero frame is not included, it will be added.}
 
-\item{reftac}{Numeric vector of radioactivity concentrations in the reference tissue for each frame. We include zero at 
+\item{reftac}{Numeric vector of radioactivity concentrations in the reference tissue for each frame. We include zero at
 time zero: if not included, it is added.}
 
-\item{roitac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time 
+\item{roitac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
 zero: if not included, it is added.}
 
-\item{weights}{Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero: 
+\item{weights}{Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
 if not included, it is added. If not specified, uniform weights will be used.}
 
-\item{tstarIncludedFrames}{Optional. The number of frames to be used in the multiple regression. This is a count from the end of the 
+\item{tstarIncludedFrames}{Optional. The number of frames to be used in the multiple regression. This is a count from the end of the
 measurement, so a value of 10 means that last 10 frames will be used. This value can be estimated using \code{mrtm1_tstar}. Note
 that this tstar differs from that of the non-invasive Logan plot (which is the point at which pseudo-equilibrium is reached).
-Rather, with MRTM1 and MRTM2, all frames can be used provided that the kinetics in the target tissue can be described by a one 
+Rather, with MRTM1 and MRTM2, all frames can be used provided that the kinetics in the target tissue can be described by a one
 tissue compartment model (like SRTM).  If this is not the case, a t* is required.}
 
-\item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20). 
+\item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 This is to assess time stability.}
 }
 \value{
-A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit}, a dataframe 
-containing the TACs of the data \code{out$tacs}, a dataframe containing the TACs of the fitted values \code{out$fitvals}, 
+A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit}, a dataframe
+containing the TACs of the data \code{out$tacs}, a dataframe containing the TACs of the fitted values \code{out$fitvals},
 a vector of the weights \code{out$weights}, and the specified tstarIncludedFrames value \code{out$tstarIncludedFrames}
 }
 \description{
-Function to fit MRTM1 of Ichise et al. (2003) to data.  This model is often used alongside MRTM2: MRTM1 is run on a 
+Function to fit MRTM1 of Ichise et al. (2003) to data.  This model is often used alongside MRTM2: MRTM1 is run on a
 high-binding region to obtain an estimate of k2prime, and this k2prime value is used for MRTM2.
 }
 \examples{

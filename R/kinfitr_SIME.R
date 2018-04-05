@@ -50,49 +50,51 @@
 
 SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
                  inpshift = 0, vB, twotcmstart, frameStartEnd,
-                 k2.start = 0.1 , k2.lower = 0 , k2.upper = 0.5 ,
-                 k3.start = 0.1 , k3.lower = 0 , k3.upper = 0.5 ,
-                 k4.start = 0.1 , k4.lower = 0 , k4.upper = 0.5 ) {
+                 k2.start = 0.1, k2.lower = 0, k2.upper = 0.5,
+                 k3.start = 0.1, k3.lower = 0, k3.upper = 0.5,
+                 k4.start = 0.1, k4.lower = 0, k4.upper = 0.5) {
 
   # Tidying
 
-  if(missing(weights)) {
-    weights = rep(1, nrow(tacdf))
+  if (missing(weights)) {
+    weights <- rep(1, nrow(tacdf))
   }
 
   lengths <- c(length(t_tac), nrow(tacdf), length(weights))
-  if(!all(lengths == lengths[1])) {
-    stop('The lengths of the times, TACs and/or weights are not equal')
+  if (!all(lengths == lengths[1])) {
+    stop("The lengths of the times, TACs and/or weights are not equal")
   }
 
-  if(!missing(frameStartEnd)) {
-    t_tac <- t_tac[ frameStartEnd[1] : frameStartEnd[2] ]
-    tacdf <- tacdf[ frameStartEnd[1] : frameStartEnd[2] , ]
+  if (!missing(frameStartEnd)) {
+    t_tac <- t_tac[ frameStartEnd[1]:frameStartEnd[2] ]
+    tacdf <- tacdf[ frameStartEnd[1]:frameStartEnd[2], ]
   }
 
-  if(min(t_tac) < 0) {
-    stop('There are negative times in the TAC')
+  if (min(t_tac) < 0) {
+    stop("There are negative times in the TAC")
   }
 
-  if(missing(roiweights) == T) {
-    roiweights = rep(1, ncol(tacdf))
+  if (missing(roiweights) == T) {
+    roiweights <- rep(1, ncol(tacdf))
   }
-  roiweights = roiweights / max(roiweights)
+  roiweights <- roiweights / max(roiweights)
 
-  Regions <- data.frame(Region = names(tacdf),
-                        roiweights = roiweights, stringsAsFactors = F)
+  Regions <- data.frame(
+    Region = names(tacdf),
+    roiweights = roiweights, stringsAsFactors = F
+  )
 
-  if(length(roiweights) != ncol(tacdf)) {
-    stop('The number of ROIs and roiweights do not match')
-  }
-
-  if(min(t_tac) > 0) {
-    t_tac = c(0, t_tac)
-    tacdf = rbind(0, tacdf)
-    weights = c(0, weights)
+  if (length(roiweights) != ncol(tacdf)) {
+    stop("The number of ROIs and roiweights do not match")
   }
 
-  newvals = shift_timings_df(t_tac, tacdf, input, inpshift)
+  if (min(t_tac) > 0) {
+    t_tac <- c(0, t_tac)
+    tacdf <- rbind(0, tacdf)
+    weights <- c(0, weights)
+  }
+
+  newvals <- shift_timings_df(t_tac, tacdf, input, inpshift)
 
   t_tac <- newvals$t_tac
   tacdf <- newvals$tacdf
@@ -111,71 +113,85 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
 
   # 2tcm Starting Parameters
 
-  if(!missing(twotcmstart)) {
-    twotcmout <- twotcm(t_tac, tac = tacdf[,twotcmstart], input,
-                        weights=weights, inpshift = inpshift,
-                        vB = vB)
+  if (!missing(twotcmstart)) {
+    twotcmout <- twotcm(
+      t_tac, tac = tacdf[, twotcmstart], input,
+      weights = weights, inpshift = inpshift,
+      vB = vB
+    )
     start[1] <- twotcmout$par$k2
-    start[2] <-  twotcmout$par$k3
-    start[3] <-  twotcmout$par$k4
-    if(missing(vB)) { vB <- twotcmout$par$vB }
-  } else { if(missing(vB)) { vB <- 0.05 } }
+    start[2] <- twotcmout$par$k3
+    start[3] <- twotcmout$par$k4
+    if (missing(vB)) {
+      vB <- twotcmout$par$vB
+    }
+  } else {
+    if (missing(vB)) {
+      vB <- 0.05
+    }
+  }
 
   # Solution
 
   tacdf$Time <- t_tac
   tacdf$weights <- weights
 
-  tidytacs <- tidyr::gather(tacdf, key=Region, value=Radioactivity, -Time, -weights)
+  tidytacs <- tidyr::gather(tacdf, key = Region, value = Radioactivity, -Time, -weights)
   frames <- nrow(tidytacs)
 
-  tidytacs <- tidytacs[rep(1:nrow(tidytacs),times = length(Vndgrid)),]
-  tidytacs$Vnd <- rep(Vndgrid, each=frames)
+  tidytacs <- tidytacs[rep(1:nrow(tidytacs), times = length(Vndgrid)), ]
+  tidytacs$Vnd <- rep(Vndgrid, each = frames)
 
-  tidytacs_nested <- tidyr::nest(tidytacs, -Vnd, -Region, .key='tacs')
+  tidytacs_nested <- tidyr::nest(tidytacs, -Vnd, -Region, .key = "tacs")
 
   fit_SIMEroi <- function(tacs, input, Vnd, vB, start, upper, lower) {
-
     tac <- tacs$Radioactivity
     t_tac <- tacs$Time
     weights <- tacs$weights
 
-    modeldata <- list(tac = tacs$Radioactivity,
-                      t_tac = tacs$Time,
-                      weights=tacs$weights,
-                      input=input)
+    modeldata <- list(
+      tac = tacs$Radioactivity,
+      t_tac = tacs$Time,
+      weights = tacs$weights,
+      input = input
+    )
 
-    fit <- minpack.lm::nlsLM(tac ~ SIME_model(t_tac, input, Vnd, k2, k3, k4, vB=vB),
-                      data=modeldata,
-                      start = start, lower = lower, upper = upper,
-                      weights=weights, control = minpack.lm::nls.lm.control(maxiter = 200))
+    fit <- minpack.lm::nlsLM(
+      tac ~ SIME_model(t_tac, input, Vnd, k2, k3, k4, vB = vB),
+      data = modeldata,
+      start = start, lower = lower, upper = upper,
+      weights = weights, control = minpack.lm::nls.lm.control(maxiter = 200)
+    )
 
     output <- broom::glance(fit)
-    output$RSS <- sum( weights(fit) * residuals(fit)^2 )
+    output$RSS <- sum(weights(fit) * residuals(fit) ^ 2)
 
     return(output)
-
   }
 
   fit_SIMEroi_possibly <- purrr::possibly(fit_SIMEroi, otherwise = NA, quiet = T)
 
 
-  tidytacs_nested <- dplyr::mutate(tidytacs_nested, fit = purrr::pmap(list(tacs, Vnd),
-                                                                          fit_SIMEroi_possibly,
-                                                                          input=input,
-                                                                          vB = vB,
-                                                                          start = start,
-                                                                          lower=lower,
-                                                                          upper=upper) )
+  tidytacs_nested <- dplyr::mutate(tidytacs_nested, fit = purrr::pmap(
+    list(tacs, Vnd),
+    fit_SIMEroi_possibly,
+    input = input,
+    vB = vB,
+    start = start,
+    lower = lower,
+    upper = upper
+  ))
 
-  tidypars <- dplyr::mutate(tidytacs_nested,
-                                   success = purrr::map_lgl(fit, ~is.data.frame(.x)))
+  tidypars <- dplyr::mutate(
+    tidytacs_nested,
+    success = purrr::map_lgl(fit, ~is.data.frame(.x))
+  )
 
-  tidypars <- dplyr::filter(tidypars, success==T)
+  tidypars <- dplyr::filter(tidypars, success == T)
   tidypars <- dplyr::select(tidypars, -tacs, -success)
   tidypars <- tidyr::unnest(tidypars)
-  tidypars <- dplyr::left_join(Regions, tidypars, by='Region')
-  tidypars <- dplyr::mutate(tidypars, RSSw = RSS*roiweights)
+  tidypars <- dplyr::left_join(Regions, tidypars, by = "Region")
+  tidypars <- dplyr::mutate(tidypars, RSSw = RSS * roiweights)
 
 
   # Calculating SSmean
@@ -183,27 +199,27 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
   SSmean <- dplyr::select(tidypars, Region, roiweights, Vnd, RSSw)
 
   SSmean <- dplyr::group_by(SSmean, Vnd)
-  SSmean <- dplyr::summarise(SSmean, RSSw=mean(RSSw))
+  SSmean <- dplyr::summarise(SSmean, RSSw = mean(RSSw))
   SSmean <- dplyr::ungroup(SSmean)
 
 
   # Output
 
-  Vnd = SSmean$Vnd[which.min(SSmean$RSSw)]
+  Vnd <- SSmean$Vnd[which.min(SSmean$RSSw)]
 
-  par = as.data.frame(list(Vnd = Vnd))
+  par <- as.data.frame(list(Vnd = Vnd))
 
-  tacs = data.frame(Time = t_tac)
+  tacs <- data.frame(Time = t_tac)
   tacs <- cbind(tacs, tacdf)
 
-  fitvals = SSmean
+  fitvals <- SSmean
 
-  out <- list( par = par, tacs = tacs, fitvals = fitvals, roifits = tidypars, input = input,
-               weights=weights, roiweights = roiweights, inpshift = inpshift, vB = vB, model='SIME')
+  out <- list(
+    par = par, tacs = tacs, fitvals = fitvals, roifits = tidypars, input = input,
+    weights = weights, roiweights = roiweights, inpshift = inpshift, vB = vB, model = "SIME"
+  )
 
   return(out)
-
-
 }
 
 
@@ -234,31 +250,30 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
 #' @export
 
 SIME_model <- function(t_tac, input, Vnd, k2, k3, k4, vB) {
-
   blood <- input$blood
   plasma <- input$plasma
   parentfrac <- input$parentfrac
 
-  i_inp <- plasma*parentfrac
+  i_inp <- plasma * parentfrac
 
   interptime <- input$Time
   step <- interptime[2] - interptime[1]
 
-  K1 <- k2*Vnd
+  K1 <- k2 * Vnd
 
-  delta <- sqrt((k2+k3+k4)^2 - 4*k2*k4)
-  th1   <- (k2+k3+k4+delta) / 2
-  th2   <- (k2+k3+k4-delta) / 2
-  ph1   <- K1*(th1-k3-k4) / delta
-  ph2   <- K1*(th2-k3-k4) / (-delta)
+  delta <- sqrt((k2 + k3 + k4) ^ 2 - 4 * k2 * k4)
+  th1 <- (k2 + k3 + k4 + delta) / 2
+  th2 <- (k2 + k3 + k4 - delta) / 2
+  ph1 <- K1 * (th1 - k3 - k4) / delta
+  ph2 <- K1 * (th2 - k3 - k4) / (-delta)
 
-  a = ph1*exp(-th1*interptime) + ph2*exp(-th2*interptime)
-  b = i_inp
+  a <- ph1 * exp(-th1 * interptime) + ph2 * exp(-th2 * interptime)
+  b <- i_inp
 
-  i_outtac <- kinfit_convolve(a,b,step)
+  i_outtac <- kinfit_convolve(a, b, step)
 
   # Correction for vB
-  i_outtac <- i_outtac*(1-vB) + vB*i_inp
+  i_outtac <- i_outtac * (1 - vB) + vB * i_inp
 
   outtac <- pracma::interp1(interptime, i_outtac, t_tac)
 
@@ -288,24 +303,26 @@ SIME_model <- function(t_tac, input, Vnd, k2, k3, k4, vB) {
 #' @export
 
 plot_SIMEfit <- function(SIMEout) {
-
   fitvals <- SIMEout$fitvals
 
   roifits <- SIMEout$roifits
 
-  minmax <- list(min = min(roifits$RSSw),
-                 max = max(roifits$RSSw) )
+  minmax <- list(
+    min = min(roifits$RSSw),
+    max = max(roifits$RSSw)
+  )
 
 
   outplot <- ggplot(roifits, aes(x = Vnd, y = RSSw)) +
     geom_point(aes(colour = Region)) +
-    geom_line(data=fitvals, aes(x = Vnd, y = RSSw), size=1) +
-    geom_vline(xintercept = SIMEout$par$Vnd, linetype="dashed") +
+    geom_line(data = fitvals, aes(x = Vnd, y = RSSw), size = 1) +
+    geom_vline(xintercept = SIMEout$par$Vnd, linetype = "dashed") +
     xlab(expression(V[ND])) +
-    scale_y_log10("Cost",
-                  breaks = scales::trans_breaks("log10", function(x) 10^x),
-                  labels = scales::trans_format("log10", scales::math_format(10^.x)))
+    scale_y_log10(
+      "Cost",
+      breaks = scales::trans_breaks("log10", function(x) 10 ^ x),
+      labels = scales::trans_format("log10", scales::math_format(10 ^ .x))
+    )
 
   return(outplot)
-
 }

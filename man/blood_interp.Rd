@@ -20,12 +20,12 @@ blood_interp(t_blood, blood, t_plasma, plasma, t_parentfrac, parentfrac)
 \item{parentfrac}{Numeric vector of the radioactivity concentration in each plasma measurement.}
 }
 \value{
-A dataframe containing the time, blood, plasma and parent fraction interpolated into the 
+A dataframe containing the time, blood, plasma and parent fraction interpolated into the
 same times, with \code{interpPoints} number of points.
 }
 \description{
 This function sorts out all the blood, plasma and parent fraction measurements into
-one convenient data frame for arterial models. It makes several 'editorial decisions' in the process. 
+one convenient data frame for arterial models. It makes several 'editorial decisions' in the process.
 i) The data is interpolated into 6000 points. This is a good number of points for Fast Fourier Transform as
 it is a power of 2, and it is sufficiently many to have a sufficient level of detail. Get in touch if there
 is a good reason to change this value. ii) The different measurements are set to have the same times, thus
@@ -37,15 +37,15 @@ at time <= 0. Best to add a bit to all measurements if you have time<=0 values, 
 shifting.
 }
 \details{
-Function to interpolate the blood, plasma and parent fraction data in order to create an 
+Function to interpolate the blood, plasma and parent fraction data in order to create an
 \code{input} object for use with models requiring arterial input functions.
 }
 \examples{
-input <- blood_interp(t_blood = blooddata$Time.sec./60, 
-           blood = blooddata$Cbl.nCi.cc., 
-           t_plasma = plasmadata$Time.sec./60, 
-           plasma = plasmadata$Cpl.nCi.cc., 
-           t_parentfrac = parentdata$Times/60, 
+input <- blood_interp(t_blood = blooddata$Time.sec./60,
+           blood = blooddata$Cbl.nCi.cc.,
+           t_plasma = plasmadata$Time.sec./60,
+           plasma = plasmadata$Cpl.nCi.cc.,
+           t_parentfrac = parentdata$Times/60,
            parentfrac = parentdata$Fraction)
 
 }
