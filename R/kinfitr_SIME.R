@@ -13,7 +13,7 @@
 #' will be used.
 #' @param inpshift Optional. The number of minutes by which to shift the timing of the input data frame forwards or backwards.
 #' If not specified, this will be set to 0. This can be fitted using 1TCM or 2TCM.
-#' @param vB_fixed Optional. The blood volume fraction.  If not specified, this will be set to 0.05. This can be fitted using 1TCM or 2TCM.
+#' @param vB Optional. The blood volume fraction.  If not specified, this will be set to 0.05. This can be fitted using 1TCM or 2TCM.
 #' @param twotcmstart Optional. The function can fit a 2TCM model to one of the ROIs and use the estimated k2, k3 and k4 as starting
 #' parameters for the rest of the fits. If left alone, these parameters will be specified as below. If one wishes to run the 2TCM to
 #' start off, use a numeric value to specify which column of \code{tacdf} to use for fitting this: best to use the largest ROI.
@@ -32,13 +32,13 @@
 #' @return A list with a data frame of the fitted parameter \code{out$par}, the dataframe containing the times and TACs \code{out$tacs},
 #' the mean cost values after fitting (after ROI weighting) \code{out$fitvals}, the ROI cost values after fitting (before ROI
 #' weighting) \code{out$roifits}, the blood input data frame after time shifting \code{input}, a vector of the weights \code{out$weights},
-#' a vector of the ROI weights \code{out$roiweights}, the inpshift value used \code{inpshift} and the vB value used \code{out$vB_fixed}.
+#' a vector of the ROI weights \code{out$roiweights}, the inpshift value used \code{inpshift} and the vB value used \code{out$vB}.
 #'
 #'
 #' @examples
 #' Vndgrid <- seq(from=0, to=5, by=0.1)
 #' SIMEout <-  SIME(t_tac, tacdf, input, Vndgrid, weights = weights,
-#'                  inpshift = onetcmout$par$inpshift, vB_fixed = onetcmout$par$vB)
+#'                  inpshift = onetcmout$par$inpshift, vB = onetcmout$par$vB)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -49,7 +49,7 @@
 #' @importFrom dplyr "%>%"
 
 SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
-                 inpshift = 0, vB_fixed, twotcmstart, frameStartEnd,
+                 inpshift = 0, vB, twotcmstart, frameStartEnd,
                  k2.start = 0.1 , k2.lower = 0 , k2.upper = 0.5 ,
                  k3.start = 0.1 , k3.lower = 0 , k3.upper = 0.5 ,
                  k4.start = 0.1 , k4.lower = 0 , k4.upper = 0.5 ) {
@@ -114,12 +114,12 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
   if(!missing(twotcmstart)) {
     twotcmout <- twotcm(t_tac, tac = tacdf[,twotcmstart], input,
                         weights=weights, inpshift = inpshift,
-                        vB_fixed = vB_fixed)
+                        vB = vB)
     start[1] <- twotcmout$par$k2
     start[2] <-  twotcmout$par$k3
     start[3] <-  twotcmout$par$k4
-    if(missing(vB_fixed)) { vB_fixed <- twotcmout$par$vB }
-  } else { if(missing(vB_fixed)) { vB_fixed <- 0.05 } }
+    if(missing(vB)) { vB <- twotcmout$par$vB }
+  } else { if(missing(vB)) { vB <- 0.05 } }
 
   # Solution
 
@@ -134,13 +134,19 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
 
   tidytacs_nested <- tidyr::nest(tidytacs, -Vnd, -Region, .key='tacs')
 
-  fit_SIMEroi <- function(tacs, input, Vnd, vB_fixed, start, upper, lower) {
+  fit_SIMEroi <- function(tacs, input, Vnd, vB, start, upper, lower) {
 
     tac <- tacs$Radioactivity
     t_tac <- tacs$Time
     weights <- tacs$weights
 
-    fit <- minpack.lm::nlsLM(tac ~ SIME_model(t_tac, input, Vnd, k2, k3, k4, vB=vB_fixed),
+    modeldata <- list(tac = tacs$Radioactivity,
+                      t_tac = tacs$Time,
+                      weights=tacs$weights,
+                      input=input)
+
+    fit <- minpack.lm::nlsLM(tac ~ SIME_model(t_tac, input, Vnd, k2, k3, k4, vB=vB),
+                      data=modeldata,
                       start = start, lower = lower, upper = upper,
                       weights=weights, control = minpack.lm::nls.lm.control(maxiter = 200))
 
@@ -157,7 +163,7 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
   tidytacs_nested <- dplyr::mutate(tidytacs_nested, fit = purrr::pmap(list(tacs, Vnd),
                                                                           fit_SIMEroi_possibly,
                                                                           input=input,
-                                                                          vB_fixed = vB_fixed,
+                                                                          vB = vB,
                                                                           start = start,
                                                                           lower=lower,
                                                                           upper=upper) )
@@ -193,7 +199,7 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
   fitvals = SSmean
 
   out <- list( par = par, tacs = tacs, fitvals = fitvals, roifits = tidypars, input = input,
-               weights=weights, roiweights = roiweights, inpshift = inpshift, vB = vB_fixed, model='SIME')
+               weights=weights, roiweights = roiweights, inpshift = inpshift, vB = vB, model='SIME')
 
   return(out)
 

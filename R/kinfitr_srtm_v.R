@@ -88,11 +88,8 @@ srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights, vBr_fixed, frameSta
   tidyinput <- tidyinput_ref(t_tac, reftac, roitac, weights, frameStartEnd)
   tidyinput_blood <- tidyinput_ref(t_tac, reftac, bloodtac, weights, frameStartEnd)
 
-  t_tac   <- tidyinput$t_tac
-  reftac  <- tidyinput$reftac
-  roitac  <- tidyinput$roitac
-  bloodtac  <- tidyinput_blood$roitac
-  weights <- tidyinput$weights
+  modeldata <- as.list(tidyinput)
+  modeldata$bloodtac <- tidyinput_blood$roitac
 
 
   # Parameters
@@ -139,17 +136,18 @@ srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights, vBr_fixed, frameSta
   if( prod(multstart_iter) == 1 ) {
 
     output <- minpack.lm::nlsLM(roitac ~ srtm_v_model(t_tac, reftac, bloodtac, R1, k2, bp, vBr, vBt),
+        data=modeldata,
         start =  start, lower = lower, upper = upper,
         weights=weights, control = minpack.lm::nls.lm.control(maxiter = 200),
         trace=printvals)
   } else {
 
   output <- nls.multstart::nls_multstart(roitac ~ srtm_v_model(t_tac, reftac, bloodtac, R1, k2, bp, vBr, vBt),
-                              supp_errors = 'Y',
+                              data=modeldata, supp_errors = 'Y',
                               start_lower = multstart_lower,
                               start_upper = multstart_upper,
                               iter = multstart_iter, convergence_count = FALSE,
-                              lower = lower, upper=upper, modelweights=weights)
+                              modelweights=weights)
   }
 
   # Output

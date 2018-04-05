@@ -14,7 +14,7 @@
 #' @param inpshift Optional. The number of minutes by which to shift the timing of the input data frame forwards or backwards.
 #' If not specified, this will be fitted, however this takes longer to compute. Recommended to perform once on a large ROI for
 #' each measurement, and to specify this value for the remainder of the regions.
-#' @param vB_fixed Optional. The blood volume fraction.  If not specified, this will be fitted. Recommended to perform once on a large ROI for
+#' @param vB Optional. The blood volume fraction.  If not specified, this will be fitted. Recommended to perform once on a large ROI for
 #' each measurement, and to specify this value for the remainder of the regions.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 #' This is to assess time stability.
@@ -47,17 +47,17 @@
 #' a dataframe containing the TACs both of the data and the fitted values \code{out$tacs},
 #' the blood input data frame after time shifting \code{input}, a vector of the weights \code{out$weights},
 #' a logical of whether the inpshift was fitted \code{inpshift_fitted} and a logical of whether the vB was
-#' fitted \code{vB_fixed}.
+#' fitted \code{vB}.
 #'
 #' @examples
 #' onetcm(t_tac, tac, input, weights=weights)
-#' onetcm(t_tac, tac, input, weights=weights, inpshift=0.1, vB_fixed=0.05)
+#' onetcm(t_tac, tac, input, weights=weights, inpshift=0.1, vB=0.05)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
 
-onetcm <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartEnd,
+onetcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
                    K1.start = 0.1 , K1.lower = 0.0001 , K1.upper = 0.5 ,
                    k2.start = 0.1 , k2.lower = 0.0001 , k2.upper = 0.5 ,
                    inpshift.start = 0 , inpshift.lower= -0.5 , inpshift.upper = 0.5 ,
@@ -69,9 +69,10 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartEnd
 
   tidyinput <- tidyinput_art(t_tac, tac, weights, frameStartEnd)
 
-  t_tac   <- tidyinput$t_tac
-  tac  <- tidyinput$tac
-  weights <- tidyinput$weights
+  modeldata <- list(t_tac = tidyinput$t_tac,
+                    tac = tidyinput$tac,
+                    weights = tidyinput$weights,
+                    input = input)
 
 
   # Parameters
@@ -81,12 +82,12 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartEnd
   upper <- c(K1 = K1.upper, k2 = k2.upper, inpshift = inpshift.upper, vB = vB.upper)
 
   vB_fitted = T
-  if(!missing(vB_fixed)) {
+  if(!missing(vB)) {
     vB_fitted = F
 
-    start[which(names(start)=='vB')] <- vB_fixed
-    lower[which(names(lower)=='vB')] <- vB_fixed
-    upper[which(names(upper)=='vB')] <- vB_fixed
+    start[which(names(start)=='vB')] <- vB
+    lower[which(names(lower)=='vB')] <- vB
+    upper[which(names(upper)=='vB')] <- vB
   }
 
   if( length(multstart_iter) == length(start) || length(multstart_iter) == 1 ) {
@@ -116,22 +117,26 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartEnd
 
 
 
+
   # Solution - Delay Already Fitted
 
   if(!missing(inpshift)) {
 
     inpshift_fitted = F
+    multstart_lower <- multstart_lower[names(multstart_lower)!='inpshift']
+    multstart_upper <- multstart_upper[names(multstart_upper)!='inpshift']
 
     newvals <- shift_timings(t_tac, tac, input, inpshift)
 
-    t_tac <- newvals$t_tac
-    tac <- newvals$tac
-    input <- newvals$input
+    modeldata$t_tac <- newvals$t_tac
+    modeldata$tac <- newvals$tac
+    modeldata$input <- newvals$input
 
     if( prod(multstart_iter) == 1 ) {
 
       output <- minpack.lm::nlsLM(tac ~ onetcm_model(t_tac, input, K1, k2, vB),
-                                  start =  start, lower = lower, upper = upper,
+                                  data=modeldata, start =  start,
+                                  lower = lower, upper = upper,
                                   weights=weights,
                                   control = minpack.lm::nls.lm.control(maxiter = 200),
                                   trace=printvals)
@@ -139,11 +144,12 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartEnd
     } else {
 
       output <- nls.multstart::nls_multstart(tac ~ onetcm_model(t_tac, input, K1, k2, vB) ,
+                                             data=modeldata,
                                              supp_errors = 'Y',
                                              start_lower = multstart_lower,
                                              start_upper = multstart_upper,
                                              iter = multstart_iter, convergence_count = FALSE,
-                                             lower = lower, upper=upper, modelweights=weights)
+                                             modelweights=weights)
 
     }
   }
@@ -157,7 +163,8 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartEnd
     if( prod(multstart_iter) == 1 ) {
 
       output <- minpack.lm::nlsLM(tac ~ onetcm_fitDelay_model(t_tac, input, K1, k2, inpshift, vB),
-                                  start =  start, lower = lower, upper = upper,
+                                  data=modeldata, start =  start,
+                                  lower = lower, upper = upper,
                                   weights=weights,
                                   control = minpack.lm::nls.lm.control(maxiter = 200),
                                   trace=printvals)
@@ -165,11 +172,12 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartEnd
     } else {
 
       output <- nls.multstart::nls_multstart(tac ~ onetcm_fitDelay_model(t_tac, input, K1, k2, inpshift, vB) ,
+                                             data=modeldata,
                                              supp_errors = 'Y',
                                              start_lower = multstart_lower,
                                              start_upper = multstart_upper,
                                              iter = multstart_iter, convergence_count = FALSE,
-                                             lower = lower, upper=upper, modelweights=weights)
+                                             modelweights=weights)
 
     }
   }
