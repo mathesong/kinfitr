@@ -8,7 +8,7 @@ mrtm2_tstar(t_tac, reftac, lowroi, medroi, highroi, k2prime, filename,
   gridbreaks = 2)
 }
 \arguments{
-\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a 
+\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
 zero. If a time zero frame is not included, it will be added.}
 
 \item{reftac}{Numeric vector of radioactivity concentrations in the reference tissue for each frame.}
@@ -19,7 +19,7 @@ zero. If a time zero frame is not included, it will be added.}
 
 \item{highroi}{Numeric vector of radioactivity concentrations in a target tissue for each frame. This should be from a ROI with high binding.}
 
-\item{k2prime}{Value of k2prime to be used for the fitting, i.e. the average tissue-to-plasma clearance rate. This can be 
+\item{k2prime}{Value of k2prime to be used for the fitting, i.e. the average tissue-to-plasma clearance rate. This can be
 obtained from another model, such as MRTM1, SRTM or set at a specified value. If using SRTM to estimate this value, it is equal to k2 / R1.}
 
 \item{filename}{The name of the output image: filename_mrtm1.jpeg}
@@ -30,7 +30,7 @@ obtained from another model, such as MRTM1, SRTM or set at a specified value. If
 Saves a jpeg of the plots as filename_mrtm2.jpeg
 }
 \description{
-Function to identify where t* is for MRTM2. Remember that this is unnecessary if the kinetics in the target tissue can be described by a one 
+Function to identify where t* is for MRTM2. Remember that this is unnecessary if the kinetics in the target tissue can be described by a one
 tissue compartment model (like SRTM).
 }
 \examples{

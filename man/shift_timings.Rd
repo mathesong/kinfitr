@@ -7,10 +7,10 @@
 shift_timings(t_tac, tac, input, inpshift, shifttac = T)
 }
 \arguments{
-\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a 
+\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
 zero. If a time zero frame is not included, it will be added.}
 
-\item{tac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time 
+\item{tac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
 zero: if not included, it is added.}
 
 \item{input}{Data frame containing the blood, plasma, and parent fraction concentrations over time.  This can be generated
@@ -34,8 +34,8 @@ will be shifted positively, but the time=0 frame will remain at time=0, i.e. the
 Shifting of the TAC only occurs if the input is shifted negatively (and can be turned off using \code{shifttac=F}).
 ii) If the input is shifted, and is subsequently shorter than the TAC, an extra measurement will be
 added at \code{max(t_tac)} with the same value as the last measurement. iii) If the input is shifted positively,
-all interpolated times will be shifted by the specified amount, but an extra measurement is added at time=0 of 
-0,0,1 for blood, plasma and parent fraction respectively (followed by interpolation into 6000 equally spaced time 
+all interpolated times will be shifted by the specified amount, but an extra measurement is added at time=0 of
+0,0,1 for blood, plasma and parent fraction respectively (followed by interpolation into 6000 equally spaced time
 intervals in the new time window) i.e. not the same process as for the TACs: I figure that since the blood changes
 so quickly, this is likely more close to the true kinetics. Get in touch if you have suggestions for this.
 }

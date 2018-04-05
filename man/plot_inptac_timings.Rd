@@ -7,10 +7,10 @@
 plot_inptac_timings(t_tac, tac, input, inpshift, zoomTime = 5)
 }
 \arguments{
-\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a 
+\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
 zero. If a time zero frame is not included, it will be added.}
 
-\item{tac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time 
+\item{tac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
 zero: if not included, it is added.}
 
 \item{input}{Data frame containing the blood, plasma, and parent fraction concentrations over time.  This can be generated
@@ -24,7 +24,7 @@ using the \code{blood_interp} function.}
 A ggplot2 object of the plot.
 }
 \description{
-Function to compare the timings of the the TAC and the Arterial Input Function (AIF) to see whether they are aligned. 
+Function to compare the timings of the the TAC and the Arterial Input Function (AIF) to see whether they are aligned.
 Can be used for assessing the fit of the delay (\code{inpshift}).
 }
 \examples{

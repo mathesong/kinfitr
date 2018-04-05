@@ -8,7 +8,7 @@ refPatlak_tstar(t_tac, reftac, lowroi, medroi, highroi, filename,
   gridbreaks = 2)
 }
 \arguments{
-\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a 
+\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
 zero. If a time zero frame is not included, it will be added.}
 
 \item{reftac}{Numeric vector of radioactivity concentrations in the reference tissue for each frame.}

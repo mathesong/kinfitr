@@ -8,7 +8,7 @@ ma1_tstar(t_tac, lowroi, medroi, highroi, input, filename, inpshift = 0,
   frameStartEnd, gridbreaks = 2)
 }
 \arguments{
-\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a 
+\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
 zero. If a time zero frame is not included, it will be added.}
 
 \item{lowroi}{Numeric vector of radioactivity concentrations in a target tissue for each frame. This should be from a ROI with low binding.}
@@ -25,7 +25,7 @@ using the \code{blood_interp} function.}
 \item{inpshift}{Optional. The number of minutes by which to shift the timing of the input data frame forwards or backwards.
 If not specified, this will be set to 0. This can be fitted using 1TCM or 2TCM.}
 
-\item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20). 
+\item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 This is to assess time stability.}
 
 \item{gridbreaks}{Optional. The size of the grid in the plots. Default: 2.}

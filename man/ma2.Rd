@@ -7,32 +7,32 @@
 ma2(t_tac, tac, input, weights, inpshift = 0, vB = 0, frameStartEnd)
 }
 \arguments{
-\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a 
+\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
 zero. If a time zero frame is not included, it will be added.}
 
-\item{tac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time 
+\item{tac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
 zero: if not included, it is added.}
 
 \item{input}{Data frame containing the blood, plasma, and parent fraction concentrations over time.  This can be generated
 using the \code{blood_interp} function.}
 
-\item{weights}{Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero: 
+\item{weights}{Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
 if not included, it is added. If not specified, uniform weights will be used.}
 
 \item{inpshift}{Optional. The number of minutes by which to shift the timing of the input data frame forwards or backwards.
 If not specified, this will be set to 0. This can be fitted using 1TCM or 2TCM.}
 
 \item{vB}{Optional. The blood volume fraction.  If not specified, this will be ignored and assumed to be 0%. If specified, it
-will be corrected for prior to parameter estimation using the following equation: 
+will be corrected for prior to parameter estimation using the following equation:
 \deqn{C_{T}(t) = \frac{C_{Measured}(t) - vB\times C_{B}(t)}{1-vB}}}
 
-\item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20). 
+\item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 This is to assess time stability.}
 }
 \value{
-A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit}, 
+A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit},
 a dataframe containing the TACs of the data \code{out$tacs}, a dataframe containing the fitted values \code{out$fitvals},
-the blood input data frame after time shifting \code{input}, a vector of the weights \code{out$weights}, 
+the blood input data frame after time shifting \code{input}, a vector of the weights \code{out$weights},
 the inpshift value used \code{inpshift} and the specified vB value \code{out$vB}.
 }
 \description{

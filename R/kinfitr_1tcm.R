@@ -60,10 +60,10 @@
 #' @export
 
 onetcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
-                   K1.start = 0.1 , K1.lower = 0.0001 , K1.upper = 0.5 ,
-                   k2.start = 0.1 , k2.lower = 0.0001 , k2.upper = 0.5 ,
-                   inpshift.start = 0 , inpshift.lower= -0.5 , inpshift.upper = 0.5 ,
-                   vB.start = 0.05 , vB.lower = 0.01 , vB.upper = 0.1 ,
+                   K1.start = 0.1, K1.lower = 0.0001, K1.upper = 0.5,
+                   k2.start = 0.1, k2.lower = 0.0001, k2.upper = 0.5,
+                   inpshift.start = 0, inpshift.lower= -0.5, inpshift.upper = 0.5,
+                   vB.start = 0.05, vB.lower = 0.01, vB.upper = 0.1,
                    multstart_iter=1, multstart_lower, multstart_upper,
                    printvals=F) {
 
@@ -71,10 +71,12 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
 
   tidyinput <- tidyinput_art(t_tac, tac, weights, frameStartEnd)
 
-  modeldata <- list(t_tac = tidyinput$t_tac,
-                    tac = tidyinput$tac,
-                    weights = tidyinput$weights,
-                    input = input)
+  modeldata <- list(
+    t_tac = tidyinput$t_tac,
+    tac = tidyinput$tac,
+    weights = tidyinput$weights,
+    input = input
+  )
 
 
   # Parameters
@@ -83,17 +85,19 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
   lower <- c(K1 = K1.lower, k2 = k2.lower, inpshift = inpshift.lower, vB = vB.lower)
   upper <- c(K1 = K1.upper, k2 = k2.upper, inpshift = inpshift.upper, vB = vB.upper)
 
-  vB_fitted = T
-  if(!missing(vB)) {
-    vB_fitted = F
+  vB_fitted <- T
+  if (!missing(vB)) {
+    vB_fitted <- F
 
-    start[which(names(start)=='vB')] <- vB
-    lower[which(names(lower)=='vB')] <- vB
-    upper[which(names(upper)=='vB')] <- vB
+    start[which(names(start) == "vB")] <- vB
+    lower[which(names(lower) == "vB")] <- vB
+    upper[which(names(upper) == "vB")] <- vB
   }
 
-  multstart_pars <- fix_multstartpars(start, lower, upper, multstart_iter,
-                                      multstart_lower, multstart_upper)
+  multstart_pars <- fix_multstartpars(
+    start, lower, upper, multstart_iter,
+    multstart_lower, multstart_upper
+  )
   multstart_upper <- multstart_pars$multstart_upper
   multstart_lower <- multstart_pars$multstart_lower
 
@@ -104,98 +108,100 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
 
   # Solution - Delay Already Fitted
 
-  if(!missing(inpshift)) {
+  if (!missing(inpshift)) {
+    inpshift_fitted <- F
 
-    inpshift_fitted = F
-
-    par_keepindex <- names(start)!='inpshift'
+    par_keepindex <- names(start) != "inpshift"
     start <- start[par_keepindex]
     lower <- lower[par_keepindex]
     upper <- upper[par_keepindex]
     multstart_lower <- multstart_lower[par_keepindex]
     multstart_upper <- multstart_upper[par_keepindex]
 
-    newvals <- shift_timings(modeldata$t_tac,
-                             modeldata$tac,
-                             modeldata$input,
-                             inpshift)
+    newvals <- shift_timings(
+      modeldata$t_tac,
+      modeldata$tac,
+      modeldata$input,
+      inpshift
+    )
 
     modeldata$t_tac <- newvals$t_tac
     modeldata$tac <- newvals$tac
     modeldata$input <- newvals$input
 
-    if( prod(multstart_iter) == 1 ) {
-
-      output <- minpack.lm::nlsLM(tac ~ onetcm_model(t_tac, input, K1, k2, vB),
-                                  data=modeldata, start =  start,
-                                  lower = lower, upper = upper,
-                                  weights=weights,
-                                  control = minpack.lm::nls.lm.control(maxiter = 200),
-                                  trace=printvals)
-
+    if (prod(multstart_iter) == 1) {
+      output <- minpack.lm::nlsLM(
+        tac ~ onetcm_model(t_tac, input, K1, k2, vB),
+        data = modeldata, start = start,
+        lower = lower, upper = upper,
+        weights = weights,
+        control = minpack.lm::nls.lm.control(maxiter = 200),
+        trace = printvals
+      )
     } else {
-
-      output <- nls.multstart::nls_multstart(tac ~ onetcm_model(t_tac, input, K1, k2, vB) ,
-                                             data=modeldata,
-                                             supp_errors = 'Y',
-                                             start_lower = multstart_lower,
-                                             start_upper = multstart_upper,
-                                             iter = multstart_iter, convergence_count = FALSE,
-                                             lower = lower, upper=upper, modelweights=weights)
-
+      output <- nls.multstart::nls_multstart(
+        tac ~ onetcm_model(t_tac, input, K1, k2, vB),
+        data = modeldata,
+        supp_errors = "Y",
+        start_lower = multstart_lower,
+        start_upper = multstart_upper,
+        iter = multstart_iter, convergence_count = FALSE,
+        lower = lower, upper = upper, modelweights = weights
+      )
     }
   }
 
   # Solution - Fitting the Delay
 
-  if(missing(inpshift)) {
+  if (missing(inpshift)) {
+    inpshift_fitted <- T
 
-    inpshift_fitted = T
-
-    if( prod(multstart_iter) == 1 ) {
-
-      output <- minpack.lm::nlsLM(tac ~ onetcm_fitDelay_model(t_tac, input, K1, k2, inpshift, vB),
-                                  data=modeldata, start =  start,
-                                  lower = lower, upper = upper,
-                                  weights=weights,
-                                  control = minpack.lm::nls.lm.control(maxiter = 200),
-                                  trace=printvals)
-
+    if (prod(multstart_iter) == 1) {
+      output <- minpack.lm::nlsLM(
+        tac ~ onetcm_fitDelay_model(t_tac, input, K1, k2, inpshift, vB),
+        data = modeldata, start = start,
+        lower = lower, upper = upper,
+        weights = weights,
+        control = minpack.lm::nls.lm.control(maxiter = 200),
+        trace = printvals
+      )
     } else {
-
-      output <- nls.multstart::nls_multstart(tac ~ onetcm_fitDelay_model(t_tac, input, K1, k2, inpshift, vB) ,
-                                             data=modeldata,
-                                             supp_errors = 'Y',
-                                             start_lower = multstart_lower,
-                                             start_upper = multstart_upper,
-                                             iter = multstart_iter, convergence_count = FALSE,
-                                             lower = lower, upper=upper, modelweights=weights)
-
+      output <- nls.multstart::nls_multstart(
+        tac ~ onetcm_fitDelay_model(t_tac, input, K1, k2, inpshift, vB),
+        data = modeldata,
+        supp_errors = "Y",
+        start_lower = multstart_lower,
+        start_upper = multstart_upper,
+        iter = multstart_iter, convergence_count = FALSE,
+        lower = lower, upper = upper, modelweights = weights
+      )
     }
   }
 
   # Output
 
-  if(inpshift_fitted == T) {
-    newvals <- shift_timings(t_tac, tac, input, as.numeric(coef(output)[['inpshift']]))
-    tacs <- data.frame(Time =newvals$t_tac, Target = newvals$tac, Target_fitted=as.numeric(fitted(output)))
+  if (inpshift_fitted == T) {
+    newvals <- shift_timings(t_tac, tac, input, as.numeric(coef(output)[["inpshift"]]))
+    tacs <- data.frame(Time = newvals$t_tac, Target = newvals$tac, Target_fitted = as.numeric(fitted(output)))
     input <- newvals$input
   } else {
-    tacs <- data.frame(Time =newvals$t_tac, Target = newvals$tac, Target_fitted=as.numeric(fitted(output)))
+    tacs <- data.frame(Time = newvals$t_tac, Target = newvals$tac, Target_fitted = as.numeric(fitted(output)))
     input <- newvals$input
   }
 
-  par = as.data.frame(as.list(coef(output)))
+  par <- as.data.frame(as.list(coef(output)))
 
-  par.se = as.data.frame(as.list(sqrt(abs(vcov(output)[,1]))))
-  names(par.se) = paste0(names(par.se), '.se')
+  par.se <- as.data.frame(as.list(sqrt(abs(vcov(output)[, 1]))))
+  names(par.se) <- paste0(names(par.se), ".se")
 
-  par$Vt = par$K1 / par$k2
-  par.se$Vt.se = par$Vt * sqrt( (par.se$K1.se/par$K1)^2 + (par.se$k2.se/par$k2)^2 )
+  par$Vt <- par$K1 / par$k2
+  par.se$Vt.se <- par$Vt * sqrt((par.se$K1.se / par$K1) ^ 2 + (par.se$k2.se / par$k2) ^ 2)
 
-  out <- list(par = par, par.se = par.se,
-              fit = output, tacs = tacs, input = input, weights = weights,
-              inpshift_fitted = inpshift_fitted, vB_fitted = vB_fitted, model='1tcm')
+  out <- list(
+    par = par, par.se = par.se,
+    fit = output, tacs = tacs, input = input, weights = weights,
+    inpshift_fitted = inpshift_fitted, vB_fitted = vB_fitted, model = "1tcm"
+  )
 
   return(out)
 }
@@ -223,7 +229,6 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
 
 
 onetcm_model <- function(t_tac, input, K1, k2, vB) {
-
   interptime <- input$Time
   step <- interptime[2] - interptime[1]
 
@@ -232,15 +237,15 @@ onetcm_model <- function(t_tac, input, K1, k2, vB) {
   i_plasma <- input$plasma
   i_parentfrac <- input$parentfrac
 
-  i_inp <- i_plasma*i_parentfrac
+  i_inp <- i_plasma * i_parentfrac
 
-  a <- K1*exp(-k2*interptime)
+  a <- K1 * exp(-k2 * interptime)
   b <- i_inp
 
-  i_outtac <- kinfit_convolve(a,b,step)
+  i_outtac <- kinfit_convolve(a, b, step)
 
   # Correction for vB
-  i_outtac <- i_outtac*(1-vB) + vB*i_blood
+  i_outtac <- i_outtac * (1 - vB) + vB * i_blood
 
   outtac <- pracma::interp1(interptime, i_outtac, t_tac)
 
@@ -271,8 +276,7 @@ onetcm_model <- function(t_tac, input, K1, k2, vB) {
 #' @export
 
 onetcm_fitDelay_model <- function(t_tac, input, K1, k2, inpshift, vB) {
-
-  newvals <- shift_timings(t_tac, rep(1,length(t_tac)), input, inpshift) # Using ones instead of tac as don't need it
+  newvals <- shift_timings(t_tac, rep(1, length(t_tac)), input, inpshift) # Using ones instead of tac as don't need it
 
   t_tac <- newvals$t_tac
 
@@ -284,15 +288,15 @@ onetcm_fitDelay_model <- function(t_tac, input, K1, k2, inpshift, vB) {
   interptime <- newvals$input$Time
   step <- interptime[2] - interptime[1]
 
-  i_inp <- i_plasma*i_parentfrac
+  i_inp <- i_plasma * i_parentfrac
 
-  a <- K1*exp(-k2*interptime)
+  a <- K1 * exp(-k2 * interptime)
   b <- i_inp
 
-  i_outtac <- kinfit_convolve(a,b,step)
+  i_outtac <- kinfit_convolve(a, b, step)
 
   # Correction for vB
-  i_outtac <- i_outtac*(1-vB) + vB*i_blood
+  i_outtac <- i_outtac * (1 - vB) + vB * i_blood
 
   outtac <- pracma::interp1(interptime, i_outtac, t_tac)
 
@@ -318,42 +322,53 @@ onetcm_fitDelay_model <- function(t_tac, input, K1, k2, inpshift, vB) {
 #' @export
 
 plot_1tcmfit <- function(onetcmout, roiname) {
+  if (missing(roiname)) {
+    roiname <- "ROI"
+  }
 
-  if(missing(roiname)) {roiname = 'ROI'}
+  measureddf <- data.frame(
+    Time = onetcmout$tacs$Time,
+    Radioactivity = onetcmout$tacs$Target,
+    Weights = weights(onetcmout$fit),
+    Region = paste0(roiname, ".Measured")
+  )
 
-  measureddf <- data.frame(Time = onetcmout$tacs$Time,
-                       Radioactivity = onetcmout$tacs$Target,
-                       Weights = weights(onetcmout$fit),
-                       Region=paste0(roiname, '.Measured'))
+  inputdf <- data.frame(
+    Time = onetcmout$input$Time,
+    Radioactivity = onetcmout$input$plasma * onetcmout$input$parentfrac,
+    Weights = 1,
+    Region = "AIF"
+  )
 
-  inputdf <- data.frame(Time = onetcmout$input$Time,
-                        Radioactivity = onetcmout$input$plasma * onetcmout$input$parentfrac,
-                        Weights = 1,
-                        Region = 'AIF')
+  i_fit <- predict(onetcmout$fit, newdata = list(
+    t_tac = onetcmout$input$Time,
+    tac = pracma::interp1(
+      onetcmout$tacs$Time,
+      onetcmout$tacs$Target,
+      onetcmout$input$Time,
+      method = "linear"
+    )
+  ))
 
-  i_fit <- predict(onetcmout$fit, newdata = list(t_tac = onetcmout$input$Time,
-                                                 tac = pracma::interp1(onetcmout$tacs$Time,
-                                                                       onetcmout$tacs$Target,
-                                                                       onetcmout$input$Time,
-                                                                       method="linear")))
-
-  fitdf <- data.frame(Time = onetcmout$input$Time,
-                      Radioactivity = i_fit,
-                      Weights=1, Region=paste0(roiname, '.Fitted'))
+  fitdf <- data.frame(
+    Time = onetcmout$input$Time,
+    Radioactivity = i_fit,
+    Weights = 1, Region = paste0(roiname, ".Fitted")
+  )
 
   plotdf <- rbind(inputdf, measureddf, fitdf)
 
-  plotdf$Region <- forcats::fct_inorder(factor(plotdf$Region) )
+  plotdf$Region <- forcats::fct_inorder(factor(plotdf$Region))
 
-  myColors <- RColorBrewer::brewer.pal(3,"Set1")
-  names(myColors) <- levels( plotdf$Region )
-  colScale <- scale_colour_manual(name = "Region",values = myColors)
+  myColors <- RColorBrewer::brewer.pal(3, "Set1")
+  names(myColors) <- levels(plotdf$Region)
+  colScale <- scale_colour_manual(name = "Region", values = myColors)
 
-  outplot = ggplot(plotdf, aes(x=Time, y=Radioactivity, colour=Region)) + colScale +
-    geom_point(data=subset(plotdf, plotdf$Region == paste0(roiname, '.Measured')), aes(shape='a', size=Weights)) +
-    geom_line(data=subset(plotdf, plotdf$Region != paste0(roiname, '.Measured'))) +
-    guides(shape=FALSE, color=guide_legend(order=1)) + scale_size(range=c(1,3)) + coord_cartesian(ylim=c(0,max(measureddf$Radioactivity)*1.5))
+  outplot <- ggplot(plotdf, aes(x = Time, y = Radioactivity, colour = Region)) + colScale +
+    geom_point(data = subset(plotdf, plotdf$Region == paste0(roiname, ".Measured")), aes(shape = "a", size = Weights)) +
+    geom_line(data = subset(plotdf, plotdf$Region != paste0(roiname, ".Measured"))) +
+    guides(shape = FALSE, color = guide_legend(order = 1)) + scale_size(range = c(1, 3)) + coord_cartesian(ylim = c(0, max(measureddf$Radioactivity) * 1.5))
 
-  #print(outplot)
+  # print(outplot)
   return(outplot)
 }

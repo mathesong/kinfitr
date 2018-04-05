@@ -7,21 +7,21 @@
 SUV(t_tac, tac, injRad = 1, bodymass = 1, frameStartEnd)
 }
 \arguments{
-\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a 
+\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
 zero. If a time zero frame is not included, it will be added.}
 
-\item{tac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time 
+\item{tac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
 zero: if not included, it is added.}
 
 \item{injRad}{The injected radioactivity.  If not included, this will be set to 1 in case one is using SUV ratios.}
 
 \item{bodymass}{The body mass of the participant. If not included, this will be set to 1 in case one is using SUV ratios.}
 
-\item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20). 
+\item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 This is to assess time stability.}
 }
 \value{
-A list with a data frame of the calculated parameters \code{out$par} and a dataframe containing the TACs both of the 
+A list with a data frame of the calculated parameters \code{out$par} and a dataframe containing the TACs both of the
 original data and the transformed values \code{out$tacs}
 }
 \description{
