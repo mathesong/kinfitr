@@ -1,4 +1,7 @@
 
+[![Travis build status](https://travis-ci.org/mathesong/kinfitr.svg?branch=master)](https://travis-ci.org/mathesong/kinfitr)
+[![Coverage Status](https://img.shields.io/codecov/c/github/mathesong/kinfitr/master.svg)](https://codecov.io/github/mathesong/kinfitr?branch=master)
+
 kinfitr : PET Kinetic Modelling using R
 =======================================
 

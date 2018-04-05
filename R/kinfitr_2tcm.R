@@ -121,7 +121,10 @@ twotcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
     multstart_lower <- multstart_lower[par_keepindex]
     multstart_upper <- multstart_upper[par_keepindex]
 
-    newvals <- shift_timings(t_tac, tac, input, inpshift)
+    newvals <- shift_timings(modeldata$t_tac,
+                             modeldata$tac,
+                             modeldata$input,
+                             inpshift)
 
     modeldata$t_tac <- newvals$t_tac
     modeldata$tac <- newvals$tac
