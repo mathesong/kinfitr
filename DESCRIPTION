@@ -10,7 +10,7 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.0.1
-Imports: 
+Imports:
     pracma,
     minpack.lm,
     forcats,
@@ -27,7 +27,7 @@ Imports:
     tibble,
     purrr,
     broom
-Suggests: 
+Suggests:
     knitr,
     devtools,
     roxygen2,
@@ -36,5 +36,6 @@ Suggests:
     LambertW,
     parallel,
     rmarkdown,
-    pander
+    pander,
+    covr
 VignetteBuilder: knitr

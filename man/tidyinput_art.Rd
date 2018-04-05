@@ -24,7 +24,7 @@ Function to tidy up the input argument vectors for arterial input models.
 \details{
 This function i) adds uniform weights if weights are not specified, ii) checks that the
 lengths of t_tac, tac and weights are of the same length, iii) shortens the vectors
-if a frameStartEnd is specified, iv) Checks whether there are negative values in t_tac due to 
+if a frameStartEnd is specified, iv) Checks whether there are negative values in t_tac due to
 adjusting for delay iv) adds a zero frame if there is not one, and v) checks that
 times are in minutes and not in seconds.
 }

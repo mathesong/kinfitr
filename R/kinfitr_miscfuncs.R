@@ -2,7 +2,7 @@
 #'
 #' Function to convolve two vectors of equal length for kinetic modelling.
 #'
-#' @param a A numeric vector of TAC function at equally spaced intervals 
+#' @param a A numeric vector of TAC function at equally spaced intervals
 #' @param b A numeric vector of TAC function at equally spaced intervals of equal length to \code{a}
 #' @param stepsize The time interval between each value of \code{a} and \code{b}
 #'
@@ -12,7 +12,7 @@
 #' a <- rnorm(20)
 #' b <- rnorm(20)
 #' stepsize = 1
-#' 
+#'
 #' kinfit_convolve(a,b,stepsize)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
@@ -20,83 +20,83 @@
 #' @export
 
 kinfit_convolve <- function(a, b, stepsize) {
-  
+
   if(length(a) != length(b)) {
     stop('The vectors are not of the same length')
   }
-  
+
   out <- pracma::conv(a, b)[1:length(a)]*stepsize
   return(out)
-  
+
 }
 
 kinfit_uninterpbydur <- function(interptime, interppred, times, durtimes) {
-  
+
   starttimes = times - durtimes/2
   interpstart = sapply(starttimes, function(x) which.min(abs(interptime-x)))[-1]
   interpend = c((interpstart-1)[-1], length(interptime))
-  
+
   startstop <- data.frame(start = interpstart, stop = interpend)
-  
+
   predvals = c(0, mapply(function(start, stop) mean(interppred[start:stop]), startstop$start, startstop$stop))
-  
+
   return(predvals)
-  
+
 }
 
 zerotrim_input <- function(t_inp, inp) {
-  
+
   # Create a zero point by drawing a regression between the peak and the peak second differential
 
   input <- data.frame(Time = t_inp, Value = inp)
-  
+
   input$Time <- input$Time
-  
+
   input_start <- subset(input, input$Time < which.max(input$Value))
   #qplot(input_start$Time, input_start$Value)
   input_start$dif1 <- c(0, diff(input_start$Value))
   input_start$dif2 <- c(0, diff(input_start$dif1))
   lineseg = input_start[which.max(input_start$dif2):which.max(input_start$Value),]
-  
+
   abc <- lm(lineseg$Value ~ lineseg$Time)
-  
+
   #qplot(input_start$Time, input_start$Value) + geom_point() + geom_abline(slope = abc$coefficients[2], intercept=abc$coefficients[1])
-  
+
   starttime <- -1*abc$coefficients[1]/abc$coefficients[2]
-  
+
   input <- subset(input, input$Time > starttime)
   input <- rbind(c(starttime, 0), input)
-  
+
   input$Time <- input$Time - input$Time[1]
-  
+
   return(input)
-  
+
 }
 
 
 plot_fitpoints <- function(ymeasured, yfitted, xmeasured, xfitted = NULL) {
-  
+
   if(is.null(xfitted)) { xfitted = xmeasured }
-  
+
   # plot the values
   plot(xmeasured, ymeasured)
-  
+
   #draw the curve
   lines(xfitted, yfitted, col="blue")
-  
+
 }
 
 plot_fitfunc <- function(ymeasured, xmeasured, fitfunction, parameters) {
-  
+
   # plot the values
   plot(xmeasured, ymeasured)
-  
+
   # generate a range of values for xmeasured in small increments to create a smooth line
   xRange <- seq(min(xmeasured), max(xmeasured), length.out = 1024)
-  
+
   # generate the predicted y values
   yValues <- predict(fitfunction, par = parameters, x = xRange)
-  
+
   #draw the curve
   lines(xRange, yValues, col="blue")
 }
@@ -104,7 +104,7 @@ plot_fitfunc <- function(ymeasured, xmeasured, fitfunction, parameters) {
 
 #' Plot Residuals of a Model
 #'
-#' Function to visualise the residuals of a model fit.  This function only works for model outputs for 
+#' Function to visualise the residuals of a model fit.  This function only works for model outputs for
 #' which a fit object is available called \code{outputobject$fit}.
 #'
 #' @param outputobject The output of a kinetic model, including a fit object \code{outputobject$fit}
@@ -120,24 +120,24 @@ plot_fitfunc <- function(ymeasured, xmeasured, fitfunction, parameters) {
 #' @export
 
 plot_residuals <- function(outputobject) {
-  
+
   Time = outputobject$tacs$Time
   Residuals = residuals(outputobject$fit)
   Weights = weights(outputobject$fit)
-  
+
   if(length(Time) > length(Residuals)) {
     Time = tail(Time, length(Residuals))
   }
-  
+
   plotdf <- data.frame(Time = Time, Residuals = Residuals, Weights = Weights)
-  
+
   ylimits = c( -max(abs(plotdf$Residuals[plotdf$Weights > 0])) , max(abs(plotdf$Residuals[plotdf$Weights > 0])) )
-  
-  outplot <- ggplot(plotdf, aes(x = Time, y = Residuals)) + 
-    geom_point(aes(size = Weights)) + 
+
+  outplot <- ggplot(plotdf, aes(x = Time, y = Residuals)) +
+    geom_point(aes(size = Weights)) +
     geom_hline(aes(yintercept = 0), linetype="dashed") + ylim(ylimits) +
     scale_size(range = c(1,3)) + geom_line()
-    
+
   return(outplot)
 }
 
@@ -160,13 +160,13 @@ plot_residuals <- function(outputobject) {
 #' @export
 
 maxpercres <- function(outputobject) {
-  
+
   Residuals = abs(residuals(outputobject$fit))
   Fitted = abs(fitted(outputobject$fit))
   PercRes = 100 * Residuals / Fitted
   MaxPercRes = max(PercRes)
   return(MaxPercRes)
-  
+
 }
 
 #' Tidy Up for Reference Region Methods
@@ -194,30 +194,30 @@ maxpercres <- function(outputobject) {
 #' @export
 
 tidyinput_ref <- function(t_tac, reftac, roitac, weights, frameStartEnd) {
-  
+
   if(missing(weights) == T) {
     weights = rep(1, length(reftac))
   }
-  
+
   lengths <- c(length(t_tac), length(reftac),  length(roitac), length(weights))
   if(!all(lengths == lengths[1])) {
     stop('The lengths of t_tac, reftac, roitac and/or weights are not equal')
   }
-  
+
   if(!missing(frameStartEnd)) {
     t_tac <- t_tac[ frameStartEnd[1] : frameStartEnd[2] ]
     reftac <- reftac[ frameStartEnd[1] : frameStartEnd[2] ]
     roitac <- roitac[ frameStartEnd[1] : frameStartEnd[2] ]
     weights <- weights[ frameStartEnd[1] : frameStartEnd[2] ]
   }
-  
+
   if(min(t_tac) > 0) {
     t_tac = c(0, t_tac)
     roitac = c(0, roitac)
     reftac = c(0, reftac)
     weights = c(0, weights)
   }
-  
+
   if(max(t_tac) > 300) {
     warning('
       ******************************************************************************
@@ -226,12 +226,12 @@ tidyinput_ref <- function(t_tac, reftac, roitac, weights, frameStartEnd) {
           warning if you just have really long measurements (over 300 minutes).
       ******************************************************************************')
   }
-  
-  out <- data.frame(t_tac = t_tac, reftac = reftac, roitac = roitac, 
+
+  out <- data.frame(t_tac = t_tac, reftac = reftac, roitac = roitac,
               weights = weights)
-  
+
   return(out)
-  
+
 }
 
 
@@ -248,7 +248,7 @@ tidyinput_ref <- function(t_tac, reftac, roitac, weights, frameStartEnd) {
 #'
 #' @details This function i) adds uniform weights if weights are not specified, ii) checks that the
 #' lengths of t_tac, tac and weights are of the same length, iii) shortens the vectors
-#' if a frameStartEnd is specified, iv) Checks whether there are negative values in t_tac due to 
+#' if a frameStartEnd is specified, iv) Checks whether there are negative values in t_tac due to
 #' adjusting for delay iv) adds a zero frame if there is not one, and v) checks that
 #' times are in minutes and not in seconds.
 #'
@@ -260,32 +260,32 @@ tidyinput_ref <- function(t_tac, reftac, roitac, weights, frameStartEnd) {
 #' @export
 
 tidyinput_art <- function(t_tac, tac, weights, frameStartEnd) {
-  
+
   if(missing(weights)) {
     weights = rep(1, length(tac))
   }
-  
+
   lengths <- c(length(t_tac), length(tac), length(weights))
   if(!all(lengths == lengths[1])) {
     stop('The lengths of t_tac, tac and/or weights are not equal')
   }
-  
+
   if(!missing(frameStartEnd)) {
     t_tac <- t_tac[ frameStartEnd[1] : frameStartEnd[2] ]
     tac <- tac[ frameStartEnd[1] : frameStartEnd[2] ]
     weights <- weights[ frameStartEnd[1] : frameStartEnd[2] ]
   }
-  
+
   if(min(t_tac) < 0) {
     stop('There are negative times in the TAC')
   }
-  
+
   if(min(t_tac) > 0) {
     t_tac = c(0, t_tac)
     tac = c(0, tac)
     weights = c(0, weights)
   }
-  
+
   if(max(t_tac) > 300) {
     warning('
       ******************************************************************************
@@ -294,12 +294,12 @@ tidyinput_art <- function(t_tac, tac, weights, frameStartEnd) {
           warning if you just have really long measurements (over 300 minutes).
       ******************************************************************************')
   }
-  
-  out <- data.frame(t_tac = t_tac, tac = tac, 
+
+  out <- data.frame(t_tac = t_tac, tac = tac,
               weights = weights)
-  
+
   return(out)
-  
+
 }
 
 #' Plot Kinetic Model Fit: Generic Function
@@ -317,7 +317,7 @@ tidyinput_art <- function(t_tac, tac, weights, frameStartEnd) {
 #' @examples
 #' loganout <- Loganplot(t_tac, tac, input, 10, weights)
 #' plot_kinfit(loganout)
-#' 
+#'
 #' srtmout <- srtm(t_tac, reftac, roitac)
 #' plot_kinfit(srtmout, roiname = 'Putamen', refname = 'Cerebellum')
 #'
@@ -330,4 +330,90 @@ plot_kinfit <- function(modelout, ...) {
   input_list <- as.list(substitute(list(...)))
   do.call(what = paste0('plot_', modelname, 'fit'), args = list(modelout, ...))
   #eval(expr = paste0('plot_', modelname, 'fit'))
+}
+
+#' Check and fix multstart parameters
+#'
+#' Checks and fixes for inputted multstart parameters. Checks missing multstart boundaries,
+#' checks if some parameters aren't to be tried with different starting parameters, and checks
+#' the lengths of the multstart bounds
+#'
+#' @param start Original starting values for without multstart
+#' @param lower Lower fitting bounds
+#' @param upper Upper fitting bounds
+#' @param multstart_iter Iterations
+#' @param multstart_lower Lower starting bounds
+#' @param multstart_upper Upper starting bounds
+#'
+#' @return A list containing the
+#' @export
+#'
+#' @examples
+#'
+#' fix_multstartpars(start, lower, upper, multstart_iter, multstart_lower, multstart_upper)
+#'
+fix_multstartpars <- function(start, lower, upper, multstart_iter, multstart_lower, multstart_upper) {
+
+  if( length(multstart_iter) == length(start) || length(multstart_iter) == 1 ) {
+
+    multstart_l <- as.list(lower)
+    multstart_u <- as.list(upper)
+
+    parnames <- names(start)
+
+    ### Adding multstart boundaries
+    if(!missing(multstart_lower)) {
+
+      if( class(multstart_lower)!='list' ||
+          sum( !(names(multstart_lower) %in% parnames) ) > 0 ) {  # Are there any names not in start?
+        stop('multstart_lower should be a named list whose names match the parameters to be fitted')
+      }
+
+      multstart_lower = modifyList(multstart_l, multstart_lower)
+    } else {
+      multstart_lower <- multstart_l
+    }
+
+    if(!missing(multstart_upper)) {
+
+      if( class(multstart_upper)!='list' ||
+          sum( !(names(multstart_upper) %in% parnames) ) > 0 ) {  # Are there any names not in start?
+        stop('multstart_upper should be a named list whose names match the parameters to be fitted')
+      }
+
+      multstart_upper = modifyList(multstart_u, multstart_upper)
+    } else {
+      multstart_upper <- multstart_u
+    }
+
+    ### No multstart for some variables ###
+    if( any(multstart_iter==1) ) {
+      non_iterable <- which(multstart_iter==1)
+      multstart_lower[non_iterable] = start[non_iterable]
+      multstart_upper[non_iterable] = start[non_iterable]
+    }
+
+    # Check order
+    multstart_lower <- multstart_lower[names(start)]
+    multstart_upper <- multstart_upper[names(start)]
+
+
+    # Turn into named vectors again
+
+    multstart_lower <- as.numeric(multstart_lower)
+    multstart_upper <- as.numeric(multstart_upper)
+
+    names(multstart_lower) <- names(start)
+    names(multstart_upper) <- names(start)
+
+
+  } else {
+    stop('multstart_iter should be of length 1 or of the same length as the number of parameters')
+  }
+
+  out <- list(multstart_lower = multstart_lower,
+              multstart_upper = multstart_upper)
+
+  return(out)
+
 }

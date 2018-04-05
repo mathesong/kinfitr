@@ -4,7 +4,7 @@
 \alias{onetcm}
 \title{One Tissue Compartment Model}
 \usage{
-onetcm(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartEnd,
+onetcm(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
   K1.start = 0.1, K1.lower = 1e-04, K1.upper = 0.5, k2.start = 0.1,
   k2.lower = 1e-04, k2.upper = 0.5, inpshift.start = 0,
   inpshift.lower = -0.5, inpshift.upper = 0.5, vB.start = 0.05,
@@ -28,7 +28,7 @@ if not included, it is added. If not specified, uniform weights will be used.}
 If not specified, this will be fitted, however this takes longer to compute. Recommended to perform once on a large ROI for
 each measurement, and to specify this value for the remainder of the regions.}
 
-\item{vB_fixed}{Optional. The blood volume fraction.  If not specified, this will be fitted. Recommended to perform once on a large ROI for
+\item{vB}{Optional. The blood volume fraction.  If not specified, this will be fitted. Recommended to perform once on a large ROI for
 each measurement, and to specify this value for the remainder of the regions.}
 
 \item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
@@ -64,10 +64,12 @@ specified as 1 for any parameters, the original starting value will be
 used, and the multstart_lower and multstart_upper values ignored.}
 
 \item{multstart_lower}{Optional. Lower bounds for starting parameters. Defaults
-to the lower bounds.}
+to the lower bounds. Named list of whichever parameters' starting bounds should
+be altered.}
 
 \item{multstart_upper}{Optional. Upper bounds for starting parameters. Defaults
-to the upper bounds.}
+to the upper bounds. Named list of whichever parameters' starting bounds should
+be altered.}
 
 \item{printvals}{Optional. This displays the parameter values for each iteration of the
 model. This is useful for debugging and changing starting values and upper and lower
@@ -78,7 +80,7 @@ A list with a data frame of the fitted parameters \code{out$par}, the model fit 
 a dataframe containing the TACs both of the data and the fitted values \code{out$tacs},
 the blood input data frame after time shifting \code{input}, a vector of the weights \code{out$weights},
 a logical of whether the inpshift was fitted \code{inpshift_fitted} and a logical of whether the vB was
-fitted \code{vB_fixed}.
+fitted \code{vB}.
 }
 \description{
 Function to fit the One Tissue Compartment Model to data. An irreversible model can also be specified by setting the
@@ -86,7 +88,7 @@ starting value, upper and lower bounds of k2 to 0.
 }
 \examples{
 onetcm(t_tac, tac, input, weights=weights)
-onetcm(t_tac, tac, input, weights=weights, inpshift=0.1, vB_fixed=0.05)
+onetcm(t_tac, tac, input, weights=weights, inpshift=0.1, vB=0.05)
 
 }
 \author{

@@ -48,9 +48,11 @@
 #'   specified as 1 for any parameters, the original starting value will be
 #'   used, and the multstart_lower and multstart_upper values ignored.
 #' @param multstart_lower Optional. Lower bounds for starting parameters. Defaults
-#'   to the lower bounds.
+#'   to the lower bounds. Named list of whichever parameters' starting bounds should
+#'   be altered.
 #' @param multstart_upper Optional. Upper bounds for starting parameters. Defaults
-#'   to the upper bounds.
+#'   to the upper bounds. Named list of whichever parameters' starting bounds should
+#'   be altered.
 #' @param printvals Optional. This displays the parameter values for each
 #'   iteration of the model. This is useful for debugging and changing starting
 #'   values and upper and lower bounds for parameters.
@@ -104,30 +106,10 @@ srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights, vBr_fixed, frameSta
     upper[which(names(upper)=='vBr')] <- vBr_fixed
   }
 
-  if( length(multstart_iter) == length(start) || length(multstart_iter) == 1 ) {
-
-    ### Missing multstart boundaries
-    if(missing(multstart_lower)) {
-      multstart_lower = lower
-    }
-    if(missing(multstart_upper)) {
-      multstart_upper = upper
-    }
-
-    ### No multstart for some variables ###
-    if( any(multstart_iter==1) ) {
-      non_iterable <- which(multstart_iter==1)
-      multstart_lower[non_iterable] = start[non_iterable]
-      multstart_upper[non_iterable] = start[non_iterable]
-    }
-
-    ### Incorrect multstart boundaries
-    if( length(multstart_lower) != length(start) || length(multstart_upper) != length(start) ) {
-      stop('multstart_lower and multstart_upper should be the same length as the number of parameters')
-    }
-  } else {
-    stop('multstart_iter should be of length 1 or of the same length as the number of parameters')
-  }
+  multstart_pars <- fix_multstartpars(start, lower, upper, multstart_iter,
+                                      multstart_lower, multstart_upper)
+  multstart_upper <- multstart_pars$multstart_upper
+  multstart_lower <- multstart_pars$multstart_lower
 
 
 
@@ -147,7 +129,7 @@ srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights, vBr_fixed, frameSta
                               start_lower = multstart_lower,
                               start_upper = multstart_upper,
                               iter = multstart_iter, convergence_count = FALSE,
-                              modelweights=weights)
+                              lower = lower, upper=upper, modelweights=weights)
   }
 
   # Output
