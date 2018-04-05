@@ -83,9 +83,10 @@ twotcm1k <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartE
 
   tidyinput <- tidyinput_art(t_tac, tac, weights, frameStartEnd)
 
-  t_tac   <- tidyinput$t_tac
-  tac  <- tidyinput$tac
-  weights <- tidyinput$weights
+  modeldata <- list(t_tac = tidyinput$t_tac,
+                    tac = tidyinput$tac,
+                    weights = tidyinput$weights,
+                    input = input)
 
   # Parameters
 
@@ -136,12 +137,14 @@ twotcm1k <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartE
   if(!missing(inpshift)) {
 
     inpshift_fitted = F
+    multstart_lower <- multstart_lower[names(multstart_lower)!='inpshift']
+    multstart_upper <- multstart_upper[names(multstart_upper)!='inpshift']
 
     newvals <- shift_timings(t_tac, tac, input, inpshift)
 
-    t_tac <- newvals$t_tac
-    tac <- newvals$tac
-    input <- newvals$input
+    modeldata$t_tac <- newvals$t_tac
+    modeldata$tac <- newvals$tac
+    modeldata$input <- newvals$input
 
     start <- start[-which(names(start)=='inpshift')]
     lower <- lower[-which(names(lower)=='inpshift')]
@@ -150,6 +153,7 @@ twotcm1k <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartE
     if( prod(multstart_iter) == 1 ) {
 
       output <- minpack.lm::nlsLM(tac ~ twotcm1k_model(t_tac, input, K1, k2, k3, k4, Kb, vB),
+                                  data=modeldata,
                                   start =  start, lower = lower, upper = upper,
                                   weights = weights, control = minpack.lm::nls.lm.control(maxiter = 200),
                                   trace = printvals)
@@ -157,11 +161,12 @@ twotcm1k <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartE
     } else {
 
       output <- nls.multstart::nls_multstart(tac ~ twotcm1k_model(t_tac, input, K1, k2, k3, k4, Kb, vB),
+                                             data=modeldata,
                                              supp_errors = 'Y',
                                              start_lower = multstart_lower,
                                              start_upper = multstart_upper,
                                              iter = multstart_iter, convergence_count = FALSE,
-                                             lower = lower, upper=upper, modelweights=weights)
+                                             modelweights=weights)
 
     }
   }
@@ -175,6 +180,7 @@ twotcm1k <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartE
     if( prod(multstart_iter) == 1 ) {
 
       output <- minpack.lm::nlsLM(tac ~ twotcm1k_fitDelay_model(t_tac, input, K1, k2, k3, k4, Kb, inpshift, vB),
+                                  data=modeldata,
                                   start =  start, lower = lower, upper = upper,
                                   weights = weights, control = minpack.lm::nls.lm.control(maxiter = 200),
                                   trace = printvals)
@@ -182,11 +188,12 @@ twotcm1k <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartE
     } else {
 
       output <- nls.multstart::nls_multstart(tac ~ twotcm1k_fitDelay_model(t_tac, input, K1, k2, k3, k4, Kb, inpshift, vB),
+                                             data=modeldata,
                                              supp_errors = 'Y',
                                              start_lower = multstart_lower,
                                              start_upper = multstart_upper,
                                              iter = multstart_iter, convergence_count = FALSE,
-                                             lower = lower, upper=upper, modelweights=weights)
+                                             modelweights=weights)
 
     }
   }
@@ -342,7 +349,7 @@ twotcm1k_fitDelay_model <- function(t_tac, input, K1, k2, k3, k4, Kb, inpshift, 
 
   B <- ( (beta - k3 - k4) / (beta-alpha) ) * exp(-beta*interptime)
 
-  C <- vB * Kb * pracma::cumtrapz(interptime, i_inp)
+  C <- vB * Kb * as.numeric(pracma::cumtrapz(interptime, i_inp))
 
   D <- vB * i_blood
 

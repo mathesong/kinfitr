@@ -140,7 +140,13 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
     t_tac <- tacs$Time
     weights <- tacs$weights
 
+    modeldata <- list(tac = tacs$Radioactivity,
+                      t_tac = tacs$Time,
+                      weights=tacs$weights,
+                      input=input)
+
     fit <- minpack.lm::nlsLM(tac ~ SIME_model(t_tac, input, Vnd, k2, k3, k4, vB=vB_fixed),
+                      data=modeldata,
                       start = start, lower = lower, upper = upper,
                       weights=weights, control = minpack.lm::nls.lm.control(maxiter = 200))
 
