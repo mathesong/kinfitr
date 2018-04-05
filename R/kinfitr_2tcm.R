@@ -15,7 +15,7 @@
 #' If not specified, this will be fitted, however this takes longer to compute. Recommended to perform once on a large ROI for
 #' each measurement, and to specify this value for the remainder of the regions. Or perhaps even to use a simpler model, such as
 #' 1TCM.
-#' @param vB_fixed Optional. The blood volume fraction.  If not specified, this will be fitted. Recommended to perform once on a large ROI for
+#' @param vB  Optional. The blood volume fraction.  If not specified, this will be fitted. Recommended to perform once on a large ROI for
 #' each measurement, and to specify this value for the remainder of the regions.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 #' This is to assess time stability.
@@ -53,17 +53,17 @@
 #' a dataframe containing the TACs both of the data and the fitted values \code{out$tacs},
 #' the blood input data frame after time shifting \code{input}, a vector of the weights \code{out$weights},
 #' a logical of whether the inpshift was fitted \code{inpshift_fitted} and a logical of whether the vB was
-#' fitted \code{vB_fixed}.
+#' fitted \code{vB}.
 #'
 #' @examples
 #' twotcm(t_tac, tac, input, weights=weights)
-#' twotcm(t_tac, tac, input, weights=weights, inpshift=0.1, vB_fixed=0.05)
+#' twotcm(t_tac, tac, input, weights=weights, inpshift=0.1, vB=0.05)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
 
-twotcm <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartEnd,
+twotcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
                    K1.start = 0.1 , K1.lower = 0.0001 , K1.upper = 0.5 ,
                    k2.start = 0.1 , k2.lower = 0.0001 , k2.upper = 0.5 ,
                    k3.start = 0.1 , k3.lower = 0.0001 , k3.upper = 0.5 ,
@@ -92,12 +92,12 @@ twotcm <- function(t_tac, tac, input, weights, inpshift, vB_fixed, frameStartEnd
              inpshift = inpshift.upper, vB = vB.upper)
 
   vB_fitted = T
-  if(!missing(vB_fixed)) {
+  if(!missing(vB)) {
     vB_fitted = F
 
-    start[which(names(start)=='vB')] <- vB_fixed
-    lower[which(names(lower)=='vB')] <- vB_fixed
-    upper[which(names(upper)=='vB')] <- vB_fixed
+    start[which(names(start)=='vB')] <- vB
+    lower[which(names(lower)=='vB')] <- vB
+    upper[which(names(upper)=='vB')] <- vB
   }
 
   if( length(multstart_iter) == length(start) || length(multstart_iter) == 1 ) {
