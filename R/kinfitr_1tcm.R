@@ -52,31 +52,39 @@
 #' fitted \code{vB}.
 #'
 #' @examples
-#' onetcm(t_tac, tac, input, weights=weights)
-#' onetcm(t_tac, tac, input, weights=weights, inpshift=0.1, vB=0.05)
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' tac <- pbr28$tacs[[1]]$FC
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' input <- blood_interp(
+#'   pbr28$blooddata[[1]]$Time/60 , pbr28$blooddata[[1]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[1]]$Time /60 , pbr28$blooddata[[1]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1 )
+#'
+#' fit1 <- onetcm(t_tac, tac, input, weights)
+#' fit2 <- onetcm(t_tac, tac, input, weights, inpshift=0.1, vB=0.05)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
 
-onetcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
+onetcm <- function(t_tac, tac, input, weights=NULL, inpshift=NULL, vB=NULL,
+                   frameStartEnd=NULL,
                    K1.start = 0.1, K1.lower = 0.0001, K1.upper = 0.5,
                    k2.start = 0.1, k2.lower = 0.0001, k2.upper = 0.5,
                    inpshift.start = 0, inpshift.lower= -0.5, inpshift.upper = 0.5,
                    vB.start = 0.05, vB.lower = 0.01, vB.upper = 0.1,
-                   multstart_iter=1, multstart_lower, multstart_upper,
+                   multstart_iter=1, multstart_lower=NULL, multstart_upper=NULL,
                    printvals=F) {
 
   # Tidying
 
-  tidyinput <- tidyinput_art(t_tac, tac, weights, frameStartEnd)
-
-  modeldata <- list(
-    t_tac = tidyinput$t_tac,
-    tac = tidyinput$tac,
-    weights = tidyinput$weights,
-    input = input
-  )
+  modeldata <- tidyinput_art(t_tac, tac, weights, frameStartEnd)
+  modeldata <- as.list(modeldata)
+  modeldata$input <- input
 
 
   # Parameters
@@ -86,7 +94,7 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
   upper <- c(K1 = K1.upper, k2 = k2.upper, inpshift = inpshift.upper, vB = vB.upper)
 
   vB_fitted <- T
-  if (!missing(vB)) {
+  if (!is.null(vB)) {
     vB_fitted <- F
 
     start[which(names(start) == "vB")] <- vB
@@ -108,7 +116,7 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
 
   # Solution - Delay Already Fitted
 
-  if (!missing(inpshift)) {
+  if (!is.null(inpshift)) {
     inpshift_fitted <- F
 
     par_keepindex <- names(start) != "inpshift"
@@ -129,7 +137,7 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
     modeldata$tac <- newvals$tac
     modeldata$input <- newvals$input
 
-    if (prod(multstart_iter) == 1) {
+    if (prod(multstart_iter) == 1) {  # i.e. don't use multstart
       output <- minpack.lm::nlsLM(
         tac ~ onetcm_model(t_tac, input, K1, k2, vB),
         data = modeldata, start = start,
@@ -153,7 +161,7 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
 
   # Solution - Fitting the Delay
 
-  if (missing(inpshift)) {
+  if (is.null(inpshift)) {
     inpshift_fitted <- T
 
     if (prod(multstart_iter) == 1) {
@@ -203,6 +211,8 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
     inpshift_fitted = inpshift_fitted, vB_fitted = vB_fitted, model = "1tcm"
   )
 
+  class(out) <- c("1tcm", "kinfit")
+
   return(out)
 }
 
@@ -221,7 +231,10 @@ onetcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
 #' @return A numeric vector of the predicted values of the TAC in the target region.
 #'
 #' @examples
+#'
+#' \dontrun{
 #' onetcm_model(t_tac, input, K1=0.1, k2=0.08, vB=0.05)
+#' }
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -269,7 +282,9 @@ onetcm_model <- function(t_tac, input, K1, k2, vB) {
 #' @return A numeric vector of the predicted values of the TAC in the target region.
 #'
 #' @examples
+#' \dontrun{
 #' onetcm_fitDelay_model(t_tac, input, K1=0.1, k2=0.08, inpshift = 0.1, vB=0.05)
+#' }
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -313,7 +328,21 @@ onetcm_fitDelay_model <- function(t_tac, input, K1, k2, inpshift, vB) {
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' plot_1tcmfit(onetcmout)
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' tac <- pbr28$tacs[[1]]$FC
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' input <- blood_interp(
+#'   pbr28$blooddata[[1]]$Time/60 , pbr28$blooddata[[1]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[1]]$Time /60 , pbr28$blooddata[[1]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1 )
+#'
+#' fit <- onetcm(t_tac, tac, input, weights, inpshift=0.1, vB=0.05)
+#'
+#' plot_1tcmfit(fit)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -321,8 +350,8 @@ onetcm_fitDelay_model <- function(t_tac, input, K1, k2, inpshift, vB) {
 #'
 #' @export
 
-plot_1tcmfit <- function(onetcmout, roiname) {
-  if (missing(roiname)) {
+plot_1tcmfit <- function(onetcmout, roiname=NULL) {
+  if (is.null(roiname)) {
     roiname <- "ROI"
   }
 
@@ -364,10 +393,16 @@ plot_1tcmfit <- function(onetcmout, roiname) {
   names(myColors) <- levels(plotdf$Region)
   colScale <- scale_colour_manual(name = "Region", values = myColors)
 
-  outplot <- ggplot(plotdf, aes(x = Time, y = Radioactivity, colour = Region)) + colScale +
-    geom_point(data = subset(plotdf, plotdf$Region == paste0(roiname, ".Measured")), aes(shape = "a", size = Weights)) +
-    geom_line(data = subset(plotdf, plotdf$Region != paste0(roiname, ".Measured"))) +
-    guides(shape = FALSE, color = guide_legend(order = 1)) + scale_size(range = c(1, 3)) + coord_cartesian(ylim = c(0, max(measureddf$Radioactivity) * 1.5))
+  outplot <- ggplot(plotdf, aes(x = Time, y = Radioactivity, colour = Region)) +
+    colScale +
+    geom_point(data = subset(plotdf,
+                             plotdf$Region == paste0(roiname, ".Measured")),
+               aes(shape = "a", size = Weights)) +
+    geom_line(data = subset(plotdf,
+                            plotdf$Region != paste0(roiname, ".Measured"))) +
+    guides(shape = FALSE, color = guide_legend(order = 1)) +
+    scale_size(range = c(1, 3)) +
+    coord_cartesian(ylim = c(0, max(measureddf$Radioactivity) * 1.5))
 
   # print(outplot)
   return(outplot)

@@ -25,7 +25,19 @@
 #' tstarIncludedFrames value \code{out$tstarIncludedFrames}
 #'
 #' @examples
-#' refLogan(t_tac, reftac, roitac, k2prime=0.1, tstarIncludedFrames=10, weights=weights)
+#'
+#' # Note: Reference region models should not be used for PBR28 - this is just
+#' # to demonstrate function
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' reftac <- pbr28$tacs[[1]]$CBL
+#' roitac <- pbr28$tacs[[1]]$STR
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' fit <- refLogan(t_tac, reftac, roitac, k2prime=0.1, tstarIncludedFrames=10, weights=weights)
+#'
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -33,7 +45,7 @@
 #'
 #' @export
 
-refLogan <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames, weights, frameStartEnd) {
+refLogan <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames, weights = NULL, frameStartEnd = NULL) {
 
 
   # Tidying
@@ -75,6 +87,8 @@ refLogan <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames, weight
     tstarIncludedFrames = tstarIncludedFrames, model = "refLogan"
   )
 
+  class(out) <- c("refLogan", "kinfit")
+
   return(out)
 }
 
@@ -88,7 +102,19 @@ refLogan <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames, weight
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' plot_refLoganfit(refloganoutout)
+#' # Note: Reference region models should not be used for PBR28 - this is just
+#' # to demonstrate function
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' reftac <- pbr28$tacs[[1]]$CBL
+#' roitac <- pbr28$tacs[[1]]$STR
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' fit <- refLogan(t_tac, reftac, roitac, k2prime=0.1, tstarIncludedFrames=10, weights=weights)
+#'
+#' plot_refLoganfit(fit)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -145,7 +171,9 @@ plot_refLoganfit <- function(refloganout, roiname = NULL) {
 #' @return Saves a jpeg of the plots as filename_refLogan.jpeg
 #'
 #' @examples
-#' refLogan_tstar(t_tac, reftac, taclow, tacmed, tachigh, k2prime = k2prime, 'demonstration')
+#' \dontrun{
+#' refLogan_tstar(t_tac, reftac, taclow, tacmed, tachigh, k2prime, 'demonstration')
+#' }
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'

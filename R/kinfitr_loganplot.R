@@ -28,8 +28,21 @@
 #' tstarIncludedFrames value \code{out$tstarIncludedFrames}.
 #'
 #' @examples
-#' Loganplot(t_tac, tac, input, 10, weights)
-#' Loganplot(t_tac, tac, input, 10, weights, inpshift = onetcmout$par$inpshift, vB=0.05)
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' tac <- pbr28$tacs[[1]]$FC
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' input <- blood_interp(
+#'   pbr28$blooddata[[1]]$Time/60 , pbr28$blooddata[[1]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[1]]$Time /60 , pbr28$blooddata[[1]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1 )
+#'
+#' fit1 <- Loganplot(t_tac, tac, input, 10, weights)
+#' fit2 <- Loganplot(t_tac, tac, input, 10, weights, inpshift = 0.1, vB=0.05)
+#'
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -37,7 +50,8 @@
 #'
 #' @export
 
-Loganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights, inpshift = 0, vB = 0, frameStartEnd) {
+Loganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights=NULL,
+                      inpshift = 0, vB = 0, frameStartEnd=NULL) {
 
   # Tidying
 
@@ -108,6 +122,9 @@ Loganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights, inpshift 
     inpshift = inpshift, vB = vB, tstarIncludedFrames = tstarIncludedFrames,
     model = "Logan"
   )
+
+  class(out) <- c("Logan", "kinfit")
+
   return(out)
 }
 
@@ -122,7 +139,20 @@ Loganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights, inpshift 
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' plot_Loganfit(loganoutout)
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' tac <- pbr28$tacs[[1]]$FC
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' input <- blood_interp(
+#'   pbr28$blooddata[[1]]$Time/60 , pbr28$blooddata[[1]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[1]]$Time /60 , pbr28$blooddata[[1]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1 )
+#'
+#' fit <- Loganplot(t_tac, tac, input, 10, weights)
+#' plot_Loganfit(fit)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -191,7 +221,9 @@ plot_Loganfit <- function(loganout, roiname = NULL) {
 #' @return Saves a jpeg of the plots as filename_Logan.jpeg
 #'
 #' @examples
+#' \dontrun{
 #' Logan_tstar(t_tac, lowroi, medroi, highroi, input, filename='demonstration', inpshift = onetcmout$par$inpshift, vB = 0.05, gridbreaks=4)
+#' }
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'

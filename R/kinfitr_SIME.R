@@ -36,9 +36,20 @@
 #'
 #'
 #' @examples
-#' Vndgrid <- seq(from=0, to=5, by=0.1)
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' tacdf <- dplyr::select(pbr28$tacs[[1]], FC:CBL)
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' input <- blood_interp(
+#'   pbr28$blooddata[[1]]$Time/60 , pbr28$blooddata[[1]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[1]]$Time /60 , pbr28$blooddata[[1]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1 )
+#'
+#' Vndgrid <- seq(from=0, to=3, by=0.5)
 #' SIMEout <-  SIME(t_tac, tacdf, input, Vndgrid, weights = weights,
-#'                  inpshift = onetcmout$par$inpshift, vB = onetcmout$par$vB)
+#'                  inpshift = 0.1, vB = 0.05)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -48,15 +59,15 @@
 #'
 #' @importFrom dplyr "%>%"
 
-SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
-                 inpshift = 0, vB, twotcmstart, frameStartEnd,
+SIME <- function(t_tac, tacdf, input, Vndgrid, weights = NULL, roiweights = NULL,
+                 inpshift = 0, vB = NULL, twotcmstart=NULL, frameStartEnd = NULL,
                  k2.start = 0.1, k2.lower = 0, k2.upper = 0.5,
                  k3.start = 0.1, k3.lower = 0, k3.upper = 0.5,
                  k4.start = 0.1, k4.lower = 0, k4.upper = 0.5) {
 
   # Tidying
 
-  if (missing(weights)) {
+  if (is.null(weights)) {
     weights <- rep(1, nrow(tacdf))
   }
 
@@ -65,16 +76,17 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
     stop("The lengths of the times, TACs and/or weights are not equal")
   }
 
-  if (!missing(frameStartEnd)) {
+  if (!is.null(frameStartEnd)) {
     t_tac <- t_tac[ frameStartEnd[1]:frameStartEnd[2] ]
     tacdf <- tacdf[ frameStartEnd[1]:frameStartEnd[2], ]
+    weights <- weights[ frameStartEnd[1]:frameStartEnd[2] ]
   }
 
   if (min(t_tac) < 0) {
     stop("There are negative times in the TAC")
   }
 
-  if (missing(roiweights) == T) {
+  if (is.null(roiweights)) {
     roiweights <- rep(1, ncol(tacdf))
   }
   roiweights <- roiweights / max(roiweights)
@@ -96,12 +108,8 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
 
   newvals <- shift_timings_df(t_tac, tacdf, input, inpshift)
 
-  t_tac <- newvals$t_tac
   tacdf <- newvals$tacdf
-
   input <- newvals$input
-
-  t_inp <- newvals$input$Time
 
 
   # Parameters
@@ -113,27 +121,27 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
 
   # 2tcm Starting Parameters
 
-  if (!missing(twotcmstart)) {
+  if (!is.null(twotcmstart)) {
     twotcmout <- twotcm(
-      t_tac, tac = tacdf[, twotcmstart], input,
+      newvals$t_tac, tac = tacdf[, twotcmstart], input,
       weights = weights, inpshift = inpshift,
       vB = vB
     )
     start[1] <- twotcmout$par$k2
     start[2] <- twotcmout$par$k3
     start[3] <- twotcmout$par$k4
-    if (missing(vB)) {
+    if (is.null(vB)) {
       vB <- twotcmout$par$vB
     }
   } else {
-    if (missing(vB)) {
+    if (is.null(vB)) {
       vB <- 0.05
     }
   }
 
   # Solution
 
-  tacdf$Time <- t_tac
+  tacdf$Time <- newvals$t_tac
   tacdf$weights <- weights
 
   tidytacs <- tidyr::gather(tacdf, key = Region, value = Radioactivity, -Time, -weights)
@@ -219,6 +227,8 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
     weights = weights, roiweights = roiweights, inpshift = inpshift, vB = vB, model = "SIME"
   )
 
+  class(out) <- c("SIME", "kinfit")
+
   return(out)
 }
 
@@ -241,7 +251,9 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights, roiweights,
 #'
 #'
 #' @examples
+#' \dontrun{
 #' SIME_model(t_tac, input, Vnd=5, k2=0.1, k3=0.05, k4=0.04, vB=0.05)
+#' }
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -294,7 +306,9 @@ SIME_model <- function(t_tac, input, Vnd, k2, k3, k4, vB) {
 #' one ROI shows a completely different pattern from the rest of the ROIs.
 #'
 #' @examples
+#' \dontrun{
 #' plot_SIMEfit(SIMEout)
+#' }
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'

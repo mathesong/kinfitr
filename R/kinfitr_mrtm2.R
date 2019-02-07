@@ -27,7 +27,17 @@
 #' tstarIncludedFrames value \code{out$tstarIncludedFrames}.
 #'
 #' @examples
-#' mrtm2(t_tac, reftac, roitac, k2prime=mrtm1out$par$k2prime, weights=weights)
+#' # Note: Reference region models should not be used for PBR28 - this is just
+#' # to demonstrate function
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' reftac <- pbr28$tacs[[1]]$CBL
+#' roitac <- pbr28$tacs[[1]]$STR
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' fit <- mrtm2(t_tac, reftac, roitac, 0.001, weights=weights)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -35,7 +45,7 @@
 #'
 #' @export
 
-mrtm2 <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames, weights, frameStartEnd) {
+mrtm2 <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames=NULL, weights=NULL, frameStartEnd=NULL) {
 
 
   # Tidying
@@ -47,7 +57,7 @@ mrtm2 <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames, weights, 
   roitac <- tidyinput$roitac
   weights <- tidyinput$weights
 
-  if (missing(tstarIncludedFrames)) {
+  if (is.null(tstarIncludedFrames)) {
     tstarIncludedFrames <- length(reftac)
   }
 
@@ -96,6 +106,8 @@ mrtm2 <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames, weights, 
     k2prime = k2prime, tstarIncludedFrames = tstarIncludedFrames, model = "mrtm2"
   )
 
+  class(out) <- c("mrtm2", "kinfit")
+
   return(out)
 }
 
@@ -110,7 +122,17 @@ mrtm2 <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames, weights, 
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' plot_mrtm2fit(mrtm2out)
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' reftac <- pbr28$tacs[[1]]$CBL
+#' roitac <- pbr28$tacs[[1]]$STR
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' fit <- mrtm2(t_tac, reftac, roitac, weights=weights)
+#'
+#' plot_mrtm2fit(fit)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -190,7 +212,9 @@ plot_mrtm2fit <- function(mrtm2out, roiname = NULL, refname = NULL) {
 #' @return Saves a jpeg of the plots as filename_mrtm2.jpeg
 #'
 #' @examples
+#' \dontrun{
 #' mrtm2_tstar(t_tac, reftac, taclow, tacmed, tachigh, 'demonstration')
+#' }
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'

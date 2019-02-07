@@ -58,21 +58,33 @@
 #' fitted \code{vB}.
 #'
 #' @examples
-#' twotcm(t_tac, tac, input, weights=weights)
-#' twotcm(t_tac, tac, input, weights=weights, inpshift=0.1, vB=0.05)
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' tac <- pbr28$tacs[[1]]$FC
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' input <- blood_interp(
+#'   pbr28$blooddata[[1]]$Time/60 , pbr28$blooddata[[1]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[1]]$Time /60 , pbr28$blooddata[[1]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1 )
+#'
+#' fit1 <- twotcm(t_tac, tac, input, weights)
+#' fit2 <- twotcm(t_tac, tac, input, weights, inpshift=0.1, vB=0.05)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
 
-twotcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
+twotcm <- function(t_tac, tac, input, weights=NULL, inpshift=NULL, vB=NULL,
+                   frameStartEnd=NULL,
                    K1.start = 0.1, K1.lower = 0.0001, K1.upper = 0.5,
                    k2.start = 0.1, k2.lower = 0.0001, k2.upper = 0.5,
                    k3.start = 0.1, k3.lower = 0.0001, k3.upper = 0.5,
                    k4.start = 0.1, k4.lower = 0.0001, k4.upper = 0.5,
                    inpshift.start = 0, inpshift.lower= -0.5, inpshift.upper = 0.5,
                    vB.start = 0.05, vB.lower = 0.01, vB.upper = 0.1,
-                   multstart_iter=1, multstart_lower, multstart_upper,
+                   multstart_iter=1, multstart_lower=NULL, multstart_upper=NULL,
                    printvals=F) {
 
   # Tidying
@@ -102,7 +114,7 @@ twotcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
   )
 
   vB_fitted <- T
-  if (!missing(vB)) {
+  if (!is.null(vB)) {
     vB_fitted <- F
 
     start[which(names(start) == "vB")] <- vB
@@ -120,7 +132,7 @@ twotcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
 
   # Solution - Delay Already Fitted
 
-  if (!missing(inpshift)) {
+  if (!is.null(inpshift)) {
     inpshift_fitted <- F
 
     par_keepindex <- names(start) != "inpshift"
@@ -164,7 +176,7 @@ twotcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
 
   # Solution - Fitting the Delay
 
-  if (missing(inpshift)) {
+  if (is.null(inpshift)) {
     inpshift_fitted <- T
 
     if (prod(multstart_iter) == 1) {
@@ -220,6 +232,8 @@ twotcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
     inpshift_fitted = inpshift_fitted, vB_fitted = vB_fitted, model = "2tcm"
   )
 
+  class(out) <- c("2tcm", "kinfit")
+
   return(out)
 }
 
@@ -240,7 +254,9 @@ twotcm <- function(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
 #' @return A numeric vector of the predicted values of the TAC in the target region.
 #'
 #' @examples
+#' \dontrun{
 #' twotcm_model(t_tac, input, K1=0.1, k2=0.08, k3=0.05, k4=0.02, vB=0.05)
+#' }
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -295,7 +311,9 @@ twotcm_model <- function(t_tac, input, K1, k2, k3, k4, vB) {
 #' @return A numeric vector of the predicted values of the TAC in the target region.
 #'
 #' @examples
+#' \dontrun{
 #' twotcm_model(t_tac, input, K1=0.1, k2=0.08, k3=0.05, k4=0.02, vB=0.05)
+#' }
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -347,7 +365,21 @@ twotcm_fitDelay_model <- function(t_tac, input, K1, k2, k3, k4, inpshift, vB) {
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' plot_2tcmfit(twotcmout)
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' tac <- pbr28$tacs[[1]]$FC
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' input <- blood_interp(
+#'   pbr28$blooddata[[1]]$Time/60 , pbr28$blooddata[[1]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[1]]$Time /60 , pbr28$blooddata[[1]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1 )
+#'
+#' fit <- twotcm(t_tac, tac, input, weights, inpshift=0.1, vB=0.05)
+#'
+#' plot_2tcmfit(fit)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -355,8 +387,8 @@ twotcm_fitDelay_model <- function(t_tac, input, K1, k2, k3, k4, inpshift, vB) {
 #'
 #' @export
 
-plot_2tcmfit <- function(twotcmout, roiname) {
-  if (missing(roiname)) {
+plot_2tcmfit <- function(twotcmout, roiname=NULL) {
+  if (is.null(roiname)) {
     roiname <- "ROI"
   }
 

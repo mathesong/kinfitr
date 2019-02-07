@@ -28,7 +28,19 @@
 #' value \code{out$tstarIncludedFrames}.
 #'
 #' @examples
-#' ma1(t_tac, tac, input, 10, weights, inpshift = onetcmout$par$inpshift)
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' tac <- pbr28$tacs[[1]]$FC
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' input <- blood_interp(
+#'   pbr28$blooddata[[1]]$Time/60 , pbr28$blooddata[[1]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[1]]$Time /60 , pbr28$blooddata[[1]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1 )
+#'
+#' fit1 <- ma1(t_tac, tac, input, 10, weights)
+#' fit2 <- ma1(t_tac, tac, input, 10, weights, inpshift = 0.1, vB=0.05)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -36,7 +48,7 @@
 #'
 #' @export
 
-ma1 <- function(t_tac, tac, input, tstarIncludedFrames, weights, inpshift = 0, vB = 0, frameStartEnd) {
+ma1 <- function(t_tac, tac, input, tstarIncludedFrames, weights=NULL, inpshift = 0, vB = 0, frameStartEnd=NULL) {
 
 
   # Tidying
@@ -111,6 +123,9 @@ ma1 <- function(t_tac, tac, input, tstarIncludedFrames, weights, inpshift = 0, v
     input = input, weights = weights, inpshift = inpshift, vB = vB,
     tstarIncludedFrames = tstarIncludedFrames, model = "ma1"
   )
+
+  class(out) <- c("Logan", "kinfit")
+
   return(out)
 }
 
@@ -124,7 +139,19 @@ ma1 <- function(t_tac, tac, input, tstarIncludedFrames, weights, inpshift = 0, v
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' plot_ma1fit(ma1out)
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' tac <- pbr28$tacs[[1]]$FC
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' input <- blood_interp(
+#'   pbr28$blooddata[[1]]$Time/60 , pbr28$blooddata[[1]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[1]]$Time /60 , pbr28$blooddata[[1]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1 )
+#'
+#' fit <- ma1(t_tac, tac, input, 10, weights)
+#' plot_ma1fit(fit)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -200,7 +227,9 @@ plot_ma1fit <- function(ma1out, roiname = NULL) {
 #' @return Saves a jpeg of the plots as filename_ma1.jpeg
 #'
 #' @examples
+#' \dontrun{
 #' ma1_tstar(t_tac, lowroi, medroi, highroi, input, filename='demonstration', inpshift = onetcmout$par$inpshift, frameStartEnd, gridbreaks=4)
+#' }
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -209,7 +238,7 @@ plot_ma1fit <- function(ma1out, roiname = NULL) {
 #' @export
 
 
-ma1_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename, inpshift = 0, frameStartEnd, gridbreaks=2) {
+ma1_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename, inpshift = 0, frameStartEnd=NULL, gridbreaks=2) {
   frames <- length(t_tac)
   lowroi_fit <- ma1(t_tac, lowroi, input, tstarIncludedFrames = frames, inpshift = inpshift, frameStartEnd = frameStartEnd)
   medroi_fit <- ma1(t_tac, medroi, input, tstarIncludedFrames = frames, inpshift = inpshift, frameStartEnd = frameStartEnd)

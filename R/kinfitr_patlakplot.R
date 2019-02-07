@@ -37,7 +37,7 @@
 #'
 #' @export
 
-Patlakplot <- function(t_tac, tac, input, tstarIncludedFrames, weights, inpshift = 0, vB = 0, frameStartEnd) {
+Patlakplot <- function(t_tac, tac, input, tstarIncludedFrames, weights, inpshift = 0, vB = 0, frameStartEnd = NULL) {
 
 
   # Tidying
@@ -107,8 +107,12 @@ Patlakplot <- function(t_tac, tac, input, tstarIncludedFrames, weights, inpshift
   out <- list(
     par = par, par.se = par.se, fit = patlak_model, tacs = tacs,
     fitvals = fitvals, input = input, weights = weights,
-    inpshift = inpshift, vB = vB, tstarIncludedFrames = tstarIncludedFrames
+    inpshift = inpshift, vB = vB, tstarIncludedFrames = tstarIncludedFrames,
+    model = "Patlak"
   )
+
+  class(out) <- c("Patlak", "kinfit")
+
   return(out)
 }
 
@@ -153,7 +157,7 @@ plot_Patlakfit <- function(patlakout, roiname = NULL) {
 
   myColors <- RColorBrewer::brewer.pal(3, "Set1")
   names(myColors) <- levels(plotdf$Equilibrium)
-  colScale <- scale_colour_manual(name = "Region", values = myColors)
+  colScale <- scale_colour_manual(name = "Equilibrium", values = myColors)
 
   xlimits <- c(0, tail(plotdf$Patlak_Plasma, 1))
 

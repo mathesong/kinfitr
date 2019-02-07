@@ -24,7 +24,17 @@
 #' tstarIncludedFrames value \code{out$tstarIncludedFrames}
 #'
 #' @examples
-#' refmlLogan(t_tac, reftac, roitac, k2prime=0.1, tstarIncludedFrames=10, weights=weights)
+#' # Note: Reference region models should not be used for PBR28 - this is just
+#' # to demonstrate function
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' reftac <- pbr28$tacs[[1]]$CBL
+#' roitac <- pbr28$tacs[[1]]$STR
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' fit <- refmlLogan(t_tac, reftac, roitac, k2prime=0.1, tstarIncludedFrames=10, weights=weights)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -32,7 +42,7 @@
 #'
 #' @export
 
-refmlLogan <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames, weights, frameStartEnd) {
+refmlLogan <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames, weights = NULL, frameStartEnd = NULL) {
 
 
   # Tidying
@@ -88,6 +98,8 @@ refmlLogan <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames, weig
     par = par, fit = fit, tacs = tacs, fitvals = fitvals, weights = weights, k2prime = k2prime,
     tstarIncludedFrames = tstarIncludedFrames, model = "refmlLogan"
   )
+
+  class(out) <- c("refmlLogan", "kinfit")
 
   return(out)
 }

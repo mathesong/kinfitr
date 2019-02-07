@@ -41,7 +41,13 @@
 
 blood_interp <- function(t_blood, blood, t_plasma, plasma, t_parentfrac, parentfrac) {
   if (max(t_blood) > 300 || max(t_plasma) > 300 || max(t_parentfrac) > 300) {
-    warning("\n      ******************************************************************************\n\n          It looks like you have included seconds instead of minutes for time\n\n          in at least one of the following: t_blood, t_plasma or t_parentfrac.\n\n          This can cause wrong/weird results, and should be avoided. Ignore this\n\n          warning if you just have really long measurements (over 300 minutes).\n\n      ******************************************************************************")
+    warning("
+            ***********************************************************************
+            It looks like you have included seconds instead of minutes for time
+            in at least one of the following: t_blood, t_plasma or t_parentfrac.
+            This can cause wrong/weird results, and should be avoided. Ignore this
+            warning if you just have really long measurements (over 300 minutes).
+            ***********************************************************************")
   }
 
   interpPoints <- 6000
@@ -356,7 +362,7 @@ plot_inptac_timings <- function(t_tac, tac, input, inpshift, zoomTime=5) {
 #' @export
 
 plot_inptac_fit <- function(fitout, roiname, zoomTime=5) {
-  if (missing(roiname)) {
+  if (is.null(roiname)) {
     roiname <- "ROI"
   }
 

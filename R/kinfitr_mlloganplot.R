@@ -29,7 +29,19 @@
 #' value \code{out$tstarIncludedFrames}.
 #'
 #' @examples
-#' mlLoganplot(t_tac, tac, input, 10, weights, inpshift = onetcmout$par$inpshift)
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' tac <- pbr28$tacs[[1]]$FC
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' input <- blood_interp(
+#'   pbr28$blooddata[[1]]$Time/60 , pbr28$blooddata[[1]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[1]]$Time /60 , pbr28$blooddata[[1]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1 )
+#'
+#' fit1 <- mlLoganplot(t_tac, tac, input, 10, weights)
+#' fit2 <- mlLoganplot(t_tac, tac, input, 10, weights, inpshift = 0.1, vB=0.05)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -38,7 +50,7 @@
 #' @export
 
 
-mlLoganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights, inpshift = 0, vB = 0, frameStartEnd) {
+mlLoganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights=NULL, inpshift = 0, vB = 0, frameStartEnd=NULL) {
 
 
   # Tidying
@@ -121,6 +133,8 @@ mlLoganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights, inpshif
     model = "mlLogan"
   )
 
+  class(out) <- c("mlLogan", "kinfit")
+
   return(out)
 }
 
@@ -135,7 +149,19 @@ mlLoganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights, inpshif
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' plot_mlLoganfit(mlloganoutout)
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' tac <- pbr28$tacs[[1]]$FC
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' input <- blood_interp(
+#'   pbr28$blooddata[[1]]$Time/60 , pbr28$blooddata[[1]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[1]]$Time /60 , pbr28$blooddata[[1]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1 )
+#'
+#' fit <- mlLoganplot(t_tac, tac, input, 10, weights)
+#' plot_mlLoganfit(fit)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -143,17 +169,18 @@ mlLoganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights, inpshif
 #'
 #' @export
 
-plot_mlLoganfit <- function(loganout, roiname = NULL) {
+plot_mlLoganfit <- function(mlloganout, roiname = NULL) {
+
   plotdf <- data.frame(
-    Weights = refmlloganout$weights,
-    Term1_DV = refmlloganout$fitvals$Term1_DV,
-    Fitted = refmlloganout$fitvals$Fitted,
+    Weights = mlloganout$weights,
+    Term1_DV = mlloganout$fitvals$Term1_DV,
+    Fitted = mlloganout$fitvals$Fitted,
     Equilibrium = as.character("Before")
   )
 
 
   plotdf$Equilibrium <- as.character(plotdf$Equilibrium)
-  plotdf$Equilibrium [ (nrow(plotdf) - (refmlloganout$tstarIncludedFrames - 1)):nrow(plotdf)  ] <- "After"
+  plotdf$Equilibrium [ (nrow(plotdf) - (mlloganout$tstarIncludedFrames - 1)):nrow(plotdf)  ] <- "After"
 
   plotdf$Equilibrium <- forcats::fct_inorder(factor(plotdf$Equilibrium))
 
@@ -192,7 +219,9 @@ plot_mlLoganfit <- function(loganout, roiname = NULL) {
 #' @return Saves a jpeg of the plots as filename_mlLogan.jpeg
 #'
 #' @examples
+#' \dontrun{
 #' mlLogan_tstar(t_tac, lowroi, medroi, highroi, input, filename='demonstration', inpshift = onetcmout$par$inpshift, vB = 0.05, gridbreaks=4)
+#' }
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -200,7 +229,7 @@ plot_mlLoganfit <- function(loganout, roiname = NULL) {
 #'
 #' @export
 
-mlLogan_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename, inpshift = 0, frameStartEnd, gridbreaks=2) {
+mlLogan_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename, inpshift = 0, frameStartEnd=NULL, gridbreaks=2) {
   frames <- length(t_tac)
   lowroi_fit <- mlLoganplot(t_tac, lowroi, input, tstarIncludedFrames = frames, inpshift = inpshift, frameStartEnd = frameStartEnd)
   medroi_fit <- mlLoganplot(t_tac, medroi, input, tstarIncludedFrames = frames, inpshift = inpshift, frameStartEnd = frameStartEnd)

@@ -40,8 +40,19 @@
 #' values \code{out$tacs}.
 #'
 #' @examples
-#' srtm(t_tac, reftac, roitac)
-#' srtm(t_tac, reftac, roitac, weights, frameStartEnd = c(1,11), bp.upper=1)
+#'
+#' # Note: Reference region models should not be used for PBR28 - this is just
+#' # to demonstrate function
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' reftac <- pbr28$tacs[[1]]$CBL
+#' roitac <- pbr28$tacs[[1]]$STR
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' fit1 <- srtm(t_tac, reftac, roitac)
+#' fit2 <- srtm(t_tac, reftac, roitac, weights, frameStartEnd = c(1,30), bp.upper=1)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -49,11 +60,11 @@
 #'
 #' @export
 
-srtm <- function(t_tac, reftac, roitac, weights, frameStartEnd,
+srtm <- function(t_tac, reftac, roitac, weights = NULL, frameStartEnd = NULL,
                  R1.start = 1, R1.lower = 0, R1.upper = 10,
                  k2.start=0.1, k2.lower = 0, k2.upper=1,
                  bp.start=1.5, bp.lower=-10, bp.upper=15,
-                 multstart_iter=1, multstart_lower, multstart_upper,
+                 multstart_iter=1, multstart_lower = NULL, multstart_upper = NULL,
                  printvals=F) {
 
 
@@ -61,7 +72,7 @@ srtm <- function(t_tac, reftac, roitac, weights, frameStartEnd,
 
   tidyinput <- tidyinput_ref(t_tac, reftac, roitac, weights, frameStartEnd)
 
-  modeldata <- as.list(tidyinput)
+  modeldata <- tidyinput
 
 
   # Parameters
@@ -103,7 +114,10 @@ srtm <- function(t_tac, reftac, roitac, weights, frameStartEnd,
 
   # Output
 
-  tacs <- data.frame(Time = t_tac, Reference = reftac, Target = roitac, Target_fitted = as.numeric(fitted(output)))
+  tacs <- data.frame(Time = modeldata$t_tac,
+                     Reference = modeldata$reftac,
+                     Target = modeldata$roitac,
+                     Target_fitted = as.numeric(fitted(output)))
 
   par <- as.data.frame(as.list(coef(output)))
 
@@ -115,6 +129,8 @@ srtm <- function(t_tac, reftac, roitac, weights, frameStartEnd,
     fit = output, weights = weights, tacs = tacs,
     model = "srtm"
   )
+
+  class(out) <- c("srtm", "kinfit")
 
   return(out)
 }
@@ -133,7 +149,9 @@ srtm <- function(t_tac, reftac, roitac, weights, frameStartEnd,
 #' @return A numeric vector of the predicted values of the TAC in the target region.
 #'
 #' @examples
+#' \dontrun{
 #' srtm_model(t_tac, reftac, R1=0.9, k2=0.1, bp=1.5)
+#' }
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -153,9 +171,9 @@ srtm_model <- function(t_tac, reftac, R1, k2, bp) {
 
   ND <- R1 * iref
   BOUND <- kinfit_convolve(a, b, step)
-  tmp <- ND + BOUND
+  i_outtac <- ND + BOUND
 
-  outtac <- pracma::interp1(interptime, tmp, t_tac)
+  outtac <- pracma::interp1(interptime, i_outtac, t_tac)
 
   return(outtac)
 }
@@ -172,7 +190,20 @@ srtm_model <- function(t_tac, reftac, R1, k2, bp) {
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' plot_srtmfit(srtmout)
+#'
+#' #' # Note: Reference region models should not be used for PBR28 - this is just
+#' # to demonstrate function
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' reftac <- pbr28$tacs[[1]]$CBL
+#' roitac <- pbr28$tacs[[1]]$STR
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' fit <- srtm(t_tac, reftac, roitac)
+#'
+#' plot_srtmfit(fit)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -180,7 +211,7 @@ srtm_model <- function(t_tac, reftac, R1, k2, bp) {
 #'
 #' @export
 
-plot_srtmfit <- function(srtmout, roiname, refname) {
+plot_srtmfit <- function(srtmout, roiname = NULL, refname = NULL) {
   measured <- data.frame(
     Time = srtmout$tacs$Time,
     Reference = srtmout$tacs$Reference,
@@ -194,10 +225,10 @@ plot_srtmfit <- function(srtmout, roiname, refname) {
     Weights = weights(srtmout$fit)
   )
 
-  if (missing(roiname)) {
+  if (is.null(roiname)) {
     roiname <- "ROI"
   }
-  if (missing(refname)) {
+  if (is.null(refname)) {
     refname <- "Reference"
   }
 
@@ -229,7 +260,8 @@ plot_srtmfit <- function(srtmout, roiname, refname) {
     geom_point(data = tidymeasured, aes(shape = "a", size = Weights)) +
     geom_line(data = tidyfitted) +
     guides(shape = FALSE, color = guide_legend(order = 1)) + colScale +
-    scale_size(range = c(1, 3))
+    scale_size(range = c(1, 3)) +
+    coord_cartesian(ylim = c(0, max(tidymeasured$Radioactivity) * 1.5))
 
   return(outplot)
 }

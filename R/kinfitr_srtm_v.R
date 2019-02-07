@@ -17,7 +17,7 @@
 #' @param weights Optional. Numeric vector of the weights assigned to each frame
 #'   in the fitting. We include zero at time zero: if not included, it is added.
 #'   If not specified, uniform weights will be used.
-#' @param vBr_fixed Optional. The blood volume fraction of the reference region.  If not
+#' @param vBr Optional. The blood volume fraction of the reference region.  If not
 #'   specified, this will be fitted. This parameter was fixed in the original article.
 #' @param frameStartEnd Optional. This allows one to specify the beginning and
 #'   final frame to use for modelling, e.g. c(1,20). This is to assess time
@@ -63,8 +63,31 @@
 #'   \code{out$tacs}.
 #'
 #' @examples
-#' srtm_v(t_tac, reftac, roitac)
-#' srtm_v(t_tac, reftac, roitac, weights, frameStartEnd = c(1,11), bp.upper=1)
+#'
+#' # Note: Reference region models should not be used for PBR28 - this is just
+#' # to demonstrate function
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' reftac <- pbr28$tacs[[1]]$CBL
+#' roitac <- pbr28$tacs[[1]]$STR
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' input <- pbr28$input[[meas]]
+
+#' newvals <- shift_timings(
+#'   t_tac,
+#'   roitac,
+#'   input,
+#'   inpshift=0
+#' )
+#'
+#' outtac <- pracma::interp1(interptime, i_outtac, t_tac)
+#'
+#' bloodtac <- pracma::interp1(newvals$input$Time, newvals$input$blood, t_tac)
+#'
+#' fit <- srtm_v(t_tac, reftac, roitac, bloodtac, weights)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -75,13 +98,13 @@
 #'
 #' @export
 
-srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights, vBr_fixed, frameStartEnd,
+srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights = NULL, vBr = NULL, frameStartEnd = NULL,
                    R1.start = 1, R1.lower = 0.0001, R1.upper = 10,
                    k2.start=0.1, k2.lower = 0.0001, k2.upper=1,
                    bp.start=1.5, bp.lower=-10, bp.upper=15,
                    vBr.start=0.05, vBr.lower=0.0001, vBr.upper=0.15,
                    vBt.start=0.05, vBt.lower=0.0001, vBt.upper=0.15,
-                   multstart_iter=1, multstart_lower, multstart_upper,
+                   multstart_iter=1, multstart_lower = NULL, multstart_upper = NULL,
                    printvals=F) {
 
 
@@ -90,7 +113,7 @@ srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights, vBr_fixed, frameSta
   tidyinput <- tidyinput_ref(t_tac, reftac, roitac, weights, frameStartEnd)
   tidyinput_blood <- tidyinput_ref(t_tac, reftac, bloodtac, weights, frameStartEnd)
 
-  modeldata <- as.list(tidyinput)
+  modeldata <- tidyinput
   modeldata$bloodtac <- tidyinput_blood$roitac
 
 
@@ -100,10 +123,12 @@ srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights, vBr_fixed, frameSta
   lower <- c(R1 = R1.lower, k2 = k2.lower, bp = bp.lower, vBr = vBr.lower, vBt = vBt.lower)
   upper <- c(R1 = R1.upper, k2 = k2.upper, bp = bp.upper, vBr = vBr.upper, vBt = vBt.upper)
 
-  if (!missing(vBr_fixed)) {
-    start[which(names(start) == "vBr")] <- vBr_fixed
-    lower[which(names(lower) == "vBr")] <- vBr_fixed
-    upper[which(names(upper) == "vBr")] <- vBr_fixed
+  vBr_fitted <- T
+  if (!is.null(vBr)) {
+    vBr_fitted <- F
+    start[which(names(start) == "vBr")] <- vBr
+    lower[which(names(lower) == "vBr")] <- vBr
+    upper[which(names(upper) == "vBr")] <- vBr
   }
 
   multstart_pars <- fix_multstartpars(
@@ -139,7 +164,8 @@ srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights, vBr_fixed, frameSta
   # Output
 
   tacs <- data.frame(
-    Time = t_tac, Reference = reftac, Blood = bloodtac, Target = roitac,
+    Time = modeldata$t_tac, Reference = modeldata$reftac,
+    Blood = modeldata$bloodtac, Target = modeldata$roitac,
     Target_fitted = as.numeric(fitted(output))
   )
 
@@ -153,6 +179,8 @@ srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights, vBr_fixed, frameSta
     fit = output, weights = weights, tacs = tacs,
     model = "srtm_v"
   )
+
+  class(out) <- c("srtm_v", "kinfit")
 
   return(out)
 }
@@ -174,7 +202,9 @@ srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights, vBr_fixed, frameSta
 #' @return A numeric vector of the predicted values of the TAC in the target region.
 #'
 #' @examples
+#' \dontrun{
 #' srtm_v_model(t_tac, reftac, R1=0.9, k2=0.1, bp=1.5, vBr=0.05, vBt=0.05)
+#' }
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -224,7 +254,32 @@ srtm_v_model <- function(t_tac, reftac, bloodtac, R1, k2, bp, vBr, vBt) {
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' plot_srtm_vfit(srtmvout)
+#' # Note: Reference region models should not be used for PBR28 - this is just
+#' # to demonstrate function
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' reftac <- pbr28$tacs[[1]]$CBL
+#' roitac <- pbr28$tacs[[1]]$STR
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' input <- pbr28$input[[meas]]
+
+#' newvals <- shift_timings(
+#'   t_tac,
+#'   roitac,
+#'   input,
+#'   inpshift=0
+#' )
+#'
+#' outtac <- pracma::interp1(interptime, i_outtac, t_tac)
+#'
+#' bloodtac <- pracma::interp1(newvals$input$Time, newvals$input$blood, t_tac)
+#'
+#' fit <- srtm_v(t_tac, reftac, roitac, bloodtac, weights)
+#'
+#' plot_srtm_vfit(fit)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -232,7 +287,7 @@ srtm_v_model <- function(t_tac, reftac, bloodtac, R1, k2, bp, vBr, vBt) {
 #'
 #' @export
 
-plot_srtm_vfit <- function(srtmvout, roiname, refname) {
+plot_srtm_vfit <- function(srtmvout, roiname = NULL, refname = NULL) {
   measured <- data.frame(
     Time = srtmvout$tacs$Time,
     Reference = srtmvout$tacs$Reference,
@@ -247,10 +302,10 @@ plot_srtm_vfit <- function(srtmvout, roiname, refname) {
     Weights = weights(srtmvout$fit)
   )
 
-  if (missing(roiname)) {
+  if (is.null(roiname)) {
     roiname <- "ROI"
   }
-  if (missing(refname)) {
+  if (is.null(refname)) {
     refname <- "Reference"
   }
 
@@ -284,7 +339,8 @@ plot_srtm_vfit <- function(srtmvout, roiname, refname) {
     geom_point(data = measured, aes(x = Time, y = Blood), colour = "black") +
     geom_line(data = measured, aes(x = Time, y = Blood), colour = "black") +
     guides(shape = FALSE, color = guide_legend(order = 1)) + colScale +
-    scale_size(range = c(1, 3))
+    scale_size(range = c(1, 3)) +
+    coord_cartesian(ylim = c(0, max(tidymeasured$Radioactivity) * 1.5))
 
   return(outplot)
 }

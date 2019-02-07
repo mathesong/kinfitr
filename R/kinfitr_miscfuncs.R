@@ -186,7 +186,7 @@ maxpercres <- function(outputobject) {
 #' @export
 
 tidyinput_ref <- function(t_tac, reftac, roitac, weights, frameStartEnd) {
-  if (missing(weights) == T) {
+  if (is.null(weights) == T) {
     weights <- rep(1, length(reftac))
   }
 
@@ -195,7 +195,7 @@ tidyinput_ref <- function(t_tac, reftac, roitac, weights, frameStartEnd) {
     stop("The lengths of t_tac, reftac, roitac and/or weights are not equal")
   }
 
-  if (!missing(frameStartEnd)) {
+  if (!is.null(frameStartEnd)) {
     t_tac <- t_tac[ frameStartEnd[1]:frameStartEnd[2] ]
     reftac <- reftac[ frameStartEnd[1]:frameStartEnd[2] ]
     roitac <- roitac[ frameStartEnd[1]:frameStartEnd[2] ]
@@ -247,7 +247,7 @@ tidyinput_ref <- function(t_tac, reftac, roitac, weights, frameStartEnd) {
 #' @export
 
 tidyinput_art <- function(t_tac, tac, weights, frameStartEnd) {
-  if (missing(weights)) {
+  if (is.null(weights)) {
     weights <- rep(1, length(tac))
   }
 
@@ -256,7 +256,7 @@ tidyinput_art <- function(t_tac, tac, weights, frameStartEnd) {
     stop("The lengths of t_tac, tac and/or weights are not equal")
   }
 
-  if (!missing(frameStartEnd)) {
+  if (!is.null(frameStartEnd)) {
     t_tac <- t_tac[ frameStartEnd[1]:frameStartEnd[2] ]
     tac <- tac[ frameStartEnd[1]:frameStartEnd[2] ]
     weights <- weights[ frameStartEnd[1]:frameStartEnd[2] ]
@@ -342,7 +342,7 @@ fix_multstartpars <- function(start, lower, upper, multstart_iter, multstart_low
     parnames <- names(start)
 
     ### Adding multstart boundaries
-    if (!missing(multstart_lower)) {
+    if (!is.null(multstart_lower)) {
       if (class(multstart_lower) != "list" ||
         sum(!(names(multstart_lower) %in% parnames)) > 0) { # Are there any names not in start?
         stop("multstart_lower should be a named list whose names match the parameters to be fitted")
@@ -353,7 +353,7 @@ fix_multstartpars <- function(start, lower, upper, multstart_iter, multstart_low
       multstart_lower <- multstart_l
     }
 
-    if (!missing(multstart_upper)) {
+    if (!is.null(multstart_upper)) {
       if (class(multstart_upper) != "list" ||
         sum(!(names(multstart_upper) %in% parnames)) > 0) { # Are there any names not in start?
         stop("multstart_upper should be a named list whose names match the parameters to be fitted")

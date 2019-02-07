@@ -29,7 +29,7 @@
 #'
 #' @export
 
-refPatlak <- function(t_tac, reftac, roitac, tstarIncludedFrames, weights, frameStartEnd) {
+refPatlak <- function(t_tac, reftac, roitac, tstarIncludedFrames, weights = NULL, frameStartEnd = NULL) {
 
 
   # Tidying
@@ -69,6 +69,8 @@ refPatlak <- function(t_tac, reftac, roitac, tstarIncludedFrames, weights, frame
     par = par, fit = fit, tacs = tacs, fitvals = fitvals, weights = weights,
     tstarIncludedFrames = tstarIncludedFrames, model = "refPatlak"
   )
+
+  class(out) <- c("refPatlak", "kinfit")
 
   return(out)
 }

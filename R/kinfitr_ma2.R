@@ -24,7 +24,19 @@
 #' the inpshift value used \code{inpshift} and the specified vB value \code{out$vB}.
 #'
 #' @examples
-#' ma2(t_tac, tac, input, weights, inpshift = onetcmout$par$inpshift)
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' tac <- pbr28$tacs[[1]]$FC
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' input <- blood_interp(
+#'   pbr28$blooddata[[1]]$Time/60 , pbr28$blooddata[[1]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[1]]$Time /60 , pbr28$blooddata[[1]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1 )
+#'
+#' fit1 <- ma2(t_tac, tac, input, weights)
+#' fit2 <- ma2(t_tac, tac, input, weights, inpshift = 0.1, vB=0.05)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -33,7 +45,7 @@
 #' @export
 
 
-ma2 <- function(t_tac, tac, input, weights, inpshift = 0, vB = 0, frameStartEnd) {
+ma2 <- function(t_tac, tac, input, weights=NULL, inpshift = 0, vB = 0, frameStartEnd=NULL) {
 
 
   # Tidying
@@ -126,6 +138,9 @@ ma2 <- function(t_tac, tac, input, weights, inpshift = 0, vB = 0, frameStartEnd)
     fitvals = fitvals, input = input, weights = weights,
     inpshift = inpshift, vB = vB, model = "ma2"
   )
+
+  class(out) <- c("ma2", "kinfit")
+
   return(out)
 }
 
@@ -140,7 +155,19 @@ ma2 <- function(t_tac, tac, input, weights, inpshift = 0, vB = 0, frameStartEnd)
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' plot_ma2fit(ma2out)
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' tac <- pbr28$tacs[[1]]$FC
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' input <- blood_interp(
+#'   pbr28$blooddata[[1]]$Time/60 , pbr28$blooddata[[1]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[1]]$Time /60 , pbr28$blooddata[[1]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1 )
+#'
+#' fit <- ma2(t_tac, tac, input, weights)
+#' plot_ma2fit(fit)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'

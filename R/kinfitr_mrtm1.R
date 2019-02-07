@@ -25,7 +25,17 @@
 #' a vector of the weights \code{out$weights}, and the specified tstarIncludedFrames value \code{out$tstarIncludedFrames}
 #'
 #' @examples
-#' mrtm1(t_tac, reftac, roitac, weights=weights)
+#' # Note: Reference region models should not be used for PBR28 - this is just
+#' # to demonstrate function
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' reftac <- pbr28$tacs[[1]]$CBL
+#' roitac <- pbr28$tacs[[1]]$STR
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' fit <- mrtm1(t_tac, reftac, roitac, weights=weights)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -33,7 +43,7 @@
 #'
 #' @export
 
-mrtm1 <- function(t_tac, reftac, roitac, weights, tstarIncludedFrames, frameStartEnd) {
+mrtm1 <- function(t_tac, reftac, roitac, weights=NULL, tstarIncludedFrames=NULL, frameStartEnd=NULL) {
 
   # Tidying
 
@@ -44,7 +54,13 @@ mrtm1 <- function(t_tac, reftac, roitac, weights, tstarIncludedFrames, frameStar
   roitac <- tidyinput$roitac
   weights <- tidyinput$weights
 
-  if (missing(tstarIncludedFrames) == T) {
+  if (is.null(tstarIncludedFrames)) {
+    tstarIncludedFrames <- length(reftac)
+  }
+
+  if(tstarIncludedFrames > length(reftac)) {
+    warning("tstarIncludedFrames is greater than the number of frames.
+            Setting it to include all the frames.")
     tstarIncludedFrames <- length(reftac)
   }
 
@@ -60,7 +76,7 @@ mrtm1 <- function(t_tac, reftac, roitac, weights, tstarIncludedFrames, frameStar
     Term1 = term1, Term2 = term2, Term3 = term3
   )
 
-  if (is.null(tstarIncludedFrames) != T) {
+  if (!is.null(tstarIncludedFrames)) {
     equil <- rep("Before", length(roitac))
     equil[(length(equil) - tstarIncludedFrames + 1):length(equil)] <- "After"
   } else {
@@ -95,6 +111,8 @@ mrtm1 <- function(t_tac, reftac, roitac, weights, tstarIncludedFrames, frameStar
     tstarIncludedFrames = tstarIncludedFrames, model = "mrtm1"
   )
 
+  class(out) <- c("mrtm1", "kinfit")
+
   return(out)
 }
 
@@ -109,7 +127,19 @@ mrtm1 <- function(t_tac, reftac, roitac, weights, tstarIncludedFrames, frameStar
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' plot_mrtm1fit(mrtm1out)
+#' # Note: Reference region models should not be used for PBR28 - this is just
+#' # to demonstrate function
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[1]]$Times/60
+#' reftac <- pbr28$tacs[[1]]$CBL
+#' roitac <- pbr28$tacs[[1]]$STR
+#' weights <- pbr28$tacs[[1]]$Weights
+#'
+#' fit <- mrtm1(t_tac, reftac, roitac, weights=weights)
+#'
+#' plot_mrtm1fit(fit)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -193,7 +223,9 @@ plot_mrtm1fit <- function(mrtm1out, roiname = NULL, refname = NULL) {
 #' @return Saves a jpeg of the plots as filename_mrtm1.jpeg
 #'
 #' @examples
+#' \dontrun{
 #' mrtm1_tstar(t_tac, reftac, taclow, tacmed, tachigh, 'demonstration')
+#' }
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
