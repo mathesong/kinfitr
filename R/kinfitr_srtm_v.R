@@ -64,17 +64,17 @@
 #'
 #' @examples
 #'
-#' # Note: Reference region models should not be used for PBR28 - this is just
-#' # to demonstrate function
+#' # Note: Reference region models, and irreversible binding models, should not
+#' # be used for PBR28 - this is just to demonstrate function
 #'
 #' data(pbr28)
 #'
-#' t_tac <- pbr28$tacs[[1]]$Times/60
-#' reftac <- pbr28$tacs[[1]]$CBL
-#' roitac <- pbr28$tacs[[1]]$STR
-#' weights <- pbr28$tacs[[1]]$Weights
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' reftac <- pbr28$tacs[[2]]$CBL
+#' roitac <- pbr28$tacs[[2]]$STR
+#' weights <- pbr28$tacs[[2]]$Weights
 #'
-#' input <- pbr28$input[[meas]]
+#' input <- pbr28$input[[2]]
 
 #' newvals <- shift_timings(
 #'   t_tac,
@@ -82,8 +82,6 @@
 #'   input,
 #'   inpshift=0
 #' )
-#'
-#' outtac <- pracma::interp1(interptime, i_outtac, t_tac)
 #'
 #' bloodtac <- pracma::interp1(newvals$input$Time, newvals$input$blood, t_tac)
 #'
@@ -176,7 +174,7 @@ srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights = NULL, vBr = NULL, 
 
   out <- list(
     par = par, par.se = par.se,
-    fit = output, weights = weights, tacs = tacs,
+    fit = output, weights = modeldata$weights, tacs = tacs,
     model = "srtm_v"
   )
 
@@ -254,17 +252,17 @@ srtm_v_model <- function(t_tac, reftac, bloodtac, R1, k2, bp, vBr, vBt) {
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' # Note: Reference region models should not be used for PBR28 - this is just
-#' # to demonstrate function
+#' # Note: Reference region models, and irreversible binding models, should not
+#' # be used for PBR28 - this is just to demonstrate function
 #'
 #' data(pbr28)
 #'
-#' t_tac <- pbr28$tacs[[1]]$Times/60
-#' reftac <- pbr28$tacs[[1]]$CBL
-#' roitac <- pbr28$tacs[[1]]$STR
-#' weights <- pbr28$tacs[[1]]$Weights
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' reftac <- pbr28$tacs[[2]]$CBL
+#' roitac <- pbr28$tacs[[2]]$STR
+#' weights <- pbr28$tacs[[2]]$Weights
 #'
-#' input <- pbr28$input[[meas]]
+#' input <- pbr28$input[[2]]
 
 #' newvals <- shift_timings(
 #'   t_tac,
@@ -272,8 +270,6 @@ srtm_v_model <- function(t_tac, reftac, bloodtac, R1, k2, bp, vBr, vBt) {
 #'   input,
 #'   inpshift=0
 #' )
-#'
-#' outtac <- pracma::interp1(interptime, i_outtac, t_tac)
 #'
 #' bloodtac <- pracma::interp1(newvals$input$Time, newvals$input$blood, t_tac)
 #'

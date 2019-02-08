@@ -172,7 +172,7 @@ test_that("srtm_v works", {
 })
 
 test_that("srtm_v works with frameStartEnd", {
-  srtm_v(t_tac, reftac, roitac, bloodtac, weights=weights,
+  srtm_vout <- srtm_v(t_tac, reftac, roitac, bloodtac, weights=weights,
                   frameStartEnd = c(1,33))
   expect_gt(srtm_vout$par$bp, -1)
   expect_lt(srtm_vout$par$bp, 0.5)
@@ -180,15 +180,22 @@ test_that("srtm_v works with frameStartEnd", {
 })
 
 test_that("srtm_v works with multstart", {
-  srtm_v(t_tac, reftac, roitac, bloodtac, weights=weights, multstart_iter = 5)
+  srtm_vout <- srtm_v(t_tac, reftac, roitac, bloodtac,
+                      weights=weights,
+                      multstart_iter = 5,
+                      multstart_upper = list(bp=0.2),
+                      multstart_lower = list(bp=-0.2))
   expect_gt(srtm_vout$par$bp, -1)
   expect_lt(srtm_vout$par$bp, 0.5)
   expect_true( any(class(plot(srtm_vout))=="ggplot") )
 })
 
 test_that("srtm_v works with frameStartEnd and multstart", {
-  srtm_v(t_tac, reftac, roitac, bloodtac, weights=weights,
-                  frameStartEnd = c(1,33), multstart_iter = 5)
+  srtm_vout <- srtm_v(t_tac, reftac, roitac, bloodtac, weights=weights,
+                  frameStartEnd = c(1,33),
+                  multstart_iter = 5,
+                  multstart_upper = list(bp=0.2),
+                  multstart_lower = list(bp=-0.2))
   expect_gt(srtm_vout$par$bp, -1)
   expect_lt(srtm_vout$par$bp, 0.5)
   expect_true( any(class(plot(srtm_vout))=="ggplot") )

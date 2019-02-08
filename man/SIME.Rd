@@ -4,10 +4,11 @@
 \alias{SIME}
 \title{Simultaneous Estimation of Non-Displaceable Binding (SIME)}
 \usage{
-SIME(t_tac, tacdf, input, Vndgrid, weights, roiweights, inpshift = 0, vB,
-  twotcmstart, frameStartEnd, k2.start = 0.1, k2.lower = 0,
-  k2.upper = 0.5, k3.start = 0.1, k3.lower = 0, k3.upper = 0.5,
-  k4.start = 0.1, k4.lower = 0, k4.upper = 0.5)
+SIME(t_tac, tacdf, input, Vndgrid, weights = NULL, roiweights = NULL,
+  inpshift = 0, vB = NULL, twotcmstart = NULL, frameStartEnd = NULL,
+  k2.start = 0.1, k2.lower = 0, k2.upper = 0.5, k3.start = 0.1,
+  k3.lower = 0, k3.upper = 0.5, k4.start = 0.1, k4.lower = 0,
+  k4.upper = 0.5)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
@@ -17,6 +18,8 @@ zero. If a time zero frame is not included, it will be added.}
 
 \item{input}{Data frame containing the blood, plasma, and parent fraction concentrations over time.  This can be generated
 using the \code{blood_interp} function.}
+
+\item{Vndgrid}{The grid of Vnd values which will be tested to see which one has the best fit.}
 
 \item{weights}{Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
 if not included, it is added. If not specified, uniform weights will be used.}
@@ -64,9 +67,20 @@ a vector of the ROI weights \code{out$roiweights}, the inpshift value used \code
 Function to fit the SIME Model of Ogden et al (2015) to data to estimate Vnd for a set of TACs.
 }
 \examples{
-Vndgrid <- seq(from=0, to=5, by=0.1)
+data(pbr28)
+
+t_tac <- pbr28$tacs[[2]]$Times/60
+tacdf <- dplyr::select(pbr28$tacs[[2]], FC:CBL)
+weights <- pbr28$tacs[[2]]$Weights
+
+input <- blood_interp(
+  pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
+  pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+  t_parentfrac = 1, parentfrac = 1 )
+
+Vndgrid <- seq(from=0, to=3, by=0.5)
 SIMEout <-  SIME(t_tac, tacdf, input, Vndgrid, weights = weights,
-                 inpshift = onetcmout$par$inpshift, vB = onetcmout$par$vB)
+                 inpshift = 0.1, vB = 0.05)
 
 }
 \references{

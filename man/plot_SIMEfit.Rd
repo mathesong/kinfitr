@@ -22,7 +22,9 @@ one ROI shows a completely different pattern from the rest of the ROIs.
 Function to visualise the fit of the SIME Model to data.
 }
 \examples{
+\dontrun{
 plot_SIMEfit(SIMEout)
+}
 
 }
 \author{

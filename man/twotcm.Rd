@@ -4,13 +4,14 @@
 \alias{twotcm}
 \title{Two Tissue Compartment Model}
 \usage{
-twotcm(t_tac, tac, input, weights, inpshift, vB, frameStartEnd,
-  K1.start = 0.1, K1.lower = 1e-04, K1.upper = 0.5, k2.start = 0.1,
-  k2.lower = 1e-04, k2.upper = 0.5, k3.start = 0.1, k3.lower = 1e-04,
-  k3.upper = 0.5, k4.start = 0.1, k4.lower = 1e-04, k4.upper = 0.5,
-  inpshift.start = 0, inpshift.lower = -0.5, inpshift.upper = 0.5,
-  vB.start = 0.05, vB.lower = 0.01, vB.upper = 0.1, multstart_iter = 1,
-  multstart_lower, multstart_upper, printvals = F)
+twotcm(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL,
+  frameStartEnd = NULL, K1.start = 0.1, K1.lower = 1e-04,
+  K1.upper = 0.5, k2.start = 0.1, k2.lower = 1e-04, k2.upper = 0.5,
+  k3.start = 0.1, k3.lower = 1e-04, k3.upper = 0.5, k4.start = 0.1,
+  k4.lower = 1e-04, k4.upper = 0.5, inpshift.start = 0,
+  inpshift.lower = -0.5, inpshift.upper = 0.5, vB.start = 0.05,
+  vB.lower = 0.01, vB.upper = 0.1, multstart_iter = 1,
+  multstart_lower = NULL, multstart_upper = NULL, printvals = F)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
@@ -101,8 +102,19 @@ Function to fit the Two Tissue Compartment Model to data. An irreversible model 
 starting value, upper and lower bounds of k4 to 0.
 }
 \examples{
-twotcm(t_tac, tac, input, weights=weights)
-twotcm(t_tac, tac, input, weights=weights, inpshift=0.1, vB=0.05)
+data(pbr28)
+
+t_tac <- pbr28$tacs[[2]]$Times/60
+tac <- pbr28$tacs[[2]]$FC
+weights <- pbr28$tacs[[2]]$Weights
+
+input <- blood_interp(
+  pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
+  pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+  t_parentfrac = 1, parentfrac = 1 )
+
+fit1 <- twotcm(t_tac, tac, input, weights)
+fit2 <- twotcm(t_tac, tac, input, weights, inpshift=0.1, vB=0.05)
 
 }
 \author{

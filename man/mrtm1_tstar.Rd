@@ -30,7 +30,9 @@ Function to identify where t* is for MRTM1. Remember that this is unnecessary if
 tissue compartment model (like SRTM).
 }
 \examples{
+\dontrun{
 mrtm1_tstar(t_tac, reftac, taclow, tacmed, tachigh, 'demonstration')
+}
 
 }
 \author{

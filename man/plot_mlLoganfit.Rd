@@ -4,12 +4,12 @@
 \alias{plot_mlLoganfit}
 \title{Plot: Multilinear Logan Plot}
 \usage{
-plot_mlLoganfit(loganout, roiname = NULL)
+plot_mlLoganfit(mlloganout, roiname = NULL)
 }
 \arguments{
-\item{roiname}{Optional. The name of the Target Region to see it on the plot.}
-
 \item{mlloganout}{The output object of the multilinear Logan Plot fitting procedure.}
+
+\item{roiname}{Optional. The name of the Target Region to see it on the plot.}
 }
 \value{
 A ggplot2 object of the plot.
@@ -18,7 +18,19 @@ A ggplot2 object of the plot.
 Function to visualise the fit of the multilinear Logan Plot model to data.
 }
 \examples{
-plot_mlLoganfit(mlloganoutout)
+data(pbr28)
+
+t_tac <- pbr28$tacs[[2]]$Times/60
+tac <- pbr28$tacs[[2]]$FC
+weights <- pbr28$tacs[[2]]$Weights
+
+input <- blood_interp(
+  pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
+  pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+  t_parentfrac = 1, parentfrac = 1 )
+
+fit <- mlLoganplot(t_tac, tac, input, 10, weights)
+plot_mlLoganfit(fit)
 
 }
 \author{

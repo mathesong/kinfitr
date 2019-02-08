@@ -26,13 +26,13 @@
 #' @examples
 #' data(pbr28)
 #'
-#' t_tac <- pbr28$tacs[[1]]$Times/60
-#' tac <- pbr28$tacs[[1]]$FC
-#' weights <- pbr28$tacs[[1]]$Weights
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' tac <- pbr28$tacs[[2]]$FC
+#' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' input <- blood_interp(
-#'   pbr28$blooddata[[1]]$Time/60 , pbr28$blooddata[[1]]$Cbl_dispcorr,
-#'   pbr28$blooddata[[1]]$Time /60 , pbr28$blooddata[[1]]$Cpl_metabcorr,
+#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1 )
 #'
 #' fit1 <- ma2(t_tac, tac, input, weights)
@@ -157,13 +157,13 @@ ma2 <- function(t_tac, tac, input, weights=NULL, inpshift = 0, vB = 0, frameStar
 #' @examples
 #' data(pbr28)
 #'
-#' t_tac <- pbr28$tacs[[1]]$Times/60
-#' tac <- pbr28$tacs[[1]]$FC
-#' weights <- pbr28$tacs[[1]]$Weights
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' tac <- pbr28$tacs[[2]]$FC
+#' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' input <- blood_interp(
-#'   pbr28$blooddata[[1]]$Time/60 , pbr28$blooddata[[1]]$Cbl_dispcorr,
-#'   pbr28$blooddata[[1]]$Time /60 , pbr28$blooddata[[1]]$Cpl_metabcorr,
+#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1 )
 #'
 #' fit <- ma2(t_tac, tac, input, weights)

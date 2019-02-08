@@ -22,11 +22,21 @@ for each model based on the output of the model.
 This function uses the \code{out$model} name to call the correct function to plot the model fit.
 }
 \examples{
-loganout <- Loganplot(t_tac, tac, input, 10, weights)
-plot_kinfit(loganout)
 
-srtmout <- srtm(t_tac, reftac, roitac)
-plot_kinfit(srtmout, roiname = 'Putamen', refname = 'Cerebellum')
+data(pbr28)
+
+t_tac <- pbr28$tacs[[2]]$Times/60
+tac <- pbr28$tacs[[2]]$FC
+weights <- pbr28$tacs[[2]]$Weights
+
+input <- blood_interp(
+  pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
+  pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+  t_parentfrac = 1, parentfrac = 1 )
+
+fit <- ma1(t_tac, tac, input, 10, weights)
+
+plot_kinfit(fit, roiname = 'FC')
 
 }
 \author{

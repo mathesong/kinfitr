@@ -7,6 +7,7 @@
 #' @param tacdf Named dataframe of TACs in wide format, i.e. each TAC should be a column.
 #' @param input Data frame containing the blood, plasma, and parent fraction concentrations over time.  This can be generated
 #' using the \code{blood_interp} function.
+#' @param Vndgrid The grid of Vnd values which will be tested to see which one has the best fit.
 #' @param weights Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
 #' if not included, it is added. If not specified, uniform weights will be used.
 #' @param roiweights Optional. Numeric vector of the weights assigned to each ROI in the fitting. If not specified, uniform weights
@@ -38,13 +39,13 @@
 #' @examples
 #' data(pbr28)
 #'
-#' t_tac <- pbr28$tacs[[1]]$Times/60
-#' tacdf <- dplyr::select(pbr28$tacs[[1]], FC:CBL)
-#' weights <- pbr28$tacs[[1]]$Weights
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' tacdf <- dplyr::select(pbr28$tacs[[2]], FC:CBL)
+#' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' input <- blood_interp(
-#'   pbr28$blooddata[[1]]$Time/60 , pbr28$blooddata[[1]]$Cbl_dispcorr,
-#'   pbr28$blooddata[[1]]$Time /60 , pbr28$blooddata[[1]]$Cpl_metabcorr,
+#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1 )
 #'
 #' Vndgrid <- seq(from=0, to=3, by=0.5)

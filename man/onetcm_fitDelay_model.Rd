@@ -28,7 +28,9 @@ This is the One Tissue Compartment Model model itself by which predicted values 
 delay, inpshift.
 }
 \examples{
+\dontrun{
 onetcm_fitDelay_model(t_tac, input, K1=0.1, k2=0.08, inpshift = 0.1, vB=0.05)
+}
 
 }
 \author{

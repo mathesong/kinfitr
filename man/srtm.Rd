@@ -4,10 +4,11 @@
 \alias{srtm}
 \title{Simplified Reference Tissue Model}
 \usage{
-srtm(t_tac, reftac, roitac, weights, frameStartEnd, R1.start = 1,
-  R1.lower = 0, R1.upper = 10, k2.start = 0.1, k2.lower = 0,
-  k2.upper = 1, bp.start = 1.5, bp.lower = -10, bp.upper = 15,
-  multstart_iter = 1, multstart_lower, multstart_upper, printvals = F)
+srtm(t_tac, reftac, roitac, weights = NULL, frameStartEnd = NULL,
+  R1.start = 1, R1.lower = 0, R1.upper = 10, k2.start = 0.1,
+  k2.lower = 0, k2.upper = 1, bp.start = 1.5, bp.lower = -10,
+  bp.upper = 15, multstart_iter = 1, multstart_lower = NULL,
+  multstart_upper = NULL, printvals = F)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
@@ -69,8 +70,19 @@ values \code{out$tacs}.
 Function to fit the SRTM model of Lammertsma and Hume (1996) to data.
 }
 \examples{
-srtm(t_tac, reftac, roitac)
-srtm(t_tac, reftac, roitac, weights, frameStartEnd = c(1,11), bp.upper=1)
+
+# Note: Reference region models, and irreversible binding models, should not
+# be used for PBR28 - this is just to demonstrate function
+
+data(pbr28)
+
+t_tac <- pbr28$tacs[[2]]$Times/60
+reftac <- pbr28$tacs[[2]]$CBL
+roitac <- pbr28$tacs[[2]]$STR
+weights <- pbr28$tacs[[2]]$Weights
+
+fit1 <- srtm(t_tac, reftac, roitac)
+fit2 <- srtm(t_tac, reftac, roitac, weights, frameStartEnd = c(1,33))
 
 }
 \references{

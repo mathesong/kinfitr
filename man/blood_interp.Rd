@@ -41,12 +41,14 @@ Function to interpolate the blood, plasma and parent fraction data in order to c
 \code{input} object for use with models requiring arterial input functions.
 }
 \examples{
+\dontrun{
 input <- blood_interp(t_blood = blooddata$Time.sec./60,
            blood = blooddata$Cbl.nCi.cc.,
            t_plasma = plasmadata$Time.sec./60,
            plasma = plasmadata$Cpl.nCi.cc.,
            t_parentfrac = parentdata$Times/60,
            parentfrac = parentdata$Fraction)
+}
 
 }
 \author{

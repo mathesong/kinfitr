@@ -4,8 +4,8 @@
 \alias{refmlLogan}
 \title{Non-Invasive Multilinear Logan Plot}
 \usage{
-refmlLogan(t_tac, reftac, roitac, k2prime, tstarIncludedFrames, weights,
-  frameStartEnd)
+refmlLogan(t_tac, reftac, roitac, k2prime, tstarIncludedFrames,
+  weights = NULL, frameStartEnd = NULL)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
@@ -40,7 +40,17 @@ tstarIncludedFrames value \code{out$tstarIncludedFrames}
 Function to fit the non-invasive modification of the multilinear Logan plot model of Turkheimer et al. (2003) to data.
 }
 \examples{
-refmlLogan(t_tac, reftac, roitac, k2prime=0.1, tstarIncludedFrames=10, weights=weights)
+# Note: Reference region models, and irreversible binding models, should not
+# be used for PBR28 - this is just to demonstrate function
+
+data(pbr28)
+
+t_tac <- pbr28$tacs[[2]]$Times/60
+reftac <- pbr28$tacs[[2]]$CBL
+roitac <- pbr28$tacs[[2]]$STR
+weights <- pbr28$tacs[[2]]$Weights
+
+fit <- refmlLogan(t_tac, reftac, roitac, k2prime=0.1, tstarIncludedFrames=10, weights=weights)
 
 }
 \references{

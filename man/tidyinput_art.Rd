@@ -29,7 +29,14 @@ adjusting for delay iv) adds a zero frame if there is not one, and v) checks tha
 times are in minutes and not in seconds.
 }
 \examples{
-tidyinput_art(t_tac, tac, weights)
+
+data(pbr28)
+
+t_tac <- pbr28$tacs[[2]]$Times/60
+tac <- pbr28$tacs[[2]]$STR
+weights <- pbr28$tacs[[2]]$Weights
+
+tidyinput_art(t_tac, tac, weights, frameStartEnd=c(1,10))
 
 }
 \author{

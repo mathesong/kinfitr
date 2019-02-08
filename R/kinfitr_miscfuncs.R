@@ -107,7 +107,18 @@ plot_fitfunc <- function(ymeasured, xmeasured, fitfunction, parameters) {
 #' @return A ggplot2 object of the residual plot
 #'
 #' @examples
+#' # Note: Reference region models, and irreversible binding models, should not
+#' # be used for PBR28 - this is just to demonstrate function
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' reftac <- pbr28$tacs[[2]]$CBL
+#' roitac <- pbr28$tacs[[2]]$STR
+#' weights <- pbr28$tacs[[2]]$Weights
+#'
 #' srtmout <- srtm(t_tac, reftac, roitac)
+#'
 #' plot_residuals(srtmout)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
@@ -146,7 +157,19 @@ plot_residuals <- function(outputobject) {
 #' @return The maximum percentage of the fitted value of a residual in the fit.
 #'
 #' @examples
-#' refloganout <- refLogan(times, reftac, roitac, k2prime, tstarIncludedFrames = 9, weights=weights)
+#'
+#' # Note: Reference region models, and irreversible binding models, should not
+#' # be used for PBR28 - this is just to demonstrate function
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' reftac <- pbr28$tacs[[2]]$CBL
+#' roitac <- pbr28$tacs[[2]]$STR
+#' weights <- pbr28$tacs[[2]]$Weights
+#'
+#' refloganout <- refLogan(t_tac, reftac, roitac, 0.1, tstarIncludedFrames = 9)
+#'
 #' maxpercres(refloganout)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
@@ -179,7 +202,18 @@ maxpercres <- function(outputobject) {
 #' times are in minutes and not in seconds.
 #'
 #' @examples
-#' tidyinput_ref(t_tac, reftac, roitac, weights)
+#'
+#' #' # Note: Reference region models, and irreversible binding models, should not
+#' # be used for PBR28 - this is just to demonstrate function
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' reftac <- pbr28$tacs[[2]]$CBL
+#' roitac <- pbr28$tacs[[2]]$STR
+#' weights <- pbr28$tacs[[2]]$Weights
+#'
+#' tidyinput_ref(t_tac, reftac, roitac, weights, frameStartEnd=c(1,10))
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -240,7 +274,14 @@ tidyinput_ref <- function(t_tac, reftac, roitac, weights, frameStartEnd) {
 #' times are in minutes and not in seconds.
 #'
 #' @examples
-#' tidyinput_art(t_tac, tac, weights)
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' tac <- pbr28$tacs[[2]]$STR
+#' weights <- pbr28$tacs[[2]]$Weights
+#'
+#' tidyinput_art(t_tac, tac, weights, frameStartEnd=c(1,10))
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -297,11 +338,21 @@ tidyinput_art <- function(t_tac, tac, weights, frameStartEnd) {
 #' @details This function uses the \code{out$model} name to call the correct function to plot the model fit.
 #'
 #' @examples
-#' loganout <- Loganplot(t_tac, tac, input, 10, weights)
-#' plot_kinfit(loganout)
 #'
-#' srtmout <- srtm(t_tac, reftac, roitac)
-#' plot_kinfit(srtmout, roiname = 'Putamen', refname = 'Cerebellum')
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' tac <- pbr28$tacs[[2]]$FC
+#' weights <- pbr28$tacs[[2]]$Weights
+#'
+#' input <- blood_interp(
+#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1 )
+#'
+#' fit <- ma1(t_tac, tac, input, 10, weights)
+#'
+#' plot_kinfit(fit, roiname = 'FC')
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -327,10 +378,17 @@ plot_kinfit <- function(modelout, ...) {
 #' @param multstart_lower Lower starting bounds
 #' @param multstart_upper Upper starting bounds
 #'
-#' @return A list containing the
+#' @return A list containing the parameters
 #' @export
 #'
 #' @examples
+#' start <- list(a = 1, b = 2, c = 3)
+#' upper <- lapply(start, function(x) x+1)
+#' lower <- lapply(start, function(x) x-1)
+#' multstart_iter <- 5
+#'
+#' multstart_lower <- NULL
+#' multstart_upper <- NULL
 #'
 #' fix_multstartpars(start, lower, upper, multstart_iter, multstart_lower, multstart_upper)
 #'

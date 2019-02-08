@@ -41,18 +41,18 @@
 #'
 #' @examples
 #'
-#' # Note: Reference region models should not be used for PBR28 - this is just
-#' # to demonstrate function
+#' # Note: Reference region models, and irreversible binding models, should not
+#' # be used for PBR28 - this is just to demonstrate function
 #'
 #' data(pbr28)
 #'
-#' t_tac <- pbr28$tacs[[1]]$Times/60
-#' reftac <- pbr28$tacs[[1]]$CBL
-#' roitac <- pbr28$tacs[[1]]$STR
-#' weights <- pbr28$tacs[[1]]$Weights
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' reftac <- pbr28$tacs[[2]]$CBL
+#' roitac <- pbr28$tacs[[2]]$STR
+#' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' fit1 <- srtm(t_tac, reftac, roitac)
-#' fit2 <- srtm(t_tac, reftac, roitac, weights, frameStartEnd = c(1,30), bp.upper=1)
+#' fit2 <- srtm(t_tac, reftac, roitac, weights, frameStartEnd = c(1,33))
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -126,7 +126,7 @@ srtm <- function(t_tac, reftac, roitac, weights = NULL, frameStartEnd = NULL,
 
   out <- list(
     par = par, par.se = par.se,
-    fit = output, weights = weights, tacs = tacs,
+    fit = output, weights = modeldata$weights, tacs = tacs,
     model = "srtm"
   )
 
@@ -191,15 +191,15 @@ srtm_model <- function(t_tac, reftac, R1, k2, bp) {
 #'
 #' @examples
 #'
-#' #' # Note: Reference region models should not be used for PBR28 - this is just
-#' # to demonstrate function
+#' #' # Note: Reference region models, and irreversible binding models, should not
+#' # be used for PBR28 - this is just to demonstrate function
 #'
 #' data(pbr28)
 #'
-#' t_tac <- pbr28$tacs[[1]]$Times/60
-#' reftac <- pbr28$tacs[[1]]$CBL
-#' roitac <- pbr28$tacs[[1]]$STR
-#' weights <- pbr28$tacs[[1]]$Weights
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' reftac <- pbr28$tacs[[2]]$CBL
+#' roitac <- pbr28$tacs[[2]]$STR
+#' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' fit <- srtm(t_tac, reftac, roitac)
 #'

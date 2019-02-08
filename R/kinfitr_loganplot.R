@@ -31,13 +31,13 @@
 #'
 #' data(pbr28)
 #'
-#' t_tac <- pbr28$tacs[[1]]$Times/60
-#' tac <- pbr28$tacs[[1]]$FC
-#' weights <- pbr28$tacs[[1]]$Weights
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' tac <- pbr28$tacs[[2]]$FC
+#' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' input <- blood_interp(
-#'   pbr28$blooddata[[1]]$Time/60 , pbr28$blooddata[[1]]$Cbl_dispcorr,
-#'   pbr28$blooddata[[1]]$Time /60 , pbr28$blooddata[[1]]$Cpl_metabcorr,
+#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1 )
 #'
 #' fit1 <- Loganplot(t_tac, tac, input, 10, weights)
@@ -142,13 +142,13 @@ Loganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights=NULL,
 #'
 #' data(pbr28)
 #'
-#' t_tac <- pbr28$tacs[[1]]$Times/60
-#' tac <- pbr28$tacs[[1]]$FC
-#' weights <- pbr28$tacs[[1]]$Weights
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' tac <- pbr28$tacs[[2]]$FC
+#' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' input <- blood_interp(
-#'   pbr28$blooddata[[1]]$Time/60 , pbr28$blooddata[[1]]$Cbl_dispcorr,
-#'   pbr28$blooddata[[1]]$Time /60 , pbr28$blooddata[[1]]$Cpl_metabcorr,
+#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1 )
 #'
 #' fit <- Loganplot(t_tac, tac, input, 10, weights)
@@ -201,28 +201,37 @@ plot_Loganfit <- function(loganout, roiname = NULL) {
 #' Function to identify where t* is for the Logan Plot.
 #'
 #'
-#' @param t_tac Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
-#' zero. If a time zero frame is not included, it will be added.
-#' @param lowroi Numeric vector of radioactivity concentrations in a target tissue for each frame. This should be from a ROI with low binding.
-#' @param medroi Numeric vector of radioactivity concentrations in a target tissue for each frame. This should be from a ROI with medium binding.
-#' @param highroi Numeric vector of radioactivity concentrations in a target tissue for each frame. This should be from a ROI with high binding.
-#' @param input Data frame containing the blood, plasma, and parent fraction concentrations over time.  This can be generated
-#' using the \code{blood_interp} function.
+#' @param t_tac Numeric vector of times for each frame in minutes. We use the
+#'   time halfway through the frame as well as a zero. If a time zero frame is
+#'   not included, it will be added.
+#' @param lowroi Numeric vector of radioactivity concentrations in a target
+#'   tissue for each frame. This should be from a ROI with low binding.
+#' @param medroi Numeric vector of radioactivity concentrations in a target
+#'   tissue for each frame. This should be from a ROI with medium binding.
+#' @param highroi Numeric vector of radioactivity concentrations in a target
+#'   tissue for each frame. This should be from a ROI with high binding.
+#' @param input Data frame containing the blood, plasma, and parent fraction
+#'   concentrations over time.  This can be generated using the
+#'   \code{blood_interp} function.
 #' @param filename The name of the output image: filename_Logan.jpeg
-#' @param inpshift Optional. The number of minutes by which to shift the timing of the input data frame forwards or backwards.
-#' If not specified, this will be set to 0. This can be fitted using 1TCM or 2TCM.
-#' @param vB Optional. The blood volume fraction.  If not specified, this will be ignored and assumed to be 0%. If specified, it
-#' will be corrected for prior to parameter estimation using the following equation:
-#' \deqn{C_{T}(t) = \frac{C_{Measured}(t) - vB\times C_{B}(t)}{1-vB}}
-#' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
-#' This is to assess time stability.
+#' @param inpshift Optional. The number of minutes by which to shift the timing
+#'   of the input data frame forwards or backwards. If not specified, this will
+#'   be set to 0. This can be fitted using 1TCM or 2TCM.
+#' @param vB Optional. The blood volume fraction.  If not specified, this will
+#'   be ignored and assumed to be 0%. If specified, it will be corrected for
+#'   prior to parameter estimation using the following equation: \deqn{C_{T}(t)
+#'   = \frac{C_{Measured}(t) - vB\times C_{B}(t)}{1-vB}}
+#' @param frameStartEnd Optional: This allows one to specify the beginning and
+#'   final frame to use for modelling, e.g. c(1,20). This is to assess time
+#'   stability.
 #' @param gridbreaks Optional. The size of the grid in the plots. Default: 2.
 #'
 #' @return Saves a jpeg of the plots as filename_Logan.jpeg
 #'
 #' @examples
 #' \dontrun{
-#' Logan_tstar(t_tac, lowroi, medroi, highroi, input, filename='demonstration', inpshift = onetcmout$par$inpshift, vB = 0.05, gridbreaks=4)
+#' Logan_tstar(t_tac, lowroi, medroi, highroi, input, filename='demonstration',
+#'             inpshift = onetcmout$par$inpshift, vB = 0.05, gridbreaks=4)
 #' }
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}

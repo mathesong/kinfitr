@@ -4,7 +4,7 @@
 \alias{plot_2tcm1kfit}
 \title{Plot: Two Tissue Compartment Model with Irreversible Trapping}
 \usage{
-plot_2tcm1kfit(twotcm1kout, roiname)
+plot_2tcm1kfit(twotcm1kout, roiname = NULL)
 }
 \arguments{
 \item{twotcm1kout}{The output object of the 2TCM1k fitting procedure.}
@@ -18,7 +18,21 @@ A ggplot2 object of the plot.
 Function to visualise the fit of the Two Tissue Compartment Model with Irreversible Trapping to data.
 }
 \examples{
-plot_2tcm1kfit(twotcm1kout)
+
+data(pbr28)
+
+t_tac <- pbr28$tacs[[2]]$Times/60
+tac <- pbr28$tacs[[2]]$FC
+weights <- pbr28$tacs[[2]]$Weights
+
+input <- blood_interp(
+  pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
+  pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+  t_parentfrac = 1, parentfrac = 1 )
+
+fit <- twotcm1k(t_tac, tac, input, weights)
+
+plot_2tcm1kfit(fit)
 
 }
 \references{

@@ -24,15 +24,15 @@
 #' tstarIncludedFrames value \code{out$tstarIncludedFrames}
 #'
 #' @examples
-#' # Note: Reference region models should not be used for PBR28 - this is just
-#' # to demonstrate function
+#' # Note: Reference region models, and irreversible binding models, should not
+#' # be used for PBR28 - this is just to demonstrate function
 #'
 #' data(pbr28)
 #'
-#' t_tac <- pbr28$tacs[[1]]$Times/60
-#' reftac <- pbr28$tacs[[1]]$CBL
-#' roitac <- pbr28$tacs[[1]]$STR
-#' weights <- pbr28$tacs[[1]]$Weights
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' reftac <- pbr28$tacs[[2]]$CBL
+#' roitac <- pbr28$tacs[[2]]$STR
+#' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' fit <- refmlLogan(t_tac, reftac, roitac, k2prime=0.1, tstarIncludedFrames=10, weights=weights)
 #'
@@ -114,7 +114,19 @@ refmlLogan <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames, weig
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' plot_refmlLoganfit(refmlloganoutout)
+#' # Note: Reference region models, and irreversible binding models, should not
+#' # be used for PBR28 - this is just to demonstrate function
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' reftac <- pbr28$tacs[[2]]$CBL
+#' roitac <- pbr28$tacs[[2]]$STR
+#' weights <- pbr28$tacs[[2]]$Weights
+#'
+#' fit <- refmlLogan(t_tac, reftac, roitac, k2prime=0.1, tstarIncludedFrames=10, weights=weights)
+#'
+#' plot_refmlLoganfit(fit)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -169,7 +181,10 @@ plot_refmlLoganfit <- function(refmlloganout, roiname = NULL) {
 #' @return Saves a jpeg of the plots as filename_refmlLogan.jpeg
 #'
 #' @examples
-#' refmlLogan_tstar(t_tac, reftac, taclow, tacmed, tachigh, k2prime = k2prime, 'demonstration')
+#' \dontrun{
+#' refmlLogan_tstar(t_tac, reftac, taclow, tacmed, tachigh,
+#'                  k2prime = k2prime, 'demonstration')
+#' }
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'

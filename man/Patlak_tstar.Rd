@@ -37,7 +37,10 @@ Saves a jpeg of the plots as filename_Patlakplot.jpeg
 Function to identify where t* is for the Patlak Plot.
 }
 \examples{
-Patlak_tstar(t_tac, lowroi, medroi, highroi, input, filename='demonstration', inpshift = onetcmout$par$inpshift, vB = 0.05, gridbreaks=4)
+\dontrun{
+Patlak_tstar(t_tac, lowroi, medroi, highroi, input, filename='demonstration',
+inpshift = onetcmout$par$inpshift, vB = 0.05, gridbreaks=4)
+}
 
 }
 \author{

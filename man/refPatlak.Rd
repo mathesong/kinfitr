@@ -4,7 +4,8 @@
 \alias{refPatlak}
 \title{Patlak Reference Tissue Model}
 \usage{
-refPatlak(t_tac, reftac, roitac, tstarIncludedFrames, weights, frameStartEnd)
+refPatlak(t_tac, reftac, roitac, tstarIncludedFrames, weights = NULL,
+  frameStartEnd = NULL)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
@@ -35,7 +36,19 @@ a vector of the weights \code{out$weights}, and the specified tstarIncludedFrame
 Function to fit the Patlak Reference Tissue Model of Patlak & Blasbert (1985) to data.
 }
 \examples{
-refPatlak(t_tac, reftac, roitac, tstarIncludedFrames=10, weights=weights)
+# Note: Reference region models, and irreversible binding models, should not
+# be used for PBR28 - this is just to demonstrate function
+
+data(pbr28)
+
+t_tac <- pbr28$tacs[[2]]$Times/60
+reftac <- pbr28$tacs[[2]]$CBL
+roitac <- pbr28$tacs[[2]]$STR
+weights <- pbr28$tacs[[2]]$Weights
+
+fit <- refPatlak(t_tac, reftac, roitac, tstarIncludedFrames=10, weights=weights)
+
+
 
 }
 \references{

@@ -4,14 +4,17 @@
 \alias{SUV}
 \title{Standardised Uptake Value}
 \usage{
-SUV(t_tac, tac, injRad = 1, bodymass = 1, frameStartEnd)
+SUV(tac, t_tac = NULL, dur_tac = NULL, injRad = 1, bodymass = 1,
+  frameStartEnd = NULL)
 }
 \arguments{
+\item{tac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
+zero: if not included, it is added.}
+
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
 zero. If a time zero frame is not included, it will be added.}
 
-\item{tac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
-zero: if not included, it is added.}
+\item{dur_tac}{Numeric vector of durations for each frame in minutes. This will be used instead of the middle points of the frames if provided.}
 
 \item{injRad}{The injected radioactivity.  If not included, this will be set to 1 in case one is using SUV ratios.}
 
@@ -28,7 +31,16 @@ original data and the transformed values \code{out$tacs}
 Function to calculate the standardised uptake value and its integral.
 }
 \examples{
-SUV(t_tac, tac, injRad=150, bodymass=85)
+data(pbr28)
+
+t_tac <- pbr28$tacs[[2]]$Times/60
+dur_tac <- pbr28$tacs[[2]]$Duration/60
+tac <- pbr28$tacs[[2]]$FC
+
+
+fit1 <- SUV(tac, t_tac, injRad=150, bodymass=85)
+fit2 <- SUV(tac, dur_tac = dur_tac, injRad=150, bodymass=85)
+
 
 }
 \author{

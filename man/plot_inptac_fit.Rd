@@ -4,7 +4,7 @@
 \alias{plot_inptac_fit}
 \title{Plot the Timings of the TAC and Arterial Input Function from a Fit Object}
 \usage{
-plot_inptac_fit(fitout, roiname, zoomTime = 5)
+plot_inptac_fit(fitout, roiname = NULL, zoomTime = 5)
 }
 \arguments{
 \item{fitout}{The output object of a fitting procedure which utilises arterial input function, e.g. \code{twotcm}.}
@@ -21,6 +21,19 @@ Function to compare the timings of the the TAC and the Arterial Input Function (
 from a kinetic fit object.  The fit needs to be a model utilising AIF (i.e. cannot be a reference region)
 }
 \examples{
+data(pbr28)
+
+t_tac <- pbr28$tacs[[2]]$Times/60
+tac <- pbr28$tacs[[2]]$FC
+weights <- pbr28$tacs[[2]]$Weights
+
+input <- blood_interp(
+  pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
+  pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+  t_parentfrac = 1, parentfrac = 1 )
+
+twotcmout <- twotcm(t_tac, tac, input, weights, frameStartEnd = c(1,25))
+
 plot_inptac_fit(twotcmout)
 
 }

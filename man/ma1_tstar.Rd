@@ -5,7 +5,7 @@
 \title{Tstar Finder: Ichise Multilinear Analysis 1}
 \usage{
 ma1_tstar(t_tac, lowroi, medroi, highroi, input, filename, inpshift = 0,
-  frameStartEnd, gridbreaks = 2)
+  frameStartEnd = NULL, gridbreaks = 2)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
@@ -37,7 +37,10 @@ Saves a jpeg of the plots as filename_ma1.jpeg
 Function to identify where t* is for MA1.
 }
 \examples{
-ma1_tstar(t_tac, lowroi, medroi, highroi, input, filename='demonstration', inpshift = onetcmout$par$inpshift, frameStartEnd, gridbreaks=4)
+\dontrun{
+ma1_tstar(t_tac, lowroi, medroi, highroi, input, filename='demonstration',
+          inpshift = onetcmout$par$inpshift, frameStartEnd, gridbreaks=4)
+}
 
 }
 \author{

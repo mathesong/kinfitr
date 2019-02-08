@@ -4,12 +4,13 @@
 \alias{srtm_v}
 \title{Simplified Reference Tissue Model with Blood Volumes}
 \usage{
-srtm_v(t_tac, reftac, roitac, bloodtac, weights, vBr_fixed, frameStartEnd,
-  R1.start = 1, R1.lower = 1e-04, R1.upper = 10, k2.start = 0.1,
-  k2.lower = 1e-04, k2.upper = 1, bp.start = 1.5, bp.lower = -10,
-  bp.upper = 15, vBr.start = 0.05, vBr.lower = 1e-04, vBr.upper = 0.15,
-  vBt.start = 0.05, vBt.lower = 1e-04, vBt.upper = 0.15,
-  multstart_iter = 1, multstart_lower, multstart_upper, printvals = F)
+srtm_v(t_tac, reftac, roitac, bloodtac, weights = NULL, vBr = NULL,
+  frameStartEnd = NULL, R1.start = 1, R1.lower = 1e-04, R1.upper = 10,
+  k2.start = 0.1, k2.lower = 1e-04, k2.upper = 1, bp.start = 1.5,
+  bp.lower = -10, bp.upper = 15, vBr.start = 0.05, vBr.lower = 1e-04,
+  vBr.upper = 0.15, vBt.start = 0.05, vBt.lower = 1e-04,
+  vBt.upper = 0.15, multstart_iter = 1, multstart_lower = NULL,
+  multstart_upper = NULL, printvals = F)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the
@@ -32,7 +33,7 @@ added.}
 in the fitting. We include zero at time zero: if not included, it is added.
 If not specified, uniform weights will be used.}
 
-\item{vBr_fixed}{Optional. The blood volume fraction of the reference region.  If not
+\item{vBr}{Optional. The blood volume fraction of the reference region.  If not
 specified, this will be fitted. This parameter was fixed in the original article.}
 
 \item{frameStartEnd}{Optional. This allows one to specify the beginning and
@@ -102,8 +103,28 @@ A list with a data frame of the fitted parameters \code{out$par}, the
 Function to fit the SRTM_V model of Tomasi et al (2008) to data.
 }
 \examples{
-srtm_v(t_tac, reftac, roitac)
-srtm_v(t_tac, reftac, roitac, weights, frameStartEnd = c(1,11), bp.upper=1)
+
+# Note: Reference region models, and irreversible binding models, should not
+# be used for PBR28 - this is just to demonstrate function
+
+data(pbr28)
+
+t_tac <- pbr28$tacs[[2]]$Times/60
+reftac <- pbr28$tacs[[2]]$CBL
+roitac <- pbr28$tacs[[2]]$STR
+weights <- pbr28$tacs[[2]]$Weights
+
+input <- pbr28$input[[2]]
+newvals <- shift_timings(
+  t_tac,
+  roitac,
+  input,
+  inpshift=0
+)
+
+bloodtac <- pracma::interp1(newvals$input$Time, newvals$input$blood, t_tac)
+
+fit <- srtm_v(t_tac, reftac, roitac, bloodtac, weights)
 
 }
 \references{

@@ -17,7 +17,18 @@ Function to visualise the residuals of a model fit.  This function only works fo
 which a fit object is available called \code{outputobject$fit}.
 }
 \examples{
+# Note: Reference region models, and irreversible binding models, should not
+# be used for PBR28 - this is just to demonstrate function
+
+data(pbr28)
+
+t_tac <- pbr28$tacs[[2]]$Times/60
+reftac <- pbr28$tacs[[2]]$CBL
+roitac <- pbr28$tacs[[2]]$STR
+weights <- pbr28$tacs[[2]]$Weights
+
 srtmout <- srtm(t_tac, reftac, roitac)
+
 plot_residuals(srtmout)
 
 }

@@ -28,18 +28,21 @@
 #'
 #'
 #' @examples
+#' \dontrun{
 #' input <- blood_interp(t_blood = blooddata$Time.sec./60,
 #'            blood = blooddata$Cbl.nCi.cc.,
 #'            t_plasma = plasmadata$Time.sec./60,
 #'            plasma = plasmadata$Cpl.nCi.cc.,
 #'            t_parentfrac = parentdata$Times/60,
 #'            parentfrac = parentdata$Fraction)
+#' }
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
 
 blood_interp <- function(t_blood, blood, t_plasma, plasma, t_parentfrac, parentfrac) {
+
   if (max(t_blood) > 300 || max(t_plasma) > 300 || max(t_parentfrac) > 300) {
     warning("
             ***********************************************************************
@@ -120,11 +123,13 @@ blood_interp <- function(t_blood, blood, t_plasma, plasma, t_parentfrac, parentf
 #'
 #'
 #' @examples
+#' \dontrun{
 #' inpshift = 0.25   # 15 seconds
 #' newValues <- shift_timings(t_tac, tac, input, inpshift)
 #' t_tac <- newValues$t_tac
 #' tac <- newValues$tac
 #' input <- newValues$input
+#' }
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -226,11 +231,13 @@ shift_timings <- function(t_tac, tac, input, inpshift, shifttac=T) {
 #'
 #'
 #' @examples
+#' \dontrun{
 #' inpshift = 0.25   # 15 seconds
 #' newValues <- shift_timings(t_tac, tac, input, inpshift)
 #' t_tac <- newValues$t_tac
 #' tac <- newValues$tac
 #' input <- newValues$input
+#' }
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -304,7 +311,17 @@ shift_timings_df <- function(t_tac, tacsdf, input, inpshift, shifttac=T) {
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' plot_inptac_timings(t_tac, tac, input, inpshift=0.25, zoomTime=5)
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' tac <- pbr28$tacs[[2]]$FC
+#'
+#' input <- blood_interp(
+#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1 )
+#'
+#' plot_inptac_timings(t_tac, tac, input, inpshift=0.12, zoomTime=5)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -334,7 +351,7 @@ plot_inptac_timings <- function(t_tac, tac, input, inpshift, zoomTime=5) {
 
   outplot <- ggplot(i_df_tidy, aes(x = interptime, y = Radioactivity, colour = Curve)) +
     geom_line() + xlab("Time (min)") +
-    colScale + coord_cartesian(ylim = c(0, max(inp) / 2), xlim = c(0, zoomTime))
+    colScale + coord_cartesian(ylim = c(0, max(tac)*1.5), xlim = c(0, zoomTime))
 
   return(outplot)
 }
@@ -353,6 +370,19 @@ plot_inptac_timings <- function(t_tac, tac, input, inpshift, zoomTime=5) {
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' tac <- pbr28$tacs[[2]]$FC
+#' weights <- pbr28$tacs[[2]]$Weights
+#'
+#' input <- blood_interp(
+#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1 )
+#'
+#' twotcmout <- twotcm(t_tac, tac, input, weights, frameStartEnd = c(1,25))
+#'
 #' plot_inptac_fit(twotcmout)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
@@ -361,7 +391,7 @@ plot_inptac_timings <- function(t_tac, tac, input, inpshift, zoomTime=5) {
 #'
 #' @export
 
-plot_inptac_fit <- function(fitout, roiname, zoomTime=5) {
+plot_inptac_fit <- function(fitout, roiname = NULL, zoomTime=5) {
   if (is.null(roiname)) {
     roiname <- "ROI"
   }
@@ -397,4 +427,49 @@ plot_inptac_fit <- function(fitout, roiname, zoomTime=5) {
     coord_cartesian(ylim = c(0, max(measureddf$Radioactivity) * 1.5), xlim = c(0, zoomTime))
 
   return(outplot)
+}
+
+
+#' Plot input
+#'
+#' Provides a plot of the input data to get an idea of how it looks. Blood, plasma and AIF data are scaled to a common value.
+#'
+#' @param input Data frame containing the blood, plasma, and parent fraction concentrations over time.  This can be generated
+#' using the \code{blood_interp} function.
+#'
+#' @return A ggplot2 object
+#'
+#' @examples
+#'
+#' data(pbr28)
+#'
+#' input <- blood_interp(
+#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1 )
+#'
+#' plot_input(input)
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @import ggplot2
+#'
+#' @export
+plot_input <- function(input) {
+
+  input$blood <- input$blood / max( c(input$blood, input$plasma) )
+  input$plasma <- input$plasma / max( c(input$blood, input$plasma) )
+  input$PBR <- input$plasma / input$blood
+  input$AIF <- input$plasma * input$parentfrac
+
+  input <- dplyr::rename(input, Blood=blood, Plasma=plasma, "Parent Fraction" = parentfrac,
+                         "Plasma-to-Blood Ratio" = PBR)
+
+  tidyinput <- tidyr::gather(input, Data, Radioactivity, -Time) %>%
+    dplyr::mutate(Data = forcats::as_factor(Data))
+
+  ggplot(tidyinput, aes(x=Time, y=Radioactivity, colour=Data)) +
+    geom_line() +
+    coord_cartesian(ylim = c(0, 1))
+
 }

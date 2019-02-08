@@ -21,7 +21,7 @@ fix_multstartpars(start, lower, upper, multstart_iter, multstart_lower,
 \item{multstart_upper}{Upper starting bounds}
 }
 \value{
-A list containing the
+A list containing the parameters
 }
 \description{
 Checks and fixes for inputted multstart parameters. Checks missing multstart boundaries,
@@ -29,6 +29,13 @@ checks if some parameters aren't to be tried with different starting parameters,
 the lengths of the multstart bounds
 }
 \examples{
+start <- list(a = 1, b = 2, c = 3)
+upper <- lapply(start, function(x) x+1)
+lower <- lapply(start, function(x) x-1)
+multstart_iter <- 5
+
+multstart_lower <- NULL
+multstart_upper <- NULL
 
 fix_multstartpars(start, lower, upper, multstart_iter, multstart_lower, multstart_upper)
 

@@ -4,7 +4,7 @@
 \alias{plot_srtmfit}
 \title{Plot: Simplified Reference Tissue Model}
 \usage{
-plot_srtmfit(srtmout, roiname, refname)
+plot_srtmfit(srtmout, roiname = NULL, refname = NULL)
 }
 \arguments{
 \item{srtmout}{The output object of the SRTM fitting procedure.}
@@ -20,7 +20,20 @@ A ggplot2 object of the plot.
 Function to visualise the fit of the SRTM model to data.
 }
 \examples{
-plot_srtmfit(srtmout)
+
+#' # Note: Reference region models, and irreversible binding models, should not
+# be used for PBR28 - this is just to demonstrate function
+
+data(pbr28)
+
+t_tac <- pbr28$tacs[[2]]$Times/60
+reftac <- pbr28$tacs[[2]]$CBL
+roitac <- pbr28$tacs[[2]]$STR
+weights <- pbr28$tacs[[2]]$Weights
+
+fit <- srtm(t_tac, reftac, roitac)
+
+plot_srtmfit(fit)
 
 }
 \author{

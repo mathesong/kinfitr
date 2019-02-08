@@ -20,7 +20,17 @@ A ggplot2 object of the plot.
 Function to visualise the fit of the MRTM2 model to data.
 }
 \examples{
-plot_mrtm2fit(mrtm2out)
+
+data(pbr28)
+
+t_tac <- pbr28$tacs[[2]]$Times/60
+reftac <- pbr28$tacs[[2]]$CBL
+roitac <- pbr28$tacs[[2]]$STR
+weights <- pbr28$tacs[[2]]$Weights
+
+fit <- mrtm2(t_tac, reftac, roitac, 0.001, weights=weights)
+
+plot_mrtm2fit(fit)
 
 }
 \author{

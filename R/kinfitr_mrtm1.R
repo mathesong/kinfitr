@@ -25,15 +25,15 @@
 #' a vector of the weights \code{out$weights}, and the specified tstarIncludedFrames value \code{out$tstarIncludedFrames}
 #'
 #' @examples
-#' # Note: Reference region models should not be used for PBR28 - this is just
-#' # to demonstrate function
+#' # Note: Reference region models, and irreversible binding models, should not
+#' # be used for PBR28 - this is just to demonstrate function
 #'
 #' data(pbr28)
 #'
-#' t_tac <- pbr28$tacs[[1]]$Times/60
-#' reftac <- pbr28$tacs[[1]]$CBL
-#' roitac <- pbr28$tacs[[1]]$STR
-#' weights <- pbr28$tacs[[1]]$Weights
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' reftac <- pbr28$tacs[[2]]$CBL
+#' roitac <- pbr28$tacs[[2]]$STR
+#' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' fit <- mrtm1(t_tac, reftac, roitac, weights=weights)
 #'
@@ -127,15 +127,15 @@ mrtm1 <- function(t_tac, reftac, roitac, weights=NULL, tstarIncludedFrames=NULL,
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' # Note: Reference region models should not be used for PBR28 - this is just
-#' # to demonstrate function
+#' # Note: Reference region models, and irreversible binding models, should not
+#' # be used for PBR28 - this is just to demonstrate function
 #'
 #' data(pbr28)
 #'
-#' t_tac <- pbr28$tacs[[1]]$Times/60
-#' reftac <- pbr28$tacs[[1]]$CBL
-#' roitac <- pbr28$tacs[[1]]$STR
-#' weights <- pbr28$tacs[[1]]$Weights
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' reftac <- pbr28$tacs[[2]]$CBL
+#' roitac <- pbr28$tacs[[2]]$STR
+#' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' fit <- mrtm1(t_tac, reftac, roitac, weights=weights)
 #'

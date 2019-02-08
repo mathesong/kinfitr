@@ -18,7 +18,19 @@ value of a residual as a percentage of its fitted value.  This is useful for obt
 of t*.
 }
 \examples{
-refloganout <- refLogan(times, reftac, roitac, k2prime, tstarIncludedFrames = 9, weights=weights)
+
+# Note: Reference region models, and irreversible binding models, should not
+# be used for PBR28 - this is just to demonstrate function
+
+data(pbr28)
+
+t_tac <- pbr28$tacs[[2]]$Times/60
+reftac <- pbr28$tacs[[2]]$CBL
+roitac <- pbr28$tacs[[2]]$STR
+weights <- pbr28$tacs[[2]]$Weights
+
+refloganout <- refLogan(t_tac, reftac, roitac, 0.1, tstarIncludedFrames = 9)
+
 maxpercres(refloganout)
 
 }

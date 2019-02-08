@@ -4,8 +4,8 @@
 \alias{mrtm2}
 \title{Ichise's Multilinear Reference Tissue Model 2}
 \usage{
-mrtm2(t_tac, reftac, roitac, k2prime, tstarIncludedFrames, weights,
-  frameStartEnd)
+mrtm2(t_tac, reftac, roitac, k2prime, tstarIncludedFrames = NULL,
+  weights = NULL, frameStartEnd = NULL)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
@@ -43,7 +43,17 @@ Function to fit MRTM2 of Ichise et al. (2003) to data.  This model is often used
 high-binding region to obtain an estimate of k2prime, and this k2prime value is used for MRTM2.
 }
 \examples{
-mrtm2(t_tac, reftac, roitac, k2prime=mrtm1out$par$k2prime, weights=weights)
+# Note: Reference region models, and irreversible binding models, should not
+# be used for PBR28 - this is just to demonstrate function
+
+data(pbr28)
+
+t_tac <- pbr28$tacs[[2]]$Times/60
+reftac <- pbr28$tacs[[2]]$CBL
+roitac <- pbr28$tacs[[2]]$STR
+weights <- pbr28$tacs[[2]]$Weights
+
+fit <- mrtm2(t_tac, reftac, roitac, 0.001, weights=weights)
 
 }
 \references{

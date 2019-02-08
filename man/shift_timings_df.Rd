@@ -44,11 +44,13 @@ Function to shift backwards and forwards the timings of the TAC vector and input
 to make them consistent. Similar to \code{shift_timings} but for a dataframe of TACs.
 }
 \examples{
+\dontrun{
 inpshift = 0.25   # 15 seconds
 newValues <- shift_timings(t_tac, tac, input, inpshift)
 t_tac <- newValues$t_tac
 tac <- newValues$tac
 input <- newValues$input
+}
 
 }
 \author{

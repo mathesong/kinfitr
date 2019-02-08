@@ -33,7 +33,9 @@ Saves a jpeg of the plots as filename_refLogan.jpeg
 Function to identify where t* is for the non-invasive Logan plot.
 }
 \examples{
-refLogan_tstar(t_tac, reftac, taclow, tacmed, tachigh, k2prime = k2prime, 'demonstration')
+\dontrun{
+refLogan_tstar(t_tac, reftac, taclow, tacmed, tachigh, k2prime, 'demonstration')
+}
 
 }
 \author{

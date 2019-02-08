@@ -23,7 +23,7 @@ test_that("1TCM fitting delay works", {
     inpshift.upper = 0.16
   )
   expect_lt(onetcmout$par$Vt, 3)
-  expect_gt(onetcmout$par$Vt, 2)
+  expect_gt(onetcmout$par$Vt, 1.5)
   expect_true( any(class(plot_kinfit(onetcmout))=="ggplot") )
 })
 
@@ -46,6 +46,20 @@ test_that("1TCM with frameStartEnd works", {
     K1.lower = 0.08, K1.upper = 0.12,
     k2.lower = 0.04, k2.upper = 0.06,
     frameStartEnd = c(1, round(0.75 * length(t_tac)))
+  )
+  expect_lt(onetcmout$par$Vt, 3)
+  expect_gt(onetcmout$par$Vt, 1.5)
+  expect_lt(max(onetcmout$tacs$Time), max(t_tac))
+  expect_true( any(class(plot_kinfit(onetcmout))=="ggplot") )
+})
+
+test_that("1TCM fitting delay with frameStartEnd works", {
+  onetcmout <- onetcm(
+    t_tac, tac, input, weights,
+    K1.start = 0.1, k2.start = 0.05,
+    K1.lower = 0.08, K1.upper = 0.12,
+    k2.lower = 0.04, k2.upper = 0.06,
+    frameStartEnd = c(1, 20)
   )
   expect_lt(onetcmout$par$Vt, 3)
   expect_gt(onetcmout$par$Vt, 1.5)
@@ -121,6 +135,23 @@ test_that("2TCM with fitted delay works", {
 test_that("2TCM with frameStartEnd works", {
   twotcmout <- twotcm(
     t_tac, tac, input, weights, inpshift = inpshift,
+    K1.start = 0.11, k2.start = 0.1,
+    k3.start = 0.06, k4.start = 0.06,
+    K1.lower = 0.09, K1.upper = 0.13,
+    k2.lower = 0.09, k2.upper = 0.10,
+    k3.lower = 0.05, k3.upper = 0.07,
+    k4.lower = 0.05, k4.upper = 0.06,
+    frameStartEnd = c(1, round(0.75 * length(t_tac)))
+  )
+  expect_lt(twotcmout$par$Vt, 3)
+  expect_gt(twotcmout$par$Vt, 1.5)
+  expect_lt(max(twotcmout$tacs$Time), max(t_tac))
+  expect_true( any(class(plot_kinfit(twotcmout))=="ggplot") )
+})
+
+test_that("2TCM fitting delay with frameStartEnd works", {
+  twotcmout <- twotcm(
+    t_tac, tac, input, weights,
     K1.start = 0.11, k2.start = 0.1,
     k3.start = 0.06, k4.start = 0.06,
     K1.lower = 0.09, K1.upper = 0.13,
@@ -215,6 +246,25 @@ test_that("2TCM1k with fitted delay works", {
 test_that("2TCM1k with frameStartEnd works", {
   twotcm1kout <- twotcm1k(
     t_tac, tac, input, weights, inpshift = inpshift,
+    K1.start = 0.11, k2.start = 0.14,
+    k3.start = 0.16, k4.start = 0.13,
+    K1.lower = 0.09, K1.upper = 0.13,
+    k2.lower = 0.12, k2.upper = 0.16,
+    k3.lower = 0.14, k3.upper = 0.18,
+    k4.lower = 0.12, k4.upper = 0.14,
+    Kb.start = 0.12, Kb.upper = 0.14,
+    Kb.lower = 0.1,
+    frameStartEnd = c(1, round(0.75 * length(t_tac)))
+  )
+  expect_lt(twotcm1kout$par$Vt, 2)
+  expect_gt(twotcm1kout$par$Vt, 1)
+  expect_lt(max(twotcm1kout$tacs$Time), max(t_tac))
+  expect_true( any(class(plot_kinfit(twotcm1kout))=="ggplot") )
+})
+
+test_that("2TCM1k fitting delay with frameStartEnd works", {
+  twotcm1kout <- twotcm1k(
+    t_tac, tac, input, weights,
     K1.start = 0.11, k2.start = 0.14,
     k3.start = 0.16, k4.start = 0.13,
     K1.lower = 0.09, K1.upper = 0.13,

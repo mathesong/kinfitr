@@ -5,7 +5,7 @@
 \title{Patlak Plot}
 \usage{
 Patlakplot(t_tac, tac, input, tstarIncludedFrames, weights, inpshift = 0,
-  vB = 0, frameStartEnd)
+  vB = 0, frameStartEnd = NULL)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
@@ -45,7 +45,19 @@ value \code{out$tstarIncludedFrames}.
 Function to fit the Patlak Plot of of Patlak et al (1983) to data.
 }
 \examples{
-Patlakplot(t_tac, tac, input, 10, weights, inpshift = onetcmout$par$inpshift)
+
+data(pbr28)
+
+t_tac <- pbr28$tacs[[2]]$Times/60
+tac <- pbr28$tacs[[2]]$FC
+weights <- pbr28$tacs[[2]]$Weights
+
+input <- blood_interp(
+  pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
+  pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+  t_parentfrac = 1, parentfrac = 1 )
+
+fit <- Patlakplot(t_tac, tac, input, 10, weights, inpshift = 0.1  )
 
 }
 \references{

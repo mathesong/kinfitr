@@ -18,7 +18,19 @@ A ggplot2 object of the plot.
 Function to visualise the fit of the refmlLogan model to data.
 }
 \examples{
-plot_refmlLoganfit(refmlloganoutout)
+# Note: Reference region models, and irreversible binding models, should not
+# be used for PBR28 - this is just to demonstrate function
+
+data(pbr28)
+
+t_tac <- pbr28$tacs[[2]]$Times/60
+reftac <- pbr28$tacs[[2]]$CBL
+roitac <- pbr28$tacs[[2]]$STR
+weights <- pbr28$tacs[[2]]$Weights
+
+fit <- refmlLogan(t_tac, reftac, roitac, k2prime=0.1, tstarIncludedFrames=10, weights=weights)
+
+plot_refmlLoganfit(fit)
 
 }
 \author{

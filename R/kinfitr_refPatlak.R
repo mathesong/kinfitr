@@ -21,7 +21,19 @@
 #' a vector of the weights \code{out$weights}, and the specified tstarIncludedFrames value \code{out$tstarIncludedFrames}
 #'
 #' @examples
-#' refPatlak(t_tac, reftac, roitac, tstarIncludedFrames=10, weights=weights)
+#' # Note: Reference region models, and irreversible binding models, should not
+#' # be used for PBR28 - this is just to demonstrate function
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' reftac <- pbr28$tacs[[2]]$CBL
+#' roitac <- pbr28$tacs[[2]]$STR
+#' weights <- pbr28$tacs[[2]]$Weights
+#'
+#' fit <- refPatlak(t_tac, reftac, roitac, tstarIncludedFrames=10, weights=weights)
+#'
+#'
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -85,7 +97,19 @@ refPatlak <- function(t_tac, reftac, roitac, tstarIncludedFrames, weights = NULL
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' plot_refPatlakfit(refpatlakout)
+#' # Note: Reference region models, and irreversible binding models, should not
+#' # be used for PBR28 - this is just to demonstrate function
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' reftac <- pbr28$tacs[[2]]$CBL
+#' roitac <- pbr28$tacs[[2]]$STR
+#' weights <- pbr28$tacs[[2]]$Weights
+#'
+#' fit <- refPatlak(t_tac, reftac, roitac, tstarIncludedFrames=10, weights=weights)
+#'
+#' plot_refPatlakfit(fit)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -141,7 +165,9 @@ plot_refPatlakfit <- function(refpatlakout, roiname = NULL) {
 #' @return Saves a jpeg of the plots as filename_refPatlak.jpeg
 #'
 #' @examples
+#' \dontrun{
 #' refPatlak_tstar(t_tac, reftac, taclow, tacmed, tachigh, 'demonstration')
+#' }
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'

@@ -30,7 +30,9 @@ Saves a jpeg of the plots as filename_refPatlak.jpeg
 Function to identify where t* is for the Patlak Reference Tissue Model.
 }
 \examples{
+\dontrun{
 refPatlak_tstar(t_tac, reftac, taclow, tacmed, tachigh, 'demonstration')
+}
 
 }
 \author{

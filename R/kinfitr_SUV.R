@@ -18,9 +18,9 @@
 #' @examples
 #' data(pbr28)
 #'
-#' t_tac <- pbr28$tacs[[1]]$Times/60
-#' dur_tac <- pbr28$tacs[[1]]$Duration/60
-#' tac <- pbr28$tacs[[1]]$FC
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' dur_tac <- pbr28$tacs[[2]]$Duration/60
+#' tac <- pbr28$tacs[[2]]$FC
 #'
 #'
 #' fit1 <- SUV(tac, t_tac, injRad=150, bodymass=85)

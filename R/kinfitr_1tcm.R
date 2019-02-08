@@ -55,13 +55,13 @@
 #'
 #' data(pbr28)
 #'
-#' t_tac <- pbr28$tacs[[1]]$Times/60
-#' tac <- pbr28$tacs[[1]]$FC
-#' weights <- pbr28$tacs[[1]]$Weights
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' tac <- pbr28$tacs[[2]]$FC
+#' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' input <- blood_interp(
-#'   pbr28$blooddata[[1]]$Time/60 , pbr28$blooddata[[1]]$Cbl_dispcorr,
-#'   pbr28$blooddata[[1]]$Time /60 , pbr28$blooddata[[1]]$Cpl_metabcorr,
+#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1 )
 #'
 #' fit1 <- onetcm(t_tac, tac, input, weights)
@@ -189,7 +189,12 @@ onetcm <- function(t_tac, tac, input, weights=NULL, inpshift=NULL, vB=NULL,
   # Output
 
   if (inpshift_fitted == T) {
-    newvals <- shift_timings(t_tac, tac, input, as.numeric(coef(output)[["inpshift"]]))
+
+    newvals <- shift_timings(modeldata$t_tac,
+                             modeldata$tac,
+                             modeldata$input,
+                             as.numeric(coef(output)[["inpshift"]]))
+
     tacs <- data.frame(Time = newvals$t_tac, Target = newvals$tac, Target_fitted = as.numeric(fitted(output)))
     input <- newvals$input
   } else {
@@ -207,7 +212,7 @@ onetcm <- function(t_tac, tac, input, weights=NULL, inpshift=NULL, vB=NULL,
 
   out <- list(
     par = par, par.se = par.se,
-    fit = output, tacs = tacs, input = input, weights = weights,
+    fit = output, tacs = tacs, input = input, weights = modeldata$weights,
     inpshift_fitted = inpshift_fitted, vB_fitted = vB_fitted, model = "1tcm"
   )
 
@@ -331,13 +336,13 @@ onetcm_fitDelay_model <- function(t_tac, input, K1, k2, inpshift, vB) {
 #'
 #' data(pbr28)
 #'
-#' t_tac <- pbr28$tacs[[1]]$Times/60
-#' tac <- pbr28$tacs[[1]]$FC
-#' weights <- pbr28$tacs[[1]]$Weights
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' tac <- pbr28$tacs[[2]]$FC
+#' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' input <- blood_interp(
-#'   pbr28$blooddata[[1]]$Time/60 , pbr28$blooddata[[1]]$Cbl_dispcorr,
-#'   pbr28$blooddata[[1]]$Time /60 , pbr28$blooddata[[1]]$Cpl_metabcorr,
+#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
+#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1 )
 #'
 #' fit <- onetcm(t_tac, tac, input, weights, inpshift=0.1, vB=0.05)
