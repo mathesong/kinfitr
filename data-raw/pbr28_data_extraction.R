@@ -36,4 +36,4 @@ pbr28 <- petdat %>%
   inner_join(demog) %>%
   arrange(PET)
 
-save(pbr28, file="data/pbr28.RData")
+save(pbr28, file="data/pbr28.RData", compress='xz')
