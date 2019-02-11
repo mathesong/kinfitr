@@ -5,10 +5,10 @@
 \title{Simultaneous Estimation of Non-Displaceable Binding (SIME)}
 \usage{
 SIME(t_tac, tacdf, input, Vndgrid, weights = NULL, roiweights = NULL,
-  inpshift = 0, vB = NULL, twotcmstart = NULL, frameStartEnd = NULL,
-  k2.start = 0.1, k2.lower = 0, k2.upper = 0.5, k3.start = 0.1,
-  k3.lower = 0, k3.upper = 0.5, k4.start = 0.1, k4.lower = 0,
-  k4.upper = 0.5)
+  inpshift = 0, vB = NULL, twotcmstart = NULL,
+  frameStartEnd = NULL, k2.start = 0.1, k2.lower = 0,
+  k2.upper = 0.5, k3.start = 0.1, k3.lower = 0, k3.upper = 0.5,
+  k4.start = 0.1, k4.lower = 0, k4.upper = 0.5)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a

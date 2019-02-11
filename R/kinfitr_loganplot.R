@@ -240,7 +240,7 @@ plot_Loganfit <- function(loganout, roiname = NULL) {
 #'
 #' @export
 
-Logan_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename, inpshift = 0, vB = 0, frameStartEnd, gridbreaks=2) {
+Logan_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename, inpshift = 0, vB = 0, frameStartEnd = NULL, gridbreaks=2) {
   frames <- length(t_tac)
   lowroi_fit <- Loganplot(t_tac, lowroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
   medroi_fit <- Loganplot(t_tac, medroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)

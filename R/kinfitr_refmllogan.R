@@ -176,7 +176,10 @@ plot_refmlLoganfit <- function(refmlloganout, roiname = NULL) {
 #' @param k2prime Value of k2prime to be used for the fitting, i.e. the average tissue-to-plasma clearance rate. This can be
 #' obtained from another model, or set at a specified value. If using SRTM to estimate this value, it is equal to k2 / R1.
 #' @param filename The name of the output image: filename_refmlLogan.jpeg
+#' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
+#' This is to assess time stability.
 #' @param gridbreaks Optional. The size of the grid in the plots. Default: 2.
+#'
 #'
 #' @return Saves a jpeg of the plots as filename_refmlLogan.jpeg
 #'
@@ -192,11 +195,11 @@ plot_refmlLoganfit <- function(refmlloganout, roiname = NULL) {
 #'
 #' @export
 
-refmlLogan_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, filename, gridbreaks = 2) {
+refmlLogan_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, filename, frameStartEnd = NULL, gridbreaks = 2) {
   frames <- length(reftac)
-  lowroi_fit <- refmlLogan(t_tac, reftac, lowroi, k2prime, length(reftac))
-  medroi_fit <- refmlLogan(t_tac, reftac, medroi, k2prime, length(reftac))
-  highroi_fit <- refmlLogan(t_tac, reftac, highroi, k2prime, length(reftac))
+  lowroi_fit <- refmlLogan(t_tac, reftac, lowroi, k2prime, length(reftac), frameStartEnd = frameStartEnd)
+  medroi_fit <- refmlLogan(t_tac, reftac, medroi, k2prime, length(reftac), frameStartEnd = frameStartEnd)
+  highroi_fit <- refmlLogan(t_tac, reftac, highroi, k2prime, length(reftac), frameStartEnd = frameStartEnd)
 
   mllogan_xlab <- "Fitted Values"
   mllogan_ylab <- "Integ(C_Tissue)"
@@ -213,9 +216,9 @@ refmlLogan_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, fi
   bp_df <- data.frame(Frames = tstarInclFrames, Time = t_tac[ tstarInclFrames ], Low = zeros, Medium = zeros, High = zeros)
 
   for (i in 1:length(tstarInclFrames)) {
-    lowfit <- refmlLogan(t_tac, reftac, lowroi, k2prime, tstarIncludedFrames = tstarInclFrames[i])
-    medfit <- refmlLogan(t_tac, reftac, medroi, k2prime, tstarIncludedFrames = tstarInclFrames[i])
-    highfit <- refmlLogan(t_tac, reftac, highroi, k2prime, tstarIncludedFrames = tstarInclFrames[i])
+    lowfit <- refmlLogan(t_tac, reftac, lowroi, k2prime, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    medfit <- refmlLogan(t_tac, reftac, medroi, k2prime, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    highfit <- refmlLogan(t_tac, reftac, highroi, k2prime, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
 
     r2_df$Low[i] <- summary(lowfit$fit)$r.squared
     r2_df$Medium[i] <- summary(medfit$fit)$r.squared

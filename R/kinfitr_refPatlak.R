@@ -160,6 +160,8 @@ plot_refPatlakfit <- function(refpatlakout, roiname = NULL) {
 #' @param medroi Numeric vector of radioactivity concentrations in a target tissue for each frame. This should be from a ROI with medium binding.
 #' @param highroi Numeric vector of radioactivity concentrations in a target tissue for each frame. This should be from a ROI with high binding.
 #' @param filename The name of the output image: filename_refPatlak.jpeg
+#' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
+#' This is to assess time stability.
 #' @param gridbreaks Optional. The size of the grid in the plots. Default: 2.
 #'
 #' @return Saves a jpeg of the plots as filename_refPatlak.jpeg
@@ -175,11 +177,11 @@ plot_refPatlakfit <- function(refpatlakout, roiname = NULL) {
 #'
 #' @export
 
-refPatlak_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename, gridbreaks = 2) {
+refPatlak_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename, frameStartEnd = NULL, gridbreaks = 2) {
   frames <- length(reftac)
-  lowroi_fit <- refPatlak(t_tac, reftac, lowroi, length(reftac))
-  medroi_fit <- refPatlak(t_tac, reftac, medroi, length(reftac))
-  highroi_fit <- refPatlak(t_tac, reftac, highroi, length(reftac))
+  lowroi_fit <- refPatlak(t_tac, reftac, lowroi, length(reftac), frameStartEnd = frameStartEnd)
+  medroi_fit <- refPatlak(t_tac, reftac, medroi, length(reftac), frameStartEnd = frameStartEnd)
+  highroi_fit <- refPatlak(t_tac, reftac, highroi, length(reftac), frameStartEnd = frameStartEnd)
 
   patlak_xlab <- "Integ(C_Ref) / C_Ref"
   patlak_ylab <- "C_Tissue / C_Ref"
@@ -196,9 +198,9 @@ refPatlak_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename, gr
   k_df <- data.frame(Frames = tstarInclFrames, Time = t_tac[ tstarInclFrames ], Low = zeros, Medium = zeros, High = zeros)
 
   for (i in 1:length(tstarInclFrames)) {
-    lowfit <- refPatlak(t_tac, reftac, lowroi, tstarIncludedFrames = tstarInclFrames[i])
-    medfit <- refPatlak(t_tac, reftac, medroi, tstarIncludedFrames = tstarInclFrames[i])
-    highfit <- refPatlak(t_tac, reftac, highroi, tstarIncludedFrames = tstarInclFrames[i])
+    lowfit <- refPatlak(t_tac, reftac, lowroi, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    medfit <- refPatlak(t_tac, reftac, medroi, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    highfit <- refPatlak(t_tac, reftac, highroi, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
 
     r2_df$Low[i] <- summary(lowfit$fit)$r.squared
     r2_df$Medium[i] <- summary(medfit$fit)$r.squared

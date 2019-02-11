@@ -146,43 +146,6 @@ plot_residuals <- function(outputobject) {
   return(outplot)
 }
 
-#' Maximum Percentage Residual
-#'
-#' Function to determine the maximum percentage residual from the fitted value, i.e. the maximum
-#' value of a residual as a percentage of its fitted value.  This is useful for obtaining estimates
-#' of t*.
-#'
-#' @param outputobject The output of a kinetic model, including a fit object \code{outputobject$fit}
-#'
-#' @return The maximum percentage of the fitted value of a residual in the fit.
-#'
-#' @examples
-#'
-#' # Note: Reference region models, and irreversible binding models, should not
-#' # be used for PBR28 - this is just to demonstrate function
-#'
-#' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
-#' reftac <- pbr28$tacs[[2]]$CBL
-#' roitac <- pbr28$tacs[[2]]$STR
-#' weights <- pbr28$tacs[[2]]$Weights
-#'
-#' refloganout <- refLogan(t_tac, reftac, roitac, 0.1, tstarIncludedFrames = 9)
-#'
-#' maxpercres(refloganout)
-#'
-#' @author Granville J Matheson, \email{mathesong@@gmail.com}
-#'
-#' @export
-
-maxpercres <- function(outputobject) {
-  Residuals <- abs(residuals(outputobject$fit))
-  Fitted <- abs(fitted(outputobject$fit))
-  PercRes <- 100 * Residuals / Fitted
-  MaxPercRes <- max(PercRes)
-  return(MaxPercRes)
-}
 
 #' Tidy Up for Reference Region Methods
 #'
@@ -323,6 +286,44 @@ tidyinput_art <- function(t_tac, tac, weights, frameStartEnd) {
   )
 
   return(out)
+}
+
+#' Maximum Percentage Residual
+#'
+#' Function to determine the maximum percentage residual from the fitted value, i.e. the maximum
+#' value of a residual as a percentage of its fitted value.  This is useful for obtaining estimates
+#' of t*.
+#'
+#' @param outputobject The output of a kinetic model, including a fit object \code{outputobject$fit}
+#'
+#' @return The maximum percentage of the fitted value of a residual in the fit.
+#'
+#' @examples
+#'
+#' # Note: Reference region models, and irreversible binding models, should not
+#' # be used for PBR28 - this is just to demonstrate function
+#'
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' reftac <- pbr28$tacs[[2]]$CBL
+#' roitac <- pbr28$tacs[[2]]$STR
+#' weights <- pbr28$tacs[[2]]$Weights
+#'
+#' refloganout <- refLogan(t_tac, reftac, roitac, 0.1, tstarIncludedFrames = 9)
+#'
+#' maxpercres(refloganout)
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @export
+
+maxpercres <- function(outputobject) {
+  Residuals <- abs(residuals(outputobject$fit))
+  Fitted <- abs(fitted(outputobject$fit))
+  PercRes <- 100 * Residuals / Fitted
+  MaxPercRes <- max(PercRes)
+  return(MaxPercRes)
 }
 
 #' Plot Kinetic Model Fit: Generic Function

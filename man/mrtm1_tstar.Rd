@@ -4,7 +4,8 @@
 \alias{mrtm1_tstar}
 \title{Tstar Finder: MRTM1}
 \usage{
-mrtm1_tstar(t_tac, reftac, lowroi, medroi, highroi, filename, gridbreaks = 2)
+mrtm1_tstar(t_tac, reftac, lowroi, medroi, highroi, filename,
+  frameStartEnd = NULL, gridbreaks = 2)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
@@ -19,6 +20,9 @@ zero. If a time zero frame is not included, it will be added.}
 \item{highroi}{Numeric vector of radioactivity concentrations in a target tissue for each frame. This should be from a ROI with high binding.}
 
 \item{filename}{The name of the output image: filename_mrtm1.jpeg}
+
+\item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
+This is to assess time stability.}
 
 \item{gridbreaks}{Optional. The size of the grid in the plots. Default: 2.}
 }

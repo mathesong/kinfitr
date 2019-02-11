@@ -8,8 +8,9 @@ onetcm(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL,
   frameStartEnd = NULL, K1.start = 0.1, K1.lower = 1e-04,
   K1.upper = 0.5, k2.start = 0.1, k2.lower = 1e-04, k2.upper = 0.5,
   inpshift.start = 0, inpshift.lower = -0.5, inpshift.upper = 0.5,
-  vB.start = 0.05, vB.lower = 0.01, vB.upper = 0.1, multstart_iter = 1,
-  multstart_lower = NULL, multstart_upper = NULL, printvals = F)
+  vB.start = 0.05, vB.lower = 0.01, vB.upper = 0.1,
+  multstart_iter = 1, multstart_lower = NULL, multstart_upper = NULL,
+  printvals = F)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a

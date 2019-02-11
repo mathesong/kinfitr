@@ -5,7 +5,7 @@
 \title{Tstar Finder: Non-Invasive Multilinear Logan Plot}
 \usage{
 refmlLogan_tstar(t_tac, reftac, lowroi, medroi, highroi, k2prime, filename,
-  gridbreaks = 2)
+  frameStartEnd = NULL, gridbreaks = 2)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
@@ -23,6 +23,9 @@ zero. If a time zero frame is not included, it will be added.}
 obtained from another model, or set at a specified value. If using SRTM to estimate this value, it is equal to k2 / R1.}
 
 \item{filename}{The name of the output image: filename_refmlLogan.jpeg}
+
+\item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
+This is to assess time stability.}
 
 \item{gridbreaks}{Optional. The size of the grid in the plots. Default: 2.}
 }

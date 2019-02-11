@@ -4,8 +4,8 @@
 \alias{Patlak_tstar}
 \title{Tstar Finder: Patlak Plot}
 \usage{
-Patlak_tstar(t_tac, lowroi, medroi, highroi, input, filename, inpshift = 0,
-  frameStartEnd, gridbreaks = 2)
+Patlak_tstar(t_tac, lowroi, medroi, highroi, input, filename,
+  inpshift = 0, frameStartEnd = NULL, gridbreaks = 2)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a

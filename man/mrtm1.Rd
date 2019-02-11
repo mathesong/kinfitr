@@ -4,8 +4,8 @@
 \alias{mrtm1}
 \title{Ichise's Multilinear Reference Tissue Model}
 \usage{
-mrtm1(t_tac, reftac, roitac, weights = NULL, tstarIncludedFrames = NULL,
-  frameStartEnd = NULL)
+mrtm1(t_tac, reftac, roitac, weights = NULL,
+  tstarIncludedFrames = NULL, frameStartEnd = NULL)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a

@@ -218,6 +218,8 @@ plot_mrtm1fit <- function(mrtm1out, roiname = NULL, refname = NULL) {
 #' @param medroi Numeric vector of radioactivity concentrations in a target tissue for each frame. This should be from a ROI with medium binding.
 #' @param highroi Numeric vector of radioactivity concentrations in a target tissue for each frame. This should be from a ROI with high binding.
 #' @param filename The name of the output image: filename_mrtm1.jpeg
+#' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
+#' This is to assess time stability.
 #' @param gridbreaks Optional. The size of the grid in the plots. Default: 2.
 #'
 #' @return Saves a jpeg of the plots as filename_mrtm1.jpeg
@@ -233,12 +235,12 @@ plot_mrtm1fit <- function(mrtm1out, roiname = NULL, refname = NULL) {
 #'
 #' @export
 
-mrtm1_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename, gridbreaks = 2) {
+mrtm1_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename, frameStartEnd=NULL, gridbreaks = 2) {
   frames <- length(reftac)
 
-  lowroi_fit <- mrtm1(t_tac, reftac, lowroi)
-  medroi_fit <- mrtm1(t_tac, reftac, medroi)
-  highroi_fit <- mrtm1(t_tac, reftac, highroi)
+  lowroi_fit <- mrtm1(t_tac, reftac, lowroi, frameStartEnd = frameStartEnd)
+  medroi_fit <- mrtm1(t_tac, reftac, medroi, frameStartEnd = frameStartEnd)
+  highroi_fit <- mrtm1(t_tac, reftac, highroi, frameStartEnd = frameStartEnd)
 
   low_linplot <- plot_mrtm1fit(lowroi_fit) + ggtitle("Low") + ylim(0, max(c(lowroi_fit$tacs$Reference, lowroi_fit$tacs$Target)) * 1.1) + theme(legend.position = "none")
   med_linplot <- plot_mrtm1fit(medroi_fit) + ggtitle("Medium") + ylim(0, max(c(medroi_fit$tacs$Reference, medroi_fit$tacs$Target)) * 1.1) + theme(legend.position = "none")
@@ -252,9 +254,9 @@ mrtm1_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename, gridbr
   bp_df <- data.frame(Frames = tstarInclFrames, Time = t_tac[ tstarInclFrames ], Low = zeros, Medium = zeros, High = zeros)
 
   for (i in 1:length(tstarInclFrames)) {
-    lowfit <- mrtm1(t_tac, reftac, lowroi, tstarIncludedFrames = tstarInclFrames[i])
-    medfit <- mrtm1(t_tac, reftac, medroi, tstarIncludedFrames = tstarInclFrames[i])
-    highfit <- mrtm1(t_tac, reftac, highroi, tstarIncludedFrames = tstarInclFrames[i])
+    lowfit <- mrtm1(t_tac, reftac, lowroi, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    medfit <- mrtm1(t_tac, reftac, medroi, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    highfit <- mrtm1(t_tac, reftac, highroi, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
 
     r2_df$Low[i] <- summary(lowfit$fit)$r.squared
     r2_df$Medium[i] <- summary(medfit$fit)$r.squared

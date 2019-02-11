@@ -4,8 +4,8 @@
 \alias{mlLogan_tstar}
 \title{Tstar Finder: Multilinear Logan Plot}
 \usage{
-mlLogan_tstar(t_tac, lowroi, medroi, highroi, input, filename, inpshift = 0,
-  frameStartEnd = NULL, gridbreaks = 2)
+mlLogan_tstar(t_tac, lowroi, medroi, highroi, input, filename,
+  inpshift = 0, frameStartEnd = NULL, gridbreaks = 2)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a

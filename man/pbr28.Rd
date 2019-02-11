@@ -3,7 +3,6 @@
 \docType{data}
 \name{pbr28}
 \alias{pbr28}
-\alias{pbr28}
 \title{PBR28 Test-Retest Data}
 \format{A nested data frame with 24 rows and 10 variables:
 \describe{

@@ -5,12 +5,12 @@
 \title{Simplified Reference Tissue Model with Blood Volumes}
 \usage{
 srtm_v(t_tac, reftac, roitac, bloodtac, weights = NULL, vBr = NULL,
-  frameStartEnd = NULL, R1.start = 1, R1.lower = 1e-04, R1.upper = 10,
-  k2.start = 0.1, k2.lower = 1e-04, k2.upper = 1, bp.start = 1.5,
-  bp.lower = -10, bp.upper = 15, vBr.start = 0.05, vBr.lower = 1e-04,
-  vBr.upper = 0.15, vBt.start = 0.05, vBt.lower = 1e-04,
-  vBt.upper = 0.15, multstart_iter = 1, multstart_lower = NULL,
-  multstart_upper = NULL, printvals = F)
+  frameStartEnd = NULL, R1.start = 1, R1.lower = 1e-04,
+  R1.upper = 10, k2.start = 0.1, k2.lower = 1e-04, k2.upper = 1,
+  bp.start = 1.5, bp.lower = -10, bp.upper = 15, vBr.start = 0.05,
+  vBr.lower = 1e-04, vBr.upper = 0.15, vBt.start = 0.05,
+  vBt.lower = 1e-04, vBt.upper = 0.15, multstart_iter = 1,
+  multstart_lower = NULL, multstart_upper = NULL, printvals = F)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the

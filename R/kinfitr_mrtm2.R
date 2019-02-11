@@ -207,6 +207,8 @@ plot_mrtm2fit <- function(mrtm2out, roiname = NULL, refname = NULL) {
 #' @param k2prime Value of k2prime to be used for the fitting, i.e. the average tissue-to-plasma clearance rate. This can be
 #' obtained from another model, such as MRTM1, SRTM or set at a specified value. If using SRTM to estimate this value, it is equal to k2 / R1.
 #' @param filename The name of the output image: filename_mrtm1.jpeg
+#' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
+#' This is to assess time stability.
 #' @param gridbreaks Optional. The size of the grid in the plots. Default: 2.
 #'
 #' @return Saves a jpeg of the plots as filename_mrtm2.jpeg
@@ -222,12 +224,12 @@ plot_mrtm2fit <- function(mrtm2out, roiname = NULL, refname = NULL) {
 #'
 #' @export
 
-mrtm2_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, filename, gridbreaks = 2) {
+mrtm2_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, filename, frameStartEnd = NULL, gridbreaks = 2) {
   frames <- length(reftac)
 
-  lowroi_fit <- mrtm2(t_tac, reftac, lowroi, k2prime = k2prime)
-  medroi_fit <- mrtm2(t_tac, reftac, medroi, k2prime = k2prime)
-  highroi_fit <- mrtm2(t_tac, reftac, highroi, k2prime = k2prime)
+  lowroi_fit <- mrtm2(t_tac, reftac, lowroi, k2prime = k2prime, frameStartEnd = frameStartEnd)
+  medroi_fit <- mrtm2(t_tac, reftac, medroi, k2prime = k2prime, frameStartEnd = frameStartEnd)
+  highroi_fit <- mrtm2(t_tac, reftac, highroi, k2prime = k2prime, frameStartEnd = frameStartEnd)
 
   low_linplot <- plot_mrtm2fit(lowroi_fit) + ggtitle("Low") + ylim(0, max(c(lowroi_fit$tacs$Reference, lowroi_fit$tacs$Target)) * 1.1) + theme(legend.position = "none")
   med_linplot <- plot_mrtm2fit(medroi_fit) + ggtitle("Medium") + ylim(0, max(c(medroi_fit$tacs$Reference, medroi_fit$tacs$Target)) * 1.1) + theme(legend.position = "none")
@@ -241,9 +243,9 @@ mrtm2_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, filenam
   bp_df <- data.frame(Frames = tstarInclFrames, Time = t_tac[ tstarInclFrames ], Low = zeros, Medium = zeros, High = zeros)
 
   for (i in 1:length(tstarInclFrames)) {
-    lowfit <- mrtm2(t_tac, reftac, lowroi, k2prime = k2prime, tstarIncludedFrames = tstarInclFrames[i])
-    medfit <- mrtm2(t_tac, reftac, medroi, k2prime = k2prime, tstarIncludedFrames = tstarInclFrames[i])
-    highfit <- mrtm2(t_tac, reftac, highroi, k2prime = k2prime, tstarIncludedFrames = tstarInclFrames[i])
+    lowfit <- mrtm2(t_tac, reftac, lowroi, k2prime = k2prime, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    medfit <- mrtm2(t_tac, reftac, medroi, k2prime = k2prime, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    highfit <- mrtm2(t_tac, reftac, highroi, k2prime = k2prime, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
 
     r2_df$Low[i] <- summary(lowfit$fit)$r.squared
     r2_df$Medium[i] <- summary(medfit$fit)$r.squared

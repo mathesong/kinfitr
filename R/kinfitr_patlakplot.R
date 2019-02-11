@@ -234,7 +234,7 @@ plot_Patlakfit <- function(patlakout, roiname = NULL) {
 #'
 #' @export
 
-Patlak_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename, inpshift = 0, frameStartEnd, gridbreaks=2) {
+Patlak_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename, inpshift = 0, frameStartEnd = NULL, gridbreaks=2) {
   frames <- length(t_tac)
   lowroi_fit <- Patlakplot(t_tac, lowroi, input, tstarIncludedFrames = frames, inpshift = inpshift, frameStartEnd = frameStartEnd)
   medroi_fit <- Patlakplot(t_tac, medroi, input, tstarIncludedFrames = frames, inpshift = inpshift, frameStartEnd = frameStartEnd)
