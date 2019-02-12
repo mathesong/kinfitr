@@ -38,7 +38,7 @@ newvals <- shift_timings(
   inpshift=0
 )
 
-bloodtac <- pracma::interp1(newvals$input$Time, newvals$input$blood, t_tac)
+bloodtac <- pracma::interp1(newvals$input$Time, newvals$input$Blood, t_tac)
 
 fit <- srtm_v(t_tac, reftac, roitac, bloodtac, weights)
 

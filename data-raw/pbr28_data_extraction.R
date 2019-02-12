@@ -16,20 +16,20 @@ tacdat <- read_csv("data-raw/pbr28_tacdata.csv") %>%
   group_by(PET) %>%
   nest(.key = "tacs")
 
-blooddat <- read_csv("data-raw/pbr28_blooddata.csv") %>%
+procblood <- read_csv("data-raw/pbr28_blooddata.csv") %>%
   mutate(
     Cbl_dispcorr = ifelse(Cbl_dispcorr < 0, 0, Cbl_dispcorr),
     Cpl_metabcorr = ifelse(Cpl_metabcorr < 0, 0, Cpl_metabcorr)
   ) %>%
   group_by(PET) %>%
-  nest(.key = "blooddata") %>%
-  mutate(input = map(blooddata, ~blood_interp(
+  nest(.key = "procblood") %>%
+  mutate(input = map(procblood, ~blood_interp(
     t_blood = .x$Time / 60, blood = .x$Cbl_dispcorr,
     t_plasma = .x$Time / 60, plasma = .x$Cpl_metabcorr,
     t_parentfrac = 1, parentfrac = 1
   )))
 
-petdat <- inner_join(tacdat, blooddat) %>%
+petdat <- inner_join(tacdat, procblood) %>%
   separate(PET, c("Subjname", "PETNo"), sep = "_", remove = F, convert = T)
 
 pbr28 <- petdat %>%

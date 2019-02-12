@@ -65,8 +65,8 @@
 #' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' input <- blood_interp(
-#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
-#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1 )
 #'
 #' fit1 <- twotcm(t_tac, tac, input, weights)
@@ -269,12 +269,8 @@ twotcm_model <- function(t_tac, input, K1, k2, k3, k4, vB) {
   interptime <- input$Time
   step <- interptime[2] - interptime[1]
 
-  t_inp <- interptime
-  i_blood <- input$blood
-  i_plasma <- input$plasma
-  i_parentfrac <- input$parentfrac
-
-  i_inp <- i_plasma * i_parentfrac
+  i_blood <- input$Blood
+  aif <- input$AIF
 
   delta <- sqrt((k2 + k3 + k4) ^ 2 - 4 * k2 * k4)
   th1 <- (k2 + k3 + k4 + delta) / 2
@@ -283,7 +279,7 @@ twotcm_model <- function(t_tac, input, K1, k2, k3, k4, vB) {
   ph2 <- K1 * (th2 - k3 - k4) / (-delta)
 
   a <- ph1 * exp(-th1 * interptime) + ph2 * exp(-th2 * interptime)
-  b <- i_inp
+  b <- aif
 
   i_outtac <- kinfit_convolve(a, b, step)
 
@@ -323,20 +319,15 @@ twotcm_model <- function(t_tac, input, K1, k2, k3, k4, vB) {
 #' @export
 
 twotcm_fitDelay_model <- function(t_tac, input, K1, k2, k3, k4, inpshift, vB) {
-  newvals <- shift_timings(t_tac, rep(1, length(t_tac)), input, inpshift)
+  newvals <- shift_timings(t_tac, rep(1, length(t_tac)), input, inpshift) # Using ones instead of tac as don't need it
 
   t_tac <- newvals$t_tac
 
-  t_inp <- newvals$input$Time
-  i_blood <- newvals$input$blood
-  i_plasma <- newvals$input$plasma
-  i_parentfrac <- newvals$input$parentfrac
-
+  i_blood <- newvals$input$Blood
+  aif <- newvals$input$AIF
 
   interptime <- newvals$input$Time
   step <- interptime[2] - interptime[1]
-
-  i_inp <- i_plasma * i_parentfrac
 
   delta <- sqrt((k2 + k3 + k4) ^ 2 - 4 * k2 * k4)
   th1 <- (k2 + k3 + k4 + delta) / 2
@@ -345,12 +336,12 @@ twotcm_fitDelay_model <- function(t_tac, input, K1, k2, k3, k4, inpshift, vB) {
   ph2 <- K1 * (th2 - k3 - k4) / (-delta)
 
   a <- ph1 * exp(-th1 * interptime) + ph2 * exp(-th2 * interptime)
-  b <- i_inp
+  b <- aif
 
   i_outtac <- kinfit_convolve(a, b, step)
 
   # Correction for vB
-  i_outtac <- i_outtac * (1 - vB) + vB * i_inp
+  i_outtac <- i_outtac * (1 - vB) + vB * aif
 
   outtac <- pracma::interp1(interptime, i_outtac, t_tac)
 
@@ -376,8 +367,8 @@ twotcm_fitDelay_model <- function(t_tac, input, K1, k2, k3, k4, inpshift, vB) {
 #' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' input <- blood_interp(
-#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
-#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1 )
 #'
 #' fit <- twotcm(t_tac, tac, input, weights, inpshift=0.1, vB=0.05)
@@ -404,7 +395,7 @@ plot_2tcmfit <- function(twotcmout, roiname=NULL) {
 
   inputdf <- data.frame(
     Time = twotcmout$input$Time,
-    Radioactivity = twotcmout$input$plasma * twotcmout$input$parentfrac,
+    Radioactivity = twotcmout$input$Plasma * twotcmout$input$ParentFraction,
     Weights = 1,
     Region = "AIF"
   )

@@ -35,7 +35,7 @@ Shifting of the TAC only occurs if the input is shifted negatively (and can be t
 ii) If the input is shifted, and is subsequently shorter than the TAC, an extra measurement will be
 added at \code{max(t_tac)} with the same value as the last measurement. iii) If the input is shifted positively,
 all interpolated times will be shifted by the specified amount, but an extra measurement is added at time=0 of
-0,0,1 for blood, plasma and parent fraction respectively (followed by interpolation into 6000 equally spaced time
+0,0,1 for blood, plasma and parent fraction respectively (followed by interpolation into default 6000 equally spaced time
 intervals in the new time window) i.e. not the same process as for the TACs: I figure that since the blood changes
 so quickly, this is likely more close to the true kinetics. Get in touch if you have suggestions for this.
 }

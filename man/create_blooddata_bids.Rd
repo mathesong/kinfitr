@@ -4,11 +4,14 @@
 \alias{create_blooddata_bids}
 \title{Create a blooddata object from BIDS data}
 \usage{
-create_blooddata_bids(bids_data)
+create_blooddata_bids(bids_data, TimeShift = 0)
 }
 \arguments{
 \item{bids_data}{The filename of a PET BIDS json sidecar, or a list
 containing the information contained within a PET BIDS json sidecar.}
+
+\item{TimeShift}{The extent to which all the times in the data should be
+shifted (in seconds). Defaults to 0.}
 }
 \value{
 A blooddata object

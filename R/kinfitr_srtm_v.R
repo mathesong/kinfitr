@@ -83,7 +83,7 @@
 #'   inpshift=0
 #' )
 #'
-#' bloodtac <- pracma::interp1(newvals$input$Time, newvals$input$blood, t_tac)
+#' bloodtac <- pracma::interp1(newvals$input$Time, newvals$input$Blood, t_tac)
 #'
 #' fit <- srtm_v(t_tac, reftac, roitac, bloodtac, weights)
 #'
@@ -271,7 +271,7 @@ srtm_v_model <- function(t_tac, reftac, bloodtac, R1, k2, bp, vBr, vBt) {
 #'   inpshift=0
 #' )
 #'
-#' bloodtac <- pracma::interp1(newvals$input$Time, newvals$input$blood, t_tac)
+#' bloodtac <- pracma::interp1(newvals$input$Time, newvals$input$Blood, t_tac)
 #'
 #' fit <- srtm_v(t_tac, reftac, roitac, bloodtac, weights)
 #'

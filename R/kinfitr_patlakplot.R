@@ -37,8 +37,8 @@
 #' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' input <- blood_interp(
-#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
-#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1 )
 #'
 #' fit <- Patlakplot(t_tac, tac, input, 10, weights, inpshift = 0.1  )
@@ -73,13 +73,10 @@ Patlakplot <- function(t_tac, tac, input, tstarIncludedFrames, weights, inpshift
   tac <- newvals$tac
 
   t_inp <- newvals$input$Time
-  blood <- newvals$input$blood
-  plasma <- newvals$input$plasma
-  parentfrac <- newvals$input$parentfrac
+  blood <- newvals$input$Blood
+  aif <- newvals$input$AIF
 
   # Parameters
-
-  corrplasma <- newvals$input$plasma * newvals$input$parentfrac
 
   interptime <- newvals$input$Time
   i_tac <- pracma::interp1(t_tac, tac, interptime, method = "linear")
@@ -87,8 +84,8 @@ Patlakplot <- function(t_tac, tac, input, tstarIncludedFrames, weights, inpshift
   # Blood Volume Correction (nothing happens if vB = 0)
   i_tac <- (i_tac - vB * blood) / (1 - vB)
 
-  patlak_roi <- i_tac / corrplasma
-  patlak_plasma <- as.numeric((pracma::cumtrapz(interptime, corrplasma)) / corrplasma)
+  patlak_roi <- i_tac / aif
+  patlak_plasma <- as.numeric((pracma::cumtrapz(interptime, aif)) / aif)
 
   patlak_roi <- pracma::interp1(interptime, patlak_roi, t_tac, method = "linear")
   patlak_plasma <- pracma::interp1(interptime, patlak_plasma, t_tac, method = "linear")
@@ -146,8 +143,8 @@ Patlakplot <- function(t_tac, tac, input, tstarIncludedFrames, weights, inpshift
 #' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' input <- blood_interp(
-#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
-#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1 )
 #'
 #' fit <- Patlakplot(t_tac, tac, input, 10, weights, inpshift = 0.1  )

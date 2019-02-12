@@ -60,8 +60,8 @@
 #' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' input <- blood_interp(
-#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
-#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1 )
 #'
 #' fit1 <- onetcm(t_tac, tac, input, weights)
@@ -250,15 +250,11 @@ onetcm_model <- function(t_tac, input, K1, k2, vB) {
   interptime <- input$Time
   step <- interptime[2] - interptime[1]
 
-  t_inp <- interptime
-  i_blood <- input$blood
-  i_plasma <- input$plasma
-  i_parentfrac <- input$parentfrac
-
-  i_inp <- i_plasma * i_parentfrac
+  i_blood <- input$Blood
+  aif <- input$AIF
 
   a <- K1 * exp(-k2 * interptime)
-  b <- i_inp
+  b <- aif
 
   i_outtac <- kinfit_convolve(a, b, step)
 
@@ -300,18 +296,15 @@ onetcm_fitDelay_model <- function(t_tac, input, K1, k2, inpshift, vB) {
 
   t_tac <- newvals$t_tac
 
-  t_inp <- newvals$input$Time
-  i_blood <- newvals$input$blood
-  i_plasma <- newvals$input$plasma
-  i_parentfrac <- newvals$input$parentfrac
+  i_blood <- newvals$input$Blood
+  aif <- newvals$input$AIF
 
   interptime <- newvals$input$Time
   step <- interptime[2] - interptime[1]
 
-  i_inp <- i_plasma * i_parentfrac
 
   a <- K1 * exp(-k2 * interptime)
-  b <- i_inp
+  b <- aif
 
   i_outtac <- kinfit_convolve(a, b, step)
 
@@ -341,8 +334,8 @@ onetcm_fitDelay_model <- function(t_tac, input, K1, k2, inpshift, vB) {
 #' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' input <- blood_interp(
-#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
-#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1 )
 #'
 #' fit <- onetcm(t_tac, tac, input, weights, inpshift=0.1, vB=0.05)
@@ -369,7 +362,7 @@ plot_1tcmfit <- function(onetcmout, roiname=NULL) {
 
   inputdf <- data.frame(
     Time = onetcmout$input$Time,
-    Radioactivity = onetcmout$input$plasma * onetcmout$input$parentfrac,
+    Radioactivity = onetcmout$input$Plasma * onetcmout$input$ParentFraction,
     Weights = 1,
     Region = "AIF"
   )

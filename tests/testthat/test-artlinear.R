@@ -106,7 +106,7 @@ test_that("Patlakplot works", {
   Patlakout <- Patlakplot(
     t_tac, tac, input, 10, weights, inpshift = inpshift  )
   expect_gt(Patlakout$par$K, 0)
-  expect_lt(Patlakout$par$K, 0.01)
+  expect_lt(Patlakout$par$K, 0.015)
   expect_true( any(class(plot(Patlakout))=="ggplot") )
 })
 

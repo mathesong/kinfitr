@@ -100,7 +100,7 @@ create_blooddata_components <- function(
     Models = list(
       Blood = list(Method = "interp", Data = NULL),
       BPR = list(Method = "interp", Data = NULL),
-      parentFrac = list(Method = "interp", Data = NULL),
+      parentFraction = list(Method = "interp", Data = NULL),
       AIF = list(Method = "interp", Data = NULL)
     ),
     TimeShift = TimeShift)
@@ -149,11 +149,6 @@ create_blooddata_bids <- function(bids_data, TimeShift = 0) {
     return(list)
   }
 
-  # Shouldn't be here
-  bids_data <- "Z:\\kipet\\atlas_images\\human\\vff\\Granville\\TRT_ShareDat\\PBR28\\PBR28_mini\\sub-03\\pet\\sub-03_ses-1_task-rest_pet.json"
-  bids_data <- jsonlite::fromJSON(bids_data)
-  bids_data$Blood.Continuous$Data.Labels <- c("time", "activity")
-
 
   # Continuous blood
   Blood.Continuous <- tibblify_bidsjson(bids_data$Blood.Continuous)
@@ -177,7 +172,7 @@ create_blooddata_bids <- function(bids_data, TimeShift = 0) {
     Models = list(
       Blood = list(Method = "interp", Data = NULL),
       BPR = list(Method = "interp", Data = NULL),
-      parentFrac = list(Method = "interp", Data = NULL),
+      parentFraction = list(Method = "interp", Data = NULL),
       AIF = list(Method = "interp", Data = NULL)
     ),
     TimeShift = 0)
@@ -193,7 +188,7 @@ create_blooddata_bids <- function(bids_data, TimeShift = 0) {
 
 blood_addfit <- function(blooddata, fit, modeltype = c("Blood",
                                                   "BPR",
-                                                  "parentFrac",
+                                                  "parentFraction",
                                                   "AIF") ) {
 
   # Verify fit object
@@ -204,9 +199,12 @@ blood_addfit <- function(blooddata, fit, modeltype = c("Blood",
 
   if(length(modeltype) > 1) {
     stop("modeltype should be defined for the model as one of
-         the following: Blood, BPR, parentFrac or AIF")
+         the following: Blood, BPR, parentFraction or AIF")
   }
-  modeltype <- match.arg(modeltype)
+  modeltype <- match.arg(modeltype, c("Blood",
+                                      "BPR",
+                                      "parentFraction",
+                                      "AIF"))
 
   blooddata$Models[[modeltype]] <- list(Method = "fit", Data=fit)
 
@@ -215,24 +213,30 @@ blood_addfit <- function(blooddata, fit, modeltype = c("Blood",
 }
 
 blood_addfitpars <- function(blooddata, modelname, fitpars,
-                             modeltype = c("Blood", "BPR", "parentFrac", "AIF")) {
+                             modeltype = c("Blood", "BPR", "parentFraction", "AIF")) {
 
 
   # Verify fit type
   if( !exists(modelname,
-              where = "package:kinfitr",
               mode = "function") ) {
     stop("The modelname should match the model name of
-         the corresponding model within the kinfitr package.")
+         the corresponding model function.")
   }
 
   if(length(modeltype) > 1) {
     stop("modeltype should be defined for the model as one of
-         the following: Blood, BPR, parentFrac or AIF")
+         the following: Blood, BPR, parentFraction or AIF")
   }
-  modeltype <- match.arg(modeltype)
+  modeltype <- match.arg(modeltype, c("Blood",
+                                      "BPR",
+                                      "parentFraction",
+                                      "AIF"))
 
-  blooddata$Models[[modeltype]] <- list(Method = "fitpars", Data=fitpars)
+
+
+  blooddata$Models[[modeltype]] <- list(Method = "fitpars",
+                                        Data=list(Model = modelname,
+                                                  Pars = fitpars))
 
   return(blooddata)
 
@@ -240,14 +244,17 @@ blood_addfitpars <- function(blooddata, modelname, fitpars,
 
 
 blood_addfitted <- function(blooddata, time, predicted,
-                             modeltype = c("Blood", "BPR", "parentFrac", "AIF")) {
+                             modeltype = c("Blood", "BPR", "parentFraction", "AIF")) {
 
 
   if(length(modeltype) > 1) {
     stop("modeltype should be defined for the model as one of
-         the following: Blood, BPR, parentFrac or AIF")
+         the following: Blood, BPR, parentFraction or AIF")
   }
-  modeltype <- match.arg(modeltype)
+  modeltype <- match.arg(modeltype, c("Blood",
+                                      "BPR",
+                                      "parentFraction",
+                                      "AIF"))
 
   fitted <- tibble::tibble(time = time, predicted = predicted)
 
@@ -257,8 +264,340 @@ blood_addfitted <- function(blooddata, time, predicted,
 
 }
 
-blooddata2input <- function(blooddata, startTime, stopTime, interpPoints = 6000) {
+blooddata2input <- function(blooddata,
+                            startTime = 0,
+                            stopTime = NULL,
+                            interpPoints = 6000,
+                            output = c("input",
+                                       "Blood",
+                                       "BPR",
+                                       "parentFraction",
+                                       "AIF")) {
+
+  if(is.null(stopTime)) {
+
+    stopTime = max( c(
+      with(blooddata$Data$Blood.Discrete$Data.Values,
+           sampleStartTime + sampleDuration),
+      with(blooddata$Data$Plasma$Data.Values,
+           sampleStartTime + sampleDuration),
+      with(blooddata$Data$Metabolite$Data.Values,
+           sampleStartTime + sampleDuration),
+      blooddata$Data$Blood.Continuous$Data.Values$time) )
+
+  }
+
+  if(startTime > blooddata$TimeShift*(-1)) {
+    startTime = 0
+  }
+
+  interptime <- seq(startTime, stopTime, length.out = interpPoints)
+
+  output <- match.arg(output, c("input",
+                                "Blood",
+                                "BPR",
+                                "parentFraction",
+                                "AIF"))
+
+  # Blood
+
+  blood_discrete <- blooddata$Data$Blood.Discrete$Data.Values
+  blood_discrete$time <- blood_discrete$sampleStartTime +
+    0.5*blood_discrete$sampleDuration
+  blood_discrete <- dplyr::arrange(blood_discrete, time)
+
+  blood_continuous <- blooddata$Data$Blood.Continuous$Data.Values
+
+  blood <- dplyr::bind_rows(blood_discrete, blood_continuous)
+  blood <- dplyr::arrange(blood, time)
+  blood$Method <- ifelse(is.na(blood$sampleDuration),
+                         yes = "Continuous",
+                         no = "Discrete")
+
+  if(output == "Blood") {
+    return(blood)
+  }
+
+    ## Interp
+    if(blooddata$Models$Blood$Method == "interp") {
+
+      suppressWarnings(
+        i_blood <- tibble::tibble(time = interptime,
+                                  activity = interpends(blood$time,
+                                                        blood$activity,
+                                                        interptime,
+                                                        method = "linear",
+                                                        yzero=0))
+      )
+    }
+
+    ## Fit
+    if(blooddata$Models$Blood$Method == "fit") {
+
+      i_blood <- tibble::tibble(time = interptime,
+                                activity = predict(blooddata$Models$Blood$Method$Data,
+                                                   newdata = list(time = interptime) ))
+    }
+
+    ## Fit pars
+    if(blooddata$Models$Blood$Method == "fitpars") {
+
+      modelname <- blooddata$Models$Blood$Data$Model
+      Pars <- append(list(time=interptime),
+                     as.list(blooddata$Models$Blood$Data$Pars))
+
+      i_blood <- tibble::tibble(time = interptime,
+                                activity = do.call(what = modelname,
+                                                   args = Pars) )
+    }
+
+    ## Fitted
+    if(blooddata$Models$Blood$Method == "fitted") {
+
+      i_blood <- tibble::tibble(time = interptime,
+                                activity = interpends(blooddata$Models$Blood$Data$time,
+                                                      blooddata$Models$Blood$Data$activity,
+                                                      interptime,
+                                                      method = "linear",
+                                                      yzero=0))
+    }
+
+  # Blood-to-Plasma Ratio
+
+  plasma <- blooddata$Data$Plasma$Data.Values
+  plasma$time <- plasma$sampleStartTime +
+    0.5*plasma$sampleDuration
+  plasma <- dplyr::arrange(plasma, time)
+
+  commonvalues <- intersect(plasma$time, blood_discrete$time)
+
+  bprvec <- blood_discrete$activity[blood_discrete$time %in% commonvalues] /
+    plasma$activity[plasma$time %in% commonvalues]
 
 
+  bpr <- tibble::tibble(time = commonvalues, bpr = bprvec)
+
+  if(output == "BPR") {
+    return(bpr)
+  }
+
+    ## Interp
+    if(blooddata$Models$BPR$Method == "interp") {
+
+      i_bpr <- tibble::tibble(time = interptime,
+                                bpr = interpends(bpr$time,
+                                                 bpr$bpr,
+                                                 interptime,
+                                                 method = "linear"))
+      blood$bpr <- interpends(bpr$time, bpr$bpr, blood$time,
+                              method = "linear")
+    }
+
+    ## Fit
+    if(blooddata$Models$BPR$Method == "fit") {
+
+      i_bpr <- tibble::tibble(time = interptime,
+                                bpr = predict(blooddata$Models$BPR$Method$Data,
+                                                   newdata = list(time = interptime) ))
+
+      blood$bpr <- predict(blooddata$Models$BPR$Method$Data,
+                           newdata = list(time = blood$time) )
+    }
+
+    ## Fit pars
+    if(blooddata$Models$BPR$Method == "fitpars") {
+
+      modelname <- blooddata$Models$BPR$Data$Model
+      Pars <- append(list(time=interptime),
+                     as.list(blooddata$Models$BPR$Data$Pars))
+
+      i_bpr <- tibble::tibble(time = interptime,
+                                activity = do.call(what = modelname,
+                                                   args = Pars) )
+      Pars <- append(list(time=blood$time),
+                     as.list(blooddata$Models$BPR$Data$Pars))
+
+      blood$bpr <- do.call(what = modelname,
+                           args = Pars)
+    }
+
+    ## Fitted
+    if(blooddata$Models$BPR$Method == "fitted") {
+
+      i_bpr <- tibble::tibble(time = interptime,
+                                activity = interpends(blooddata$Models$BPR$Data$time,
+                                                      blooddata$Models$BPR$Data$activity,
+                                                      interptime,
+                                                      method = "linear"))
+      blood$bpr <- interpends(blooddata$Models$BPR$Data$time,
+                              blooddata$Models$BPR$Data$activity,
+                              blood$time,
+                              method = "linear")
+
+    }
+
+
+  # Parent Fraction
+
+  pf <- blooddata$Data$Metabolite$Data.Values
+  pf$time <- pf$sampleStartTime + 0.5*pf$sampleDuration
+
+  if(output == "parentFraction") {
+    return(pf)
+  }
+
+    ## Interp
+    if(blooddata$Models$parentFraction$Method == "interp") {
+
+      i_pf <- tibble::tibble(time = interptime,
+                              parentFraction = interpends(pf$time,
+                                               pf$parentFraction,
+                                               interptime,
+                                               method = "linear",
+                                               yzero = 1))
+      blood$parentFraction <- interpends(pf$time, pf$parentFraction,
+                                               blood$time,
+                                               method = "linear")
+
+    }
+
+    ## Fit
+    if(blooddata$Models$parentFraction$Method == "fit") {
+
+      i_pf <- tibble::tibble(time = interptime,
+                              parentFraction = predict(blooddata$Models$parentFraction$Method$Data,
+                                            newdata = list(time = interptime) ))
+
+      blood$parentFraction <- predict(blooddata$Models$parentFraction$Method$Data,
+                           newdata = list(time = blood$time) )
+    }
+
+    ## Fit pars
+    if(blooddata$Models$parentFraction$Method == "fitpars") {
+
+      modelname <- blooddata$Models$parentFraction$Data$Model
+      Pars <- append(list(time=interptime),
+                     as.list(blooddata$Models$parentFraction$Data$Pars))
+
+      i_pf <- tibble::tibble(time = interptime,
+                              activity = do.call(what = modelname,
+                                                 args = Pars) )
+
+      Pars <- append(list(time=blood$time),
+                     as.list(blooddata$Models$parentFraction$Data$Pars))
+
+      blood$parentFraction <- do.call(what = modelname,
+                           args = Pars)
+    }
+
+    ## Fitted
+    if(blooddata$Models$parentFraction$Method == "fitted") {
+
+      i_pf <- tibble::tibble(time = interptime,
+                              parentFraction = interpends(blooddata$Models$parentFraction$Data$time,
+                                                    blooddata$Models$parentFraction$Data$parentFraction,
+                                                    interptime,
+                                                    method = "linear",
+                                                    yzero = 1))
+
+      blood$parentFraction <- interpends(blooddata$Models$parentFraction$Data$time,
+                              blooddata$Models$parentFraction$Data$parentFraction,
+                              blood$time,
+                              method = "linear",
+                              yzero=1)
+    }
+
+  # AIF
+
+  aif <- blood
+  aif <- dplyr::rename(aif, blood = activity)
+  aif <- dplyr::mutate(aif,
+                       plasma = blood * (1/bpr),
+                       aif = plasma * parentFraction)
+
+  if(output == "AIF") {
+    return(aif)
+  }
+
+
+    ## Interp
+    if(blooddata$Models$AIF$Method == "interp") {
+
+      suppressWarnings(
+        i_aif <- tibble::tibble(time = interptime,
+                              aif = interpends(aif$time,
+                                               aif$aif,
+                                               interptime,
+                                               method = "linear",
+                                               yzero = 0))
+      )
+
+    }
+
+    ## Fit
+    if(blooddata$Models$AIF$Method == "fit") {
+
+      i_aif <- tibble::tibble(time = interptime,
+                              aif = predict(blooddata$Models$AIF$Method$Data,
+                                           newdata = list(time = interptime) ))
+    }
+
+    ## Fit pars
+    if(blooddata$Models$AIF$Method == "fitpars") {
+
+      modelname <- blooddata$Models$AIF$Data$Model
+      Pars <- append(list(time=interptime),
+                     as.list(blooddata$Models$AIF$Data$Pars))
+
+      i_aif <- tibble::tibble(time = interptime,
+                             activity = do.call(what = modelname,
+                                                args = Pars) )
+    }
+
+    ## Fitted
+    if(blooddata$Models$AIF$Method == "fitted") {
+
+      i_aif <- tibble::tibble(time = interptime,
+                              aif = interpends(blooddata$Models$AIF$Data$time,
+                                               blooddata$Models$AIF$Data$aif,
+                                               interptime,
+                                               method = "linear",
+                                               yzero = 0))
+    }
+
+  if(output == "input") {
+
+    input <- tibble::tibble(
+      Time = (interptime + TimeShift)/60,
+      Blood = i_blood$activity,
+      Plasma = i_blood$activity * i_bpr$bpr,
+      ParentFraction = i_pf$parentFraction,
+      AIF = i_aif$aif
+    )
+
+    return(input)
+
+  }
 
 }
+
+interpends <- function(x, y, xi, method="linear", yzero = NULL) {
+
+  if(is.null(yzero)) {
+    yzero = head(y , 1)
+  }
+
+  if( head(xi, 1) < head(x, 1)) {
+    x <- c( head(xi, 1), x)
+    y <- c( yzero, y)
+  }
+
+  if( tail(xi, 1) < tail(x, 1)) {
+    x <- c( x, tail(xi, 1) )
+    y <- c( y, tail(y , 1) )
+  }
+
+  pracma::interp1(x, y, xi, method)
+
+}
+

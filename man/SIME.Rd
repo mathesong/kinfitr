@@ -74,8 +74,8 @@ tacdf <- dplyr::select(pbr28$tacs[[2]], FC:CBL)
 weights <- pbr28$tacs[[2]]$Weights
 
 input <- blood_interp(
-  pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
-  pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+  pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
+  pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
   t_parentfrac = 1, parentfrac = 1 )
 
 Vndgrid <- seq(from=0, to=3, by=0.5)

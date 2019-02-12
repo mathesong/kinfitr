@@ -36,8 +36,8 @@
 #' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' input <- blood_interp(
-#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
-#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1 )
 #'
 #' fit1 <- Loganplot(t_tac, tac, input, 10, weights)
@@ -73,13 +73,10 @@ Loganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights=NULL,
   tac <- newvals$tac
 
   t_inp <- newvals$input$Time
-  blood <- newvals$input$blood
-  plasma <- newvals$input$plasma
-  parentfrac <- newvals$input$parentfrac
+  blood <- newvals$input$Blood
+  aif <- newvals$input$AIF
 
   # Parameters
-
-  corrplasma <- newvals$input$plasma * newvals$input$parentfrac
 
   interptime <- newvals$input$Time
   i_tac <- pracma::interp1(t_tac, tac, interptime, method = "linear")
@@ -88,7 +85,7 @@ Loganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights=NULL,
   i_tac <- (i_tac - vB * blood) / (1 - vB)
 
   logan_roi <- as.numeric(pracma::cumtrapz(interptime, i_tac) / i_tac)
-  logan_plasma <- as.numeric((pracma::cumtrapz(interptime, corrplasma)) / i_tac)
+  logan_plasma <- as.numeric((pracma::cumtrapz(interptime, aif)) / i_tac)
 
   logan_roi <- pracma::interp1(interptime, logan_roi, t_tac, method = "linear")
   logan_plasma <- pracma::interp1(interptime, logan_plasma, t_tac, method = "linear")
@@ -147,8 +144,8 @@ Loganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights=NULL,
 #' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' input <- blood_interp(
-#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
-#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1 )
 #'
 #' fit <- Loganplot(t_tac, tac, input, 10, weights)

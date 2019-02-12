@@ -21,8 +21,8 @@ Provides a plot of the input data to get an idea of how it looks. Blood, plasma 
 data(pbr28)
 
 input <- blood_interp(
-  pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
-  pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+  pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
+  pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
   t_parentfrac = 1, parentfrac = 1 )
 
 plot_input(input)

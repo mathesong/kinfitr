@@ -35,8 +35,8 @@
 #' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' input <- blood_interp(
-#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
-#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1 )
 #'
 #' fit1 <- ma1(t_tac, tac, input, 10, weights)
@@ -70,13 +70,10 @@ ma1 <- function(t_tac, tac, input, tstarIncludedFrames, weights=NULL, inpshift =
   tac <- newvals$tac
 
   t_inp <- newvals$input$Time
-  blood <- newvals$input$blood
-  plasma <- newvals$input$plasma
-  parentfrac <- newvals$input$parentfrac
+  blood <- newvals$input$Blood
+  aif <- newvals$input$AIF
 
   # Parameters
-
-  corrplasma <- newvals$input$plasma * newvals$input$parentfrac
 
   interptime <- newvals$input$Time
 
@@ -85,7 +82,7 @@ ma1 <- function(t_tac, tac, input, tstarIncludedFrames, weights=NULL, inpshift =
   # Blood Volume Correction (nothing happens if vB = 0)
   i_tac <- (i_tac - vB * blood) / (1 - vB)
 
-  term1 <- as.numeric(pracma::cumtrapz(interptime, corrplasma))
+  term1 <- as.numeric(pracma::cumtrapz(interptime, aif))
   term2 <- as.numeric(pracma::cumtrapz(interptime, i_tac))
 
   term1 <- pracma::interp1(interptime, term1, t_tac, method = "linear")
@@ -146,8 +143,8 @@ ma1 <- function(t_tac, tac, input, tstarIncludedFrames, weights=NULL, inpshift =
 #' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' input <- blood_interp(
-#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
-#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1 )
 #'
 #' fit <- ma1(t_tac, tac, input, 10, weights)

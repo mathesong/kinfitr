@@ -44,8 +44,8 @@
 #' weights <- pbr28$tacs[[2]]$Weights
 #'
 #' input <- blood_interp(
-#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
-#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
+#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1 )
 #'
 #' Vndgrid <- seq(from=0, to=3, by=0.5)
@@ -263,11 +263,8 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights = NULL, roiweights = NULL
 #' @export
 
 SIME_model <- function(t_tac, input, Vnd, k2, k3, k4, vB) {
-  blood <- input$blood
-  plasma <- input$plasma
-  parentfrac <- input$parentfrac
-
-  i_inp <- plasma * parentfrac
+  blood <- input$Blood
+  aif <- input$AIF
 
   interptime <- input$Time
   step <- interptime[2] - interptime[1]
@@ -281,12 +278,12 @@ SIME_model <- function(t_tac, input, Vnd, k2, k3, k4, vB) {
   ph2 <- K1 * (th2 - k3 - k4) / (-delta)
 
   a <- ph1 * exp(-th1 * interptime) + ph2 * exp(-th2 * interptime)
-  b <- i_inp
+  b <- aif
 
   i_outtac <- kinfit_convolve(a, b, step)
 
   # Correction for vB
-  i_outtac <- i_outtac * (1 - vB) + vB * i_inp
+  i_outtac <- i_outtac * (1 - vB) + vB * aif
 
   outtac <- pracma::interp1(interptime, i_outtac, t_tac)
 

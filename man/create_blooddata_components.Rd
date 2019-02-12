@@ -16,24 +16,30 @@ create_blooddata_components(Blood.Discrete.Data.Values.sampleStartTime,
   Blood.Continuous.WithdrawalRate = NULL,
   Blood.Continuous.DispersionConstant = NULL,
   Blood.Continuous.DispersionConstantUnits = NULL,
-  Blood.Continuous.DispersionCorrected = TRUE)
+  Blood.Continuous.DispersionCorrected = TRUE, TimeShift = 0)
 }
 \arguments{
-\item{Blood.Discrete.Data.Values.sampleStartTime}{In seconds. Sample start times (if durations known), or simply sample times (if durations unkown).}
+\item{Blood.Discrete.Data.Values.sampleStartTime}{In seconds. Sample start
+times (if durations known), or simply sample times (if durations unkown).}
 
-\item{Blood.Discrete.Data.Values.sampleDuration}{In seconds. Sample durations (if known). Defaults to zero if durations unknown.}
+\item{Blood.Discrete.Data.Values.sampleDuration}{In seconds. Sample durations
+(if known). Defaults to zero if durations unknown.}
 
 \item{Blood.Discrete.Data.Values.activity}{In kBq/ml. Measured radioactivity.}
 
-\item{Plasma.Data.Values.sampleStartTime}{In seconds. Sample start times (if durations known), or simply sample times (if durations unkown).}
+\item{Plasma.Data.Values.sampleStartTime}{In seconds. Sample start times (if
+durations known), or simply sample times (if durations unkown).}
 
-\item{Plasma.Data.Values.sampleDuration}{In seconds. Sample durations (if known). Defaults to zero if durations unknown.}
+\item{Plasma.Data.Values.sampleDuration}{In seconds. Sample durations (if
+known). Defaults to zero if durations unknown.}
 
 \item{Plasma.Data.Values.activity}{In kBq/ml. Measured radioactivity.}
 
-\item{Metabolite.Data.Values.sampleStartTime}{In seconds. Sample start times (if durations known), or simply sample times (if durations unkown).}
+\item{Metabolite.Data.Values.sampleStartTime}{In seconds. Sample start times
+(if durations known), or simply sample times (if durations unkown).}
 
-\item{Metabolite.Data.Values.sampleDuration}{In seconds. Sample durations (if known). Defaults to zero if durations unknown.}
+\item{Metabolite.Data.Values.sampleDuration}{In seconds. Sample durations (if
+known). Defaults to zero if durations unknown.}
 
 \item{Metabolite.Data.Values.parentFraction}{Measured fraction.}
 
@@ -41,17 +47,28 @@ create_blooddata_components(Blood.Discrete.Data.Values.sampleStartTime,
 
 \item{Blood.Continuous.Data.Values.activity}{in kBq/ml.}
 
-\item{Blood.Continuous.WithdrawalRate}{The rate at which the blood was withdrawn from the subject.}
+\item{Blood.Continuous.WithdrawalRate}{The rate at which the blood was
+withdrawn from the subject.}
 
-\item{Blood.Continuous.DispersionConstant}{External dispersion time constant resulting from tubing.}
+\item{Blood.Continuous.DispersionConstant}{External dispersion time constant
+resulting from tubing.}
 
-\item{Blood.Continuous.DispersionConstantUnits}{The units of the dispersion constant.}
+\item{Blood.Continuous.DispersionConstantUnits}{The units of the dispersion
+constant.}
 
-\item{Blood.Continuous.DispersionCorrected}{Boolean flag specifying whether the continuous blood data have been dispersion-corrected.}
+\item{Blood.Continuous.DispersionCorrected}{Boolean flag specifying whether
+the continuous blood data have been dispersion-corrected.}
+
+\item{TimeShift}{The extent to which all the times in the data should be
+shifted (in seconds). Defaults to 0.}
 }
 \value{
 a blooddata object
 }
 \description{
-This function creates a blooddata object from data vectors. This function creates data objects which contain the minimum amount of data for modelling. Ideally, I recommend storing your data according to the BIDS specification and using the create_blooddata_bids command instead. Please refer to the PET BIDS standard for further details about the inputs.
+This function creates a blooddata object from data vectors. This function
+creates data objects which contain the minimum amount of data for modelling.
+Ideally, I recommend storing your data according to the BIDS specification
+and using the create_blooddata_bids command instead. Please refer to the PET
+BIDS standard for further details about the inputs.
 }
