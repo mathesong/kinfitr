@@ -30,7 +30,9 @@ Imports:
     grDevices,
     graphics,
     stats,
-    utils
+    utils,
+    tools,
+    jsonlite
 Suggests:
     knitr,
     devtools,
