@@ -502,3 +502,110 @@ plot_input <- function(input) {
     coord_cartesian(ylim = c(0, 1))
 
 }
+
+#' Perform dispersion correction on blood data collected using ABSS
+#'
+#' Perform dispersion correction on continuous blood samples from vectors as per
+#' http://www.turkupetcentre.net/petanalysis/input_dispersion.html. The measured
+#' values are first interpolated so that all measurements have an equal time
+#' between them, so any missing measurements are interpolated.
+#'
+#' @param time Vector of time (in seconds) of each sample.
+#' @param activity Vector of measured radioactivity concentrations in  blood
+#'   samples.
+#' @param tau Time constant denoting the time of dispersion (in seconds).
+#' @param timedelta The time difference between each measured sample. Defaults
+#'   to the most common time difference between the first 20 measurements.
+#' @param keep_interpolated Defaults to TRUE: should interpolated samples which
+#'   were not included in the original input be included in the output.
+#' @param smooth_iterations The number of times that the smoothing of each pair
+#'   of observations should be performed using blood_smooth. Defaults to 0.
+#'
+#' @return A tibble containing the measured times and radioactivity
+#'   concentrations after dispersion correction.
+#' @export
+#'
+#' @examples
+#' time <- 1:20
+#' activity <- rnorm(20)
+#' tau = 2.5
+#'
+#' blood_dispcor(time, activity, tau, 1)
+#'
+blood_dispcor <- function(time, activity, tau, timedelta = NULL,
+                          keep_interpolated=T, smooth_iterations = 0) {
+
+  if(is.null(timedelta)) {
+    diffs <- diff(head(time, 20))
+    deltas <- sort(table(diffs),decreasing=TRUE)
+    timedelta <- as.numeric(names(deltas)[1])
+  }
+
+  # linear interpolation of time and blood into seconds, in case values missing
+  i_time <- seq(from=min(time), to = max(time), by = timedelta)
+  i_activity <- pracma::interp1(time, activity, i_time, method = "linear")
+
+  # Adding a value on each side to make the output the same length
+  i_time <- c( head(i_time, 1), i_time, tail(i_time, 1) )
+  i_activity <- c( head(i_activity, 1)-timedelta, i_activity, tail(i_activity, 1)+timedelta )
+
+  i_integ_activity <- pracma::cumtrapz(i_time, i_activity)
+  i_integ_true <- tau*i_activity + i_integ_activity
+
+  ind <- 2:(length(i_time)-1)
+
+  time_out <- i_time[ind]
+  activity_out <- ( i_integ_true[ind+1] - i_integ_true[ind-1] ) / 2*timedelta
+
+  out <- tibble::tibble(time=time_out, activity=activity_out)
+
+  if(!keep_interpolated) {
+    meastimes <- time
+    out <- dplyr::filter(out, time %in% meastimes)
+  }
+
+  out <- blood_smooth(time_out, activity_out, smooth_iterations)
+
+  return(out)
+
+}
+
+
+
+#' Smooth continuous blood data
+#'
+#' This function averages each pair of blood measurements from ABSS systems -
+#' can be used after dispersion correction.
+#'
+#' @param time Vector of time (in seconds) of each sample.
+#' @param activity Vector of measured radioactivity concentrations in  blood
+#'   samples.
+#' @param iterations The number of times that the smoothing of each pair of
+#'   observations should be performed.
+#'
+#' @return A tibble containing the measured times and radioactivity
+#'   concentrations after smoothing.
+#' @export
+#'
+#' @examples
+#' time <- 1:20
+#' activity <- rnorm(20)
+#'
+#' blood_smooth(time, activity, 5)
+#'
+blood_smooth <- function(time, activity, iterations=1) {
+
+  if( iterations > 0 ) {
+
+    for(i in 1:iterations) {
+      idx <- 1:(length(time)-1)
+
+      time <- (time[idx] + time[idx+1])/2
+      activity <- (activity[idx] + activity[idx+1])/2
+    }
+  }
+
+  tibble::tibble(time=time, activity=activity)
+}
+
+

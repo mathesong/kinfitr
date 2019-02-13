@@ -56,44 +56,57 @@ create_blooddata_components <- function(
   TimeShift = 0) {
 
 
+
+
+  # Blood
+
+  Blood <- list()
+
   # Continuous blood
-  Blood.Continuous <- list(
-    Data.Values = tibble::tibble(time = Blood.Continuous.Data.Values.time,
-                                 activity = Blood.Continuous.Data.Values.activity),
-    WithdrawalRate = Blood.Continuous.WithdrawalRate,
-    DispersionConstant = Blood.Continuous.DispersionConstant,
-    DispersionConstantUnits = Blood.Continuous.DispersionConstantUnits,
-    DispersionCorrected = Blood.Continuous.DispersionCorrected
-  )
+
+  Blood$Continuous <- list(
+      Data = list(
+        Values = tibble::tibble(time = Blood.Continuous.Data.Values.time,
+                                   activity = Blood.Continuous.Data.Values.activity)),
+      WithdrawalRate = Blood.Continuous.WithdrawalRate,
+      DispersionConstant = Blood.Continuous.DispersionConstant,
+      DispersionConstantUnits = Blood.Continuous.DispersionConstantUnits,
+      DispersionCorrected = Blood.Continuous.DispersionCorrected
+    )
 
   # Discrete blood
-  Blood.Discrete <- list(
-    Data.Values = tibble::tibble(sampleStartTime =
+  Blood$Discrete <- list(
+    Data = list(
+      Values = tibble::tibble(sampleStartTime =
                                    Blood.Discrete.Data.Values.sampleStartTime,
                                  sampleDuration =
                                    Blood.Discrete.Data.Values.sampleDuration,
                                  activity = Blood.Discrete.Data.Values.activity))
+  )
 
   # Plasma
   Plasma <- list(
-    Data.Values = tibble::tibble(sampleStartTime =
+    Data = list(
+      Values = tibble::tibble(sampleStartTime =
                                    Plasma.Data.Values.sampleStartTime,
                                  sampleDuration =
                                    Plasma.Data.Values.sampleDuration,
                                  activity = Plasma.Data.Values.activity))
+  )
 
   # Metabolite
   Metabolite <- list(
-    Data.Values = tibble::tibble(sampleStartTime =
+    Data = list(
+      Values = tibble::tibble(sampleStartTime =
                                    Metabolite.Data.Values.sampleStartTime,
                                  sampleDuration =
                                    Metabolite.Data.Values.sampleDuration,
                                  parentFraction = Metabolite.Data.Values.activity))
+  )
 
   blooddata <- list(
     Data = list(
-      Blood.Continuous = Blood.Continuous,
-      Blood.Discrete = Blood.Discrete,
+      Blood = Blood,
       Plasma = Plasma,
       Metabolite = Metabolite
     ),
@@ -111,8 +124,6 @@ create_blooddata_components <- function(
   class(blooddata) <- "blooddata"
 
   return(blooddata)
-
-
 
 }
 
@@ -144,17 +155,20 @@ create_blooddata_bids <- function(bids_data, TimeShift = 0) {
   }
 
   tibblify_bidsjson <- function(list) {
-    list$Data.Values <- tibble::as_tibble(list$Data.Values)
-    colnames(list$Data.Values) <- list$Data.Labels
+    list$Data$Values <- tibble::as_tibble(list$Data$Values)
+    colnames(list$Data$Values) <- list$Data$Labels
     return(list)
   }
 
 
+  # Blood
+  Blood <- list()
+
   # Continuous blood
-  Blood.Continuous <- tibblify_bidsjson(bids_data$Blood.Continuous)
+  Blood$Continuous <- tibblify_bidsjson(bids_data$Blood$Continuous)
 
   # Discrete blood
-  Blood.Discrete <- tibblify_bidsjson(bids_data$Blood.Discrete)
+  Blood$Discrete <- tibblify_bidsjson(bids_data$Blood$Discrete)
 
   # Plasma
   Plasma <- tibblify_bidsjson(bids_data$Plasma)
@@ -164,8 +178,7 @@ create_blooddata_bids <- function(bids_data, TimeShift = 0) {
 
   blooddata <- list(
     Data = list(
-      Blood.Continuous = Blood.Continuous,
-      Blood.Discrete = Blood.Discrete,
+      Blood = Blood,
       Plasma = Plasma,
       Metabolite = Metabolite
     ),
@@ -186,6 +199,27 @@ create_blooddata_bids <- function(bids_data, TimeShift = 0) {
 }
 
 
+#' Add a model fit to a blooddata object
+#'
+#' This function adds a fit object which can predict values to the blooddata
+#' object
+#'
+#' @param blooddata A blooddata object created using one of the
+#'   create_blooddata_* functions.
+#' @param fit A model fit object, for which the predict function can be used for
+#'   new data.
+#' @param modeltype The function which the model predicts. One of the following:
+#'   Blood for models of how the blood data should be described, BPR for models
+#'   of the blood-to-plasma ratio, parentFraction for models of metabolism, and
+#'   AIF for models of the arterial input function.
+#'
+#' @return A blooddata object with the model inserted.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' blooddata <- blood_addfit(blooddata, hillfit, "parentFraction")
+#' }
 blood_addfit <- function(blooddata, fit, modeltype = c("Blood",
                                                   "BPR",
                                                   "parentFraction",
@@ -212,6 +246,25 @@ blood_addfit <- function(blooddata, fit, modeltype = c("Blood",
 
 }
 
+#' Add model fit parameters to a blooddata object
+#'
+#' This function adds the fitted parameters of a known model to the blooddata object.
+#'
+#' @param blooddata A blooddata object created using one of the create_blooddata_* functions.
+#' @param modelname The name of the model function which produces fitted outcomes for given parameters.
+#' @param fitpars The fitted parameters as a named list, data.frame or tibble.
+#' @param modeltype The function which the model predicts. One of the following:
+#'   Blood for models of how the blood data should be described, BPR for models
+#'   of the blood-to-plasma ratio, parentFraction for models of metabolism, and
+#'   AIF for models of the arterial input function.
+#'
+#' @return A blooddata object with the model inserted.
+#' @export
+#'
+#' @examples
+#' #' \dontrun{
+#' blooddata <- blood_addfitpars(blooddata, hillfit_model, hillfit$pars, "parentFraction")
+#' }
 blood_addfitpars <- function(blooddata, modelname, fitpars,
                              modeltype = c("Blood", "BPR", "parentFraction", "AIF")) {
 
@@ -243,6 +296,26 @@ blood_addfitpars <- function(blooddata, modelname, fitpars,
 }
 
 
+#' Add fitted values from another fit to a blooddata object
+#'
+#' This function adds the predicted values of an external function to a blooddata object. This allows one to use functions outside of kinfitr to estimate blood values.
+#'
+#' @param blooddata A blooddata object created using one of the create_blooddata_* functions.
+#' @param time The times of the predictions at a sufficiently detailed level of interpolation.
+#' @param predicted The predicted values for the given set of times.
+#' @param modeltype The function which the model predicts. One of the following:
+#'   Blood for models of how the blood data should be described, BPR for models
+#'   of the blood-to-plasma ratio, parentFraction for models of metabolism, and
+#'   AIF for models of the arterial input function.
+#'
+#' @return A blooddata object with the model fits inserted.
+#' @export
+#'
+#' @examples
+#' #' #' \dontrun{
+#' blooddata <- blood_addfitpars(blooddata, matlabout$time,
+#'              matlabout$predicted, "AIF")
+#' }
 blood_addfitted <- function(blooddata, time, predicted,
                              modeltype = c("Blood", "BPR", "parentFraction", "AIF")) {
 
@@ -264,6 +337,24 @@ blood_addfitted <- function(blooddata, time, predicted,
 
 }
 
+#' Create an input object from a blooddata object.
+#'
+#' Predicts and interpolates all of the functions to create an input object, or to a set of values for modelling of blood-related functions.
+#'
+#' @param blooddata A blooddata object, to which all the desired fits have been applied and added.
+#' @param startTime The starting time for the interpolation. Defaults to zero. If, after application of the TimeShift value in the blooddata object, the startTime is still after zero, it will be set to zero.
+#' @param stopTime The end time for the interpolation. Defaults to the maximum measured time.
+#' @param interpPoints The number of points to interpolate over between the start and stop times.
+#' @param output The output. This defaults to an "input" object, which can be used in a kinetic model fit. But if set to "Blood", "BPR", "parentFraction" or "AIF", it yields the appropriate input for the function which will be used to model these.
+#'
+#' @return A tibble containing the output specified.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' blooddata2input(blooddata)
+#' blooddata2input(blooddata, output="parentFraction")
+#' }
 blooddata2input <- function(blooddata,
                             startTime = 0,
                             stopTime = NULL,
@@ -277,13 +368,13 @@ blooddata2input <- function(blooddata,
   if(is.null(stopTime)) {
 
     stopTime = max( c(
-      with(blooddata$Data$Blood.Discrete$Data.Values,
+      with(blooddata$Data$Blood$Discrete$Data$Values,
            sampleStartTime + sampleDuration),
-      with(blooddata$Data$Plasma$Data.Values,
+      with(blooddata$Data$Plasma$Data$Values,
            sampleStartTime + sampleDuration),
-      with(blooddata$Data$Metabolite$Data.Values,
+      with(blooddata$Data$Metabolite$Data$Values,
            sampleStartTime + sampleDuration),
-      blooddata$Data$Blood.Continuous$Data.Values$time) )
+      blooddata$Data$Blood$Continuous$Data$Values$time) )
 
   }
 
@@ -301,12 +392,12 @@ blooddata2input <- function(blooddata,
 
   # Blood
 
-  blood_discrete <- blooddata$Data$Blood.Discrete$Data.Values
+  blood_discrete <- blooddata$Data$Blood$Discrete$Data$Values
   blood_discrete$time <- blood_discrete$sampleStartTime +
     0.5*blood_discrete$sampleDuration
   blood_discrete <- dplyr::arrange(blood_discrete, time)
 
-  blood_continuous <- blooddata$Data$Blood.Continuous$Data.Values
+  blood_continuous <- blooddata$Data$Blood$Continuous$Data$Values
 
   blood <- dplyr::bind_rows(blood_discrete, blood_continuous)
   blood <- dplyr::arrange(blood, time)
@@ -364,7 +455,7 @@ blooddata2input <- function(blooddata,
 
   # Blood-to-Plasma Ratio
 
-  plasma <- blooddata$Data$Plasma$Data.Values
+  plasma <- blooddata$Data$Plasma$Data$Values
   plasma$time <- plasma$sampleStartTime +
     0.5*plasma$sampleDuration
   plasma <- dplyr::arrange(plasma, time)
@@ -439,7 +530,7 @@ blooddata2input <- function(blooddata,
 
   # Parent Fraction
 
-  pf <- blooddata$Data$Metabolite$Data.Values
+  pf <- blooddata$Data$Metabolite$Data$Values
   pf$time <- pf$sampleStartTime + 0.5*pf$sampleDuration
 
   if(output == "parentFraction") {
@@ -592,7 +683,7 @@ interpends <- function(x, y, xi, method="linear", yzero = NULL) {
     y <- c( yzero, y)
   }
 
-  if( tail(xi, 1) < tail(x, 1)) {
+  if( tail(xi, 1) > tail(x, 1)) {
     x <- c( x, tail(xi, 1) )
     y <- c( y, tail(y , 1) )
   }
@@ -601,3 +692,120 @@ interpends <- function(x, y, xi, method="linear", yzero = NULL) {
 
 }
 
+#' Perform Dispersion Correction on a blooddata object
+#'
+#' Dispersion corrected is performed on the continuous blood data if it has not
+#' already been performed.
+#'
+#' @param blooddata A blooddata object created using one of the
+#'   create_blooddata_* functions.
+#' @param tau Time constant denoting the time of dispersion (in seconds).
+#' @param timedelta The time difference between each measured sample. Defaults
+#'   to the most common time difference between the first 20 measurements.
+#' @param keep_interpolated Defaults to TRUE: should interpolated samples which
+#'   were not included in the original input be included in the output.
+#' @param smooth_iterations The number of times that the smoothing of each pair
+#'   of observations should be performed using blood_smooth. Defaults to 0.
+#'
+#' @return A blooddata object after dispersion correction.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' blooddata <- blooddata_blood_dispcor(blooddata, 2.5)
+#' }
+#'
+blooddata_blood_dispcor <- function(blooddata, tau, timedelta = NULL,
+                                    keep_interpolated=T, smooth_iterations=0) {
+
+  if(is.null(blooddata$Data$Blood$Continuous)) {
+    stop("There is no continuous blood data to
+         perform dispersion correction on.")
+  }
+
+  if( !blooddata$Data$Blood$Continuous$DispersionCorrected ) { # not corrected
+
+    blood_continuous <- blooddata$Data$Blood$Continuous$Data$Values
+
+    blood_dc <- blood_dispcor(blood_continuous$time,
+                    blood_continuous$activity,
+                    tau = blooddata$Data$Blood$Continuous$DispersionConstant,
+                    timedelta, keep_interpolated=T,
+                    smooth_iterations = smooth_iterations)
+
+    blooddata$Data$Blood$Continuous$Data$Values <- blood_dc
+    blooddata$Data$Blood$Continuous$DispersionCorrected <- TRUE
+
+  }
+
+  return(blooddata)
+
+}
+
+plot_blooddata <- function(blooddata,
+                           startTime = 0,
+                           stopTime = NULL,
+                           interpPoints = 6000,
+                           colours=c('#ff321b',
+                                     '#1bff7e',
+                                     '#501bff',
+                                     '#ffa81b')) {
+
+  # Predicted
+
+  input <- blooddata2input(blooddata, startTime, stopTime, interpPoints)
+  input$`Blood-Plasma Ratio` <- input$Plasma / input$Blood
+  input <- dplyr::rename(input, "Parent Fraction" = ParentFraction)
+
+  bloodmax <- max(input$Blood)
+  input$Blood <- input$Blood / bloodmax
+  input$AIF <- input$AIF / bloodmax
+  input <- dplyr::select(input, -Plasma)
+
+  pred <- tidyr::gather(input, Outcome, Value, -Time)
+  pred <- dplyr::arrange(pred, Outcome, Time)
+  pred <- dplyr::rename(pred, "Parent Fraction" = ParentFraction)
+
+  # Measured data
+
+
+
+  pf <- blooddata2input(blooddata, startTime, stopTime, interpPoints, output = "parentFraction")
+  pf <- dplyr::select(pf, Time = time, Value = parentFraction)
+  pf <- dplyr::mutate(pf, Outcome = "Parent Fraction", Measurement = "Discrete")
+
+  bpr <- blooddata2input(blooddata, startTime, stopTime, interpPoints, output = "BPR")
+  bpr <- dplyr::select(bpr, Time = time, Value = bpr)
+  bpr <- dplyr::mutate(bpr, Outcome = "Blood-Plasma Ratio", Measurement = "Discrete")
+
+  blood <- blooddata2input(blooddata, startTime, stopTime, interpPoints, output = "Blood")
+  blood <- dplyr::select(blood, Time = time, Value = activity, Measurement = Method)
+  blood <- dplyr::mutate(blood, Outcome = "Blood", Value = Value/bloodmax)
+
+  aif <- blooddata2input(blooddata, startTime, stopTime, interpPoints, output = "AIF")
+  aif <- dplyr::select(aif, Time = time, Value = aif, Measurement = Method)
+  aif <- dplyr::mutate(aif, Outcome = "AIF", Value = Value/bloodmax)
+
+  measured <- dplyr::bind_rows(list(pf, bpr, blood, aif))
+  measured <- dplyr::arrange(measured, Outcome, Time)
+  measured <- dplyr::mutate(measured, Time = Time/60,
+                            dotsize = ifelse(Measurement=="Continuous", 1,2))
+
+
+  # Plot
+
+  ggplot(data=measured, aes(x=Time, y=Value, colour=Outcome)) +
+    geom_point(aes(shape=Measurement, size=dotsize)) +
+    scale_shape_manual(values = c(1, 16)) +
+    scale_size(range=c(1,2.5)) +
+    geom_line(data=pred, size=1.1, colour="black",
+              aes(group=Outcome), alpha=0.5) +
+    geom_line(data=pred, alpha=0.5) +
+    guides(shape=FALSE)
+
+# NB - BPR little strange - not sure which way it should be.
+
+
+
+
+}
