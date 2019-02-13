@@ -322,7 +322,7 @@ blood_addfitpars <- function(blooddata, modelname, fitpars,
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @examples
-#' #' #' \dontrun{
+#' #' \dontrun{
 #' blooddata <- blood_addfitpars(blooddata, matlabout$time,
 #'              matlabout$predicted, "AIF")
 #' }
