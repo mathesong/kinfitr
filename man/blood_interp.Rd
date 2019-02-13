@@ -24,6 +24,8 @@ measurement in minutes.}
 
 \item{parentfrac}{Numeric vector of the radioactivity concentration in each
 plasma measurement.}
+
+\item{interpPoints}{The number of points to interpolate into.}
 }
 \value{
 A dataframe containing the time, blood, plasma and parent fraction

@@ -16,6 +16,7 @@
 #'   measurement in minutes.
 #' @param parentfrac Numeric vector of the radioactivity concentration in each
 #'   plasma measurement.
+#' @param interpPoints The number of points to interpolate into.
 #'
 #'
 #' @return A dataframe containing the time, blood, plasma and parent fraction

@@ -72,3 +72,6 @@ Ideally, I recommend storing your data according to the BIDS specification
 and using the create_blooddata_bids command instead. Please refer to the PET
 BIDS standard for further details about the inputs.
 }
+\author{
+Granville J Matheson, \email{mathesong@gmail.com}
+}

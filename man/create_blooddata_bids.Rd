@@ -25,3 +25,6 @@ the PET BIDS standard.
 a <- create_blooddata_bids('bids_sidecar.json')
 }
 }
+\author{
+Granville J Matheson, \email{mathesong@gmail.com}
+}

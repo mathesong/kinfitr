@@ -37,6 +37,8 @@
 #' @return a blooddata object
 #' @export
 #'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
 create_blooddata_components <- function(
   Blood.Discrete.Data.Values.sampleStartTime,
   Blood.Discrete.Data.Values.sampleDuration = 0,
@@ -141,6 +143,8 @@ create_blooddata_components <- function(
 #' @return A blooddata object
 #' @export
 #'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
 #' @examples
 #' \dontrun{
 #' a <- create_blooddata_bids('bids_sidecar.json')
@@ -216,6 +220,8 @@ create_blooddata_bids <- function(bids_data, TimeShift = 0) {
 #' @return A blooddata object with the model inserted.
 #' @export
 #'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
 #' @examples
 #' \dontrun{
 #' blooddata <- blood_addfit(blooddata, hillfit, "parentFraction")
@@ -261,8 +267,10 @@ blood_addfit <- function(blooddata, fit, modeltype = c("Blood",
 #' @return A blooddata object with the model inserted.
 #' @export
 #'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
 #' @examples
-#' #' \dontrun{
+#' \dontrun{
 #' blooddata <- blood_addfitpars(blooddata, hillfit_model, hillfit$pars, "parentFraction")
 #' }
 blood_addfitpars <- function(blooddata, modelname, fitpars,
@@ -311,6 +319,8 @@ blood_addfitpars <- function(blooddata, modelname, fitpars,
 #' @return A blooddata object with the model fits inserted.
 #' @export
 #'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
 #' @examples
 #' #' #' \dontrun{
 #' blooddata <- blood_addfitpars(blooddata, matlabout$time,
@@ -350,12 +360,14 @@ blood_addfitted <- function(blooddata, time, predicted,
 #' @return A tibble containing the output specified.
 #' @export
 #'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
 #' @examples
 #' \dontrun{
-#' blooddata2input(blooddata)
-#' blooddata2input(blooddata, output="parentFraction")
+#' blooddata_getdata(blooddata)
+#' blooddata_getdata(blooddata, output="parentFraction")
 #' }
-blooddata2input <- function(blooddata,
+blooddata_getdata <- function(blooddata,
                             startTime = 0,
                             stopTime = NULL,
                             interpPoints = 6000,
@@ -661,7 +673,7 @@ blooddata2input <- function(blooddata,
     input <- tibble::tibble(
       Time = (interptime + TimeShift)/60,
       Blood = i_blood$activity,
-      Plasma = i_blood$activity * i_bpr$bpr,
+      Plasma = i_blood$activity / i_bpr$bpr,
       ParentFraction = i_pf$parentFraction,
       AIF = i_aif$aif
     )
@@ -710,6 +722,8 @@ interpends <- function(x, y, xi, method="linear", yzero = NULL) {
 #' @return A blooddata object after dispersion correction.
 #' @export
 #'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
 #' @examples
 #' \dontrun{
 #' blooddata <- blooddata_blood_dispcor(blooddata, 2.5)
@@ -742,6 +756,25 @@ blooddata_blood_dispcor <- function(blooddata, tau, timedelta = NULL,
 
 }
 
+#' Plot a blooddata object
+#'
+#' @param blooddata A blooddata object, to which all the desired fits have been applied and added.
+#' @param startTime The starting time for the interpolation. Defaults to zero. If, after application of the TimeShift value in the blooddata object, the startTime is still after zero, it will be set to zero.
+#' @param stopTime The end time for the interpolation. Defaults to the maximum measured time.
+#' @param interpPoints The number of points to interpolate over between the start and stop times.
+#' @param colours The colours for the plot.
+#'
+#' @return A ggplot2 object
+#' @export
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @import ggplot2
+#'
+#' @examples
+#' \dontrun{
+#' plot_blooddata(blooddata)
+#' }
 plot_blooddata <- function(blooddata,
                            startTime = 0,
                            stopTime = NULL,
@@ -753,8 +786,8 @@ plot_blooddata <- function(blooddata,
 
   # Predicted
 
-  input <- blooddata2input(blooddata, startTime, stopTime, interpPoints)
-  input$`Blood-Plasma Ratio` <- input$Plasma / input$Blood
+  input <- blooddata_getdata(blooddata, startTime, stopTime, interpPoints)
+  input$`Blood-Plasma Ratio` <- input$Blood / input$Plasma
   input <- dplyr::rename(input, "Parent Fraction" = ParentFraction)
 
   bloodmax <- max(input$Blood)
@@ -770,19 +803,19 @@ plot_blooddata <- function(blooddata,
 
 
 
-  pf <- blooddata2input(blooddata, startTime, stopTime, interpPoints, output = "parentFraction")
+  pf <- blooddata_getdata(blooddata, startTime, stopTime, interpPoints, output = "parentFraction")
   pf <- dplyr::select(pf, Time = time, Value = parentFraction)
   pf <- dplyr::mutate(pf, Outcome = "Parent Fraction", Measurement = "Discrete")
 
-  bpr <- blooddata2input(blooddata, startTime, stopTime, interpPoints, output = "BPR")
+  bpr <- blooddata_getdata(blooddata, startTime, stopTime, interpPoints, output = "BPR")
   bpr <- dplyr::select(bpr, Time = time, Value = bpr)
   bpr <- dplyr::mutate(bpr, Outcome = "Blood-Plasma Ratio", Measurement = "Discrete")
 
-  blood <- blooddata2input(blooddata, startTime, stopTime, interpPoints, output = "Blood")
+  blood <- blooddata_getdata(blooddata, startTime, stopTime, interpPoints, output = "Blood")
   blood <- dplyr::select(blood, Time = time, Value = activity, Measurement = Method)
   blood <- dplyr::mutate(blood, Outcome = "Blood", Value = Value/bloodmax)
 
-  aif <- blooddata2input(blooddata, startTime, stopTime, interpPoints, output = "AIF")
+  aif <- blooddata_getdata(blooddata, startTime, stopTime, interpPoints, output = "AIF")
   aif <- dplyr::select(aif, Time = time, Value = aif, Measurement = Method)
   aif <- dplyr::mutate(aif, Outcome = "AIF", Value = Value/bloodmax)
 
@@ -794,16 +827,18 @@ plot_blooddata <- function(blooddata,
 
   # Plot
 
+  plotmax <- min(c(1.2, max(bpr$Value)))
+
   ggplot(data=measured, aes(x=Time, y=Value, colour=Outcome)) +
     geom_point(aes(shape=Measurement, size=dotsize)) +
     scale_shape_manual(values = c(1, 16)) +
     scale_size(range=c(1,2.5)) +
-    geom_line(data=pred, size=1.1, colour="black",
+    geom_line(data=pred, size=0.8, colour="grey46",
               aes(group=Outcome), alpha=0.5) +
-    geom_line(data=pred, alpha=0.5) +
-    guides(shape=FALSE)
-
-# NB - BPR little strange - not sure which way it should be.
+    geom_line(data=pred) +
+    guides(size=FALSE) +
+    coord_cartesian(ylim = c(0, plotmax)) +
+    theme_bw()
 
 
 
