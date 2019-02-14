@@ -30,7 +30,8 @@ test_that("srtm works with frameStartEnd", {
 })
 
 test_that("srtm works with multstart", {
-  srtmout <- srtm(t_tac, reftac, roitac, weights=weights, multstart_iter = 5)
+  srtmout <- srtm(t_tac, reftac, roitac, weights=weights,
+                  multstart_iter = 5)
   expect_gt(srtmout$par$bp, -1)
   expect_lt(srtmout$par$bp, 0.5)
   expect_true( any(class(plot(srtmout))=="ggplot") )
@@ -38,7 +39,8 @@ test_that("srtm works with multstart", {
 
 test_that("srtm works with frameStartEnd and multstart", {
   srtmout <- srtm(t_tac, reftac, roitac, weights=weights,
-                  frameStartEnd = c(1,33), multstart_iter = 5)
+                  frameStartEnd = c(1,33),
+                  multstart_iter = 5)
   expect_gt(srtmout$par$bp, -1)
   expect_lt(srtmout$par$bp, 0.5)
   expect_true( any(class(plot(srtmout))=="ggplot") )
@@ -171,6 +173,14 @@ test_that("srtm_v works", {
   expect_true( any(class(plot(srtm_vout))=="ggplot") )
 })
 
+test_that("srtm_v works with vBr fitted", {
+  srtm_vout <- srtm_v(t_tac, reftac, roitac, bloodtac,
+                      weights=weights, vBr = 0.05)
+  expect_gt(srtm_vout$par$bp, -1)
+  expect_lt(srtm_vout$par$bp, 0.5)
+  expect_true( any(class(plot(srtm_vout))=="ggplot") )
+})
+
 test_that("srtm_v works with frameStartEnd", {
   srtm_vout <- srtm_v(t_tac, reftac, roitac, bloodtac, weights=weights,
                   frameStartEnd = c(1,33))
@@ -184,7 +194,8 @@ test_that("srtm_v works with multstart", {
                       weights=weights,
                       multstart_iter = 5,
                       multstart_upper = list(bp=0.2),
-                      multstart_lower = list(bp=-0.2))
+                      multstart_lower = list(bp=-0.2),
+                      vBr = 0.05)
   expect_gt(srtm_vout$par$bp, -1)
   expect_lt(srtm_vout$par$bp, 0.5)
   expect_true( any(class(plot(srtm_vout))=="ggplot") )
@@ -195,7 +206,8 @@ test_that("srtm_v works with frameStartEnd and multstart", {
                   frameStartEnd = c(1,33),
                   multstart_iter = 5,
                   multstart_upper = list(bp=0.2),
-                  multstart_lower = list(bp=-0.2))
+                  multstart_lower = list(bp=-0.2),
+                  vBr = 0.05)
   expect_gt(srtm_vout$par$bp, -1)
   expect_lt(srtm_vout$par$bp, 0.5)
   expect_true( any(class(plot(srtm_vout))=="ggplot") )

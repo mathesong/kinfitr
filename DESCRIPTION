@@ -32,7 +32,8 @@ Imports:
     stats,
     utils,
     tools,
-    jsonlite
+    jsonlite,
+    invgamma
 Suggests:
     knitr,
     devtools,

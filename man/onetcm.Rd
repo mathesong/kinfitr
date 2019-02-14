@@ -98,7 +98,7 @@ weights <- pbr28$tacs[[2]]$Weights
 input <- blood_interp(
   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
-  t_parentfrac = 1, parentfrac = 1 )
+  t_parentfrac = 1, parentfrac = 1)
 
 fit1 <- onetcm(t_tac, tac, input, weights)
 fit2 <- onetcm(t_tac, tac, input, weights, inpshift=0.1, vB=0.05)

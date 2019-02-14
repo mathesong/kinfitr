@@ -99,13 +99,15 @@ blood_interp <- function(t_blood, blood, t_plasma, plasma, t_parentfrac, parentf
                                                           interptime,
                                                           method = "linear"))
 
-  interped <- tibble::tibble(Time = interptime,
+  input <- tibble::tibble(Time = interptime,
                              Blood = interpcurves$Blood,
                              Plasma = interpcurves$Plasma,
                              ParentFraction = interpcurves$ParentFrac,
                              AIF = interpcurves$Plasma * interpcurves$ParentFrac)
 
-  return(interped)
+  class(input) <- c("interpblood", class(input))
+
+  return(input)
 }
 
 
@@ -214,6 +216,8 @@ shift_timings <- function(t_tac, tac, input, inpshift, shifttac=T) {
     AIF = pracma::interp1(input$Time, input$AIF, interptime,
                           method = "linear") )
 
+  class(input) <- c("interpblood", class(input))
+
   i_tac <- pracma::interp1(tacdf$Time, tacdf$Value, interptime, method = "linear")
 
   out <- list(t_tac = tacdf$Time, tac = tacdf$Value, input = input, interptime = interptime, i_tac = i_tac)
@@ -313,6 +317,8 @@ shift_timings_df <- function(t_tac, tacsdf, input, inpshift, shifttac=T) {
                                      method = "linear"),
     AIF = pracma::interp1(input$Time, input$AIF, interptime,
                           method = "linear") )
+
+  class(input) <- c("interpblood", class(input))
 
   i_tacs <- sapply(tacsdf, function(x) pracma::interp1(tacdf$Time, x, interptime, method = "linear"))
 
@@ -487,13 +493,13 @@ plot_inptac_fit <- function(fitout, roiname = NULL, zoomTime=5) {
 #' @export
 plot_input <- function(input) {
 
+  input$BPR <- input$Blood / input$Plasma
   input$Blood <- input$Blood / max( c(input$Blood, input$Plasma) )
   input$Plasma <- input$Plasma / max( c(input$Blood, input$Plasma) )
-  input$PBR <- input$Plasma / input$Blood
   input$AIF <- input$Plasma * input$ParentFraction
 
-  input <- dplyr::rename(input, Blood=blood, Plasma=plasma, "Parent Fraction" = parentfrac,
-                         "Plasma-to-Blood Ratio" = PBR)
+  input <- dplyr::rename(input, "Parent Fraction" = ParentFraction,
+                         "Blood-Plasma Ratio" = BPR)
 
   tidyinput <- tidyr::gather(input, Data, Radioactivity, -Time) %>%
     dplyr::mutate(Data = forcats::as_factor(Data))

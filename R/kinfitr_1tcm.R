@@ -41,8 +41,8 @@
 #'   to the upper bounds. Named list of whichever parameters' starting bounds should
 #'   be altered.
 #' @param printvals Optional. This displays the parameter values for each iteration of the
-#' model. This is useful for debugging and changing starting values and upper and lower
-#' bounds for parameters.
+#'   model. This is useful for debugging and changing starting values and upper and lower
+#'   bounds for parameters.
 #'
 #'
 #' @return A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit},
@@ -62,7 +62,7 @@
 #' input <- blood_interp(
 #'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
 #'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
-#'   t_parentfrac = 1, parentfrac = 1 )
+#'   t_parentfrac = 1, parentfrac = 1)
 #'
 #' fit1 <- onetcm(t_tac, tac, input, weights)
 #' fit2 <- onetcm(t_tac, tac, input, weights, inpshift=0.1, vB=0.05)

@@ -26,7 +26,7 @@ A blooddata object with the model fits inserted.
 This function adds the predicted values of an external function to a blooddata object. This allows one to use functions outside of kinfitr to estimate blood values.
 }
 \examples{
-#' #' \dontrun{
+\dontrun{
 blooddata <- blood_addfitpars(blooddata, matlabout$time,
              matlabout$predicted, "AIF")
 }

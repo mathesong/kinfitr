@@ -322,7 +322,7 @@ blood_addfitpars <- function(blooddata, modelname, fitpars,
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @examples
-#' #' \dontrun{
+#' \dontrun{
 #' blooddata <- blood_addfitpars(blooddata, matlabout$time,
 #'              matlabout$predicted, "AIF")
 #' }
@@ -346,6 +346,93 @@ blood_addfitted <- function(blooddata, time, predicted,
   return(blooddata)
 
 }
+
+
+
+# blooddata_getblood <- function(blooddata) {
+#
+#   blood_discrete <- blooddata$Data$Blood$Discrete$Data$Values
+#
+#   blood_discrete$time <- blood_discrete$sampleStartTime +
+#     0.5*blood_discrete$sampleDuration
+#
+#   blood_discrete <- dplyr::arrange(blood_discrete, time)
+#
+#   blood_continuous <- blooddata$Data$Blood$Continuous$Data$Values
+#
+#   blood <- dplyr::bind_rows(blood_discrete, blood_continuous)
+#   blood <- dplyr::arrange(blood, time)
+#   blood$Method <- ifelse(is.na(blood$sampleDuration),
+#                          yes = "Continuous",
+#                          no = "Discrete")
+#
+#   return(blood)
+#
+# }
+#
+# blooddata_getplasma <- function(blooddata) {
+#
+#   plasma <- blooddata$Data$Plasma$Data$Values
+#
+#   plasma$time <- plasma$sampleStartTime +
+#     0.5*plasma$sampleDuration
+#
+#   plasma <- dplyr::arrange(plasma, time)
+#
+#   return(plasma)
+#
+# }
+#
+# blooddata_getbpr <- function(blooddata) {
+#
+#   blood <- blooddata_getblood(blooddata)
+#   plasma <- blooddata_getplasma(blooddata)
+#
+#   commonvalues <- intersect(plasma$time, blood_discrete$time)
+#
+#   bprvec <- blood_discrete$activity[blood_discrete$time %in% commonvalues] /
+#     plasma$activity[plasma$time %in% commonvalues]
+#
+#
+#   bpr <- tibble::tibble(time = commonvalues, bpr = bprvec)
+#
+#   return(bpr)
+#
+# }
+#
+# blooddata_getpf <- function(blooddata) {
+#
+#   pf <- blooddata$Data$Metabolite$Data$Values
+#   pf$time <- pf$sampleStartTime + 0.5*pf$sampleDuration
+#
+#   return(pf)
+#
+# }
+#
+#
+# blooddata_getaif <- function(blooddata) {
+#
+#   aif <- blooddata_getblood(blooddata)
+#   bpr <- blooddata_getbpr(blooddata)
+#
+#   aif <- dplyr::rename(aif, blood = activity)
+#   aif <- dplyr::mutate(aif,
+#                        plasma = blood * (1/bpr),
+#                        aif = plasma * parentFraction)
+#
+#   if(output == "AIF") {
+#     return(aif)
+#   }
+#
+# }
+
+
+
+
+
+
+
+
 
 #' Create an input object from a blooddata object.
 #'
@@ -424,10 +511,33 @@ blooddata_getdata <- function(blooddata,
     ## Interp
     if(blooddata$Models$Blood$Method == "interp") {
 
+      blood_for_interp <- blood
+
+      ### Comment - for interpolation of blood data, I remove the discrete samples
+      ### from the first half of the overlap between discrete and continuous
+      ### samples. This is where the peak is, and where the timing of discrete
+      ### samples can mess stuff up.
+
+      if(nrow(blood_continuous) > 0) {
+        if( max(blood_continuous$time) > min(blood_discrete) ) {
+          overlap_start <- min(blood_discrete$time)
+          overlap_stop <- max(blood_continuous$time)
+          overlap_time <- overlap_stop - overlap_start
+
+          blood_for_interp$keep <- ifelse(
+            blood_for_interp$Method=="Discrete" &
+              blood_for_interp$time <
+              (overlap_start + 0.5*overlap_time),
+            yes = FALSE, no=TRUE)
+
+          blood_for_interp <- dplyr::filter(blood_for_interp, keep==TRUE)
+        }
+      }
+
       suppressWarnings(
         i_blood <- tibble::tibble(time = interptime,
-                                  activity = interpends(blood$time,
-                                                        blood$activity,
+                                  activity = interpends(blood_for_interp$time,
+                                                        blood_for_interp$activity,
                                                         interptime,
                                                         method = "linear",
                                                         yzero=0))
@@ -438,7 +548,7 @@ blooddata_getdata <- function(blooddata,
     if(blooddata$Models$Blood$Method == "fit") {
 
       i_blood <- tibble::tibble(time = interptime,
-                                activity = predict(blooddata$Models$Blood$Method$Data,
+                                activity = predict(blooddata$Models$Blood$Data,
                                                    newdata = list(time = interptime) ))
     }
 
@@ -500,10 +610,10 @@ blooddata_getdata <- function(blooddata,
     if(blooddata$Models$BPR$Method == "fit") {
 
       i_bpr <- tibble::tibble(time = interptime,
-                                bpr = predict(blooddata$Models$BPR$Method$Data,
+                                bpr = predict(blooddata$Models$BPR$Data,
                                                    newdata = list(time = interptime) ))
 
-      blood$bpr <- predict(blooddata$Models$BPR$Method$Data,
+      blood$bpr <- predict(blooddata$Models$BPR$Data,
                            newdata = list(time = blood$time) )
     }
 
@@ -568,10 +678,10 @@ blooddata_getdata <- function(blooddata,
     if(blooddata$Models$parentFraction$Method == "fit") {
 
       i_pf <- tibble::tibble(time = interptime,
-                              parentFraction = predict(blooddata$Models$parentFraction$Method$Data,
+                              parentFraction = predict(blooddata$Models$parentFraction$Data,
                                             newdata = list(time = interptime) ))
 
-      blood$parentFraction <- predict(blooddata$Models$parentFraction$Method$Data,
+      blood$parentFraction <- predict(blooddata$Models$parentFraction$Data,
                            newdata = list(time = blood$time) )
     }
 
@@ -626,10 +736,34 @@ blooddata_getdata <- function(blooddata,
     ## Interp
     if(blooddata$Models$AIF$Method == "interp") {
 
+      aif_for_interp <- aif
+
+      ### Comment - for interpolation of blood data, I remove the discrete samples
+      ### from the first half of the overlap between discrete and continuous
+      ### samples. This is where the peak is, and where the timing of discrete
+      ### samples can mess stuff up.
+
+      if(nrow(blood_continuous) > 0) {
+        if( max(blood_continuous$time) > min(blood_discrete) ) {
+
+          overlap_start <- min(blood_discrete$time)
+          overlap_stop <- max(blood_continuous$time)
+          overlap_time <- overlap_stop - overlap_start
+
+          aif_for_interp$keep <- ifelse(
+            aif_for_interp$Method=="Discrete" &
+              aif_for_interp$time <
+              (overlap_start + 0.5*overlap_time),
+            yes = FALSE, no=TRUE)
+
+          aif_for_interp <- dplyr::filter(aif_for_interp, keep==TRUE)
+        }
+      }
+
       suppressWarnings(
         i_aif <- tibble::tibble(time = interptime,
-                              aif = interpends(aif$time,
-                                               aif$aif,
+                              aif = interpends(aif_for_interp$time,
+                                               aif_for_interp$aif,
                                                interptime,
                                                method = "linear",
                                                yzero = 0))
@@ -641,7 +775,7 @@ blooddata_getdata <- function(blooddata,
     if(blooddata$Models$AIF$Method == "fit") {
 
       i_aif <- tibble::tibble(time = interptime,
-                              aif = predict(blooddata$Models$AIF$Method$Data,
+                              aif = predict(blooddata$Models$AIF$Data,
                                            newdata = list(time = interptime) ))
     }
 
@@ -671,12 +805,14 @@ blooddata_getdata <- function(blooddata,
   if(output == "input") {
 
     input <- tibble::tibble(
-      Time = (interptime + TimeShift)/60,
+      Time = (interptime + blooddata$TimeShift)/60,
       Blood = i_blood$activity,
       Plasma = i_blood$activity / i_bpr$bpr,
       ParentFraction = i_pf$parentFraction,
       AIF = i_aif$aif
     )
+
+    class(input) <- c("interpblood", class(input))
 
     return(input)
 
@@ -797,11 +933,9 @@ plot_blooddata <- function(blooddata,
 
   pred <- tidyr::gather(input, Outcome, Value, -Time)
   pred <- dplyr::arrange(pred, Outcome, Time)
-  pred <- dplyr::rename(pred, "Parent Fraction" = ParentFraction)
+  # pred <- dplyr::rename(pred, "Parent Fraction" = ParentFraction)
 
   # Measured data
-
-
 
   pf <- blooddata_getdata(blooddata, startTime, stopTime, interpPoints, output = "parentFraction")
   pf <- dplyr::select(pf, Time = time, Value = parentFraction)
@@ -837,10 +971,25 @@ plot_blooddata <- function(blooddata,
               aes(group=Outcome), alpha=0.5) +
     geom_line(data=pred) +
     guides(size=FALSE) +
-    coord_cartesian(ylim = c(0, plotmax)) +
-    theme_bw()
+    coord_cartesian(ylim = c(0, plotmax))
+
+}
 
 
+create_interpinput <- function(blood_input, startTime = 0,
+                               stopTime = NULL,
+                               interpPoints = 6000) {
 
+  if("interpblood" %in% class(blood_input)) {
+    return(blood_input)
+  }
+
+  if("blooddata" %in% class(blood_input)) {
+    blood_input <- blooddata_getdata(blood_input,
+                                     startTime,
+                                     stopTime,
+                                     interpPoints)
+    return(blood_input)
+  }
 
 }
