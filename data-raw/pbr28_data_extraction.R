@@ -32,8 +32,11 @@ procblood <- read_csv("data-raw/pbr28_blooddata.csv") %>%
 petdat <- inner_join(tacdat, procblood) %>%
   separate(PET, c("Subjname", "PETNo"), sep = "_", remove = F, convert = T)
 
+jsondat <- readRDS('data-raw/pbr28_jsondata.rds')
+
 pbr28 <- petdat %>%
   inner_join(demog) %>%
+  inner_join(jsondat) %>%
   arrange(PET)
 
 save(pbr28, file="data/pbr28.RData", compress='xz')

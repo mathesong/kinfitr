@@ -10,10 +10,10 @@
   \item{Subjname}{Descriptor of which individual was measured}
   \item{PETNo}{Descriptor of the PET number}
   \item{tacs}{Nested tibble of the TAC data. Consists of Times, in seconds; Weights, between 0 and 1; StartTime, in seconds; Duration, in seconds, and TACs for Frontal Cortex (FC), Temporal Cortex (TC), Striatum (STR), Thalamus (THA), Whole Brain (WB), and Cerebellum (CBL)}
-  \item{blooddata}{Nested tibble of the blood data. Note that this data is following preprocessing, and does not contain information about automatic and manual sampling. Consists of Time in seconds (Time), blood radioactivity following dispersion correction (Cbl_dispcorr) and plasma radioactivity following metabolite correction (Cpl_metabcorr)}
-  \item{input}{Nested tibble of the input data, obtained from the blooddata with the blood_interp command}
-  \item{Genotype}{Refers to the High Affinity Binder (HAB) or Medium Affinity Binder (MAB) genotype}
+  \item{procblood}{Nested tibble of the processed blood data which was generated for Matheson et al. (2017). Preprocessing was performed using in-house methods. This data does not contain information about automatic and manual sampling. Consists of Time in seconds (Time), blood radioactivity following dispersion correction (Cbl_dispcorr) and plasma radioactivity following metabolite correction (Cpl_metabcorr)}
+  \item{Genotype}{Refers to the High Affinity Binder (HAB) or Mixed Affinity Binder (MAB) genotype}
   \item{injRad}{Injected radioactivity}
+  \item{jsondata}{This information is the contents of the BIDS json sidecar for each PET measurement. This contains all the raw blood data.}
 }}
 \source{
 \url{https://ejnmmires.springeropen.com/articles/10.1186/s13550-017-0304-1}
