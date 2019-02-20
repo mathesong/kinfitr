@@ -35,7 +35,7 @@ tissue compartment model (like SRTM).
 }
 \examples{
 \dontrun{
-mrtm1_tstar(t_tac, reftac, taclow, tacmed, tachigh, 'demonstration')
+mrtm1_tstar(t_tac, reftac, taclow, tacmed, tachigh, "demonstration")
 }
 
 }

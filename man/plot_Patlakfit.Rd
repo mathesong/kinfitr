@@ -21,19 +21,19 @@ Function to visualise the fit of the Patlak Plot model to data.
 
 data(pbr28)
 
-t_tac <- pbr28$tacs[[2]]$Times/60
+t_tac <- pbr28$tacs[[2]]$Times / 60
 tac <- pbr28$tacs[[2]]$FC
 weights <- pbr28$tacs[[2]]$Weights
 
 input <- blood_interp(
-  pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
-  pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
-  t_parentfrac = 1, parentfrac = 1 )
+  pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+  pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+  t_parentfrac = 1, parentfrac = 1
+)
 
-fit <- Patlakplot(t_tac, tac, input, 10, weights, inpshift = 0.1  )
+fit <- Patlakplot(t_tac, tac, input, 10, weights, inpshift = 0.1)
 
 plot_Patlakfit(fit)
-
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}

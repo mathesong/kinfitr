@@ -26,5 +26,5 @@ Predicted values
 This is the model function for fitting of the classic Hill function.
 }
 \examples{
-metab_hill_model(seq(0, 60*60, by=120), 0.05, 2.6, 6.9, 1, 0)
+metab_hill_model(seq(0, 60 * 60, by = 120), 0.05, 2.6, 6.9, 1, 0)
 }

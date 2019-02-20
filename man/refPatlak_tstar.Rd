@@ -34,7 +34,7 @@ Function to identify where t* is for the Patlak Reference Tissue Model.
 }
 \examples{
 \dontrun{
-refPatlak_tstar(t_tac, reftac, taclow, tacmed, tachigh, 'demonstration')
+refPatlak_tstar(t_tac, reftac, taclow, tacmed, tachigh, "demonstration")
 }
 
 }

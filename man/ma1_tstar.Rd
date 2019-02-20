@@ -43,8 +43,10 @@ Function to identify where t* is for MA1.
 }
 \examples{
 \dontrun{
-ma1_tstar(t_tac, lowroi, medroi, highroi, input, filename='demonstration',
-          inpshift = onetcmout$par$inpshift, frameStartEnd, gridbreaks=4)
+ma1_tstar(t_tac, lowroi, medroi, highroi, input,
+  filename = "demonstration",
+  inpshift = onetcmout$par$inpshift, frameStartEnd, gridbreaks = 4
+)
 }
 
 }

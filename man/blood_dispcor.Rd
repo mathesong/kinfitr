@@ -37,8 +37,7 @@ between them, so any missing measurements are interpolated.
 \examples{
 time <- 1:20
 activity <- rnorm(20)
-tau = 2.5
+tau <- 2.5
 
 blood_dispcor(time, activity, tau, 1)
-
 }

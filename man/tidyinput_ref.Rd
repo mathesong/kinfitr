@@ -36,13 +36,12 @@ times are in minutes and not in seconds.
 
 data(pbr28)
 
-t_tac <- pbr28$tacs[[2]]$Times/60
+t_tac <- pbr28$tacs[[2]]$Times / 60
 reftac <- pbr28$tacs[[2]]$CBL
 roitac <- pbr28$tacs[[2]]$STR
 weights <- pbr28$tacs[[2]]$Weights
 
-tidyinput_ref(t_tac, reftac, roitac, weights, frameStartEnd=c(1,10))
-
+tidyinput_ref(t_tac, reftac, roitac, weights, frameStartEnd = c(1, 10))
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}

@@ -22,7 +22,7 @@ the PET BIDS standard.
 }
 \examples{
 \dontrun{
-a <- create_blooddata_bids('bids_sidecar.json')
+a <- create_blooddata_bids("bids_sidecar.json")
 }
 }
 \author{

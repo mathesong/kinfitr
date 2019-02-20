@@ -28,5 +28,4 @@ time <- 1:20
 activity <- rnorm(20)
 
 blood_smooth(time, activity, 5)
-
 }

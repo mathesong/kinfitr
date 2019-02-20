@@ -26,7 +26,7 @@ Predicted values
 This is the model function for fitting of the modification of the Hill function by Guo et al. (2013).
 }
 \examples{
-metab_hillguo_model(seq(0, 60*60, by=120), 7, 0.6, 0.04, 1, 0)
+metab_hillguo_model(seq(0, 60 * 60, by = 120), 7, 0.6, 0.04, 1, 0)
 }
 \references{
 Guo Q, Colasanti A, Owen DR, et al. Quantification of the specific translocator protein signal of 18F-PBR111 in healthy humans: a genetic polymorphism effect on in vivo binding. J Nucl Med 2013; 54: 1915–1923.

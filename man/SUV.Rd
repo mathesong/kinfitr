@@ -33,15 +33,13 @@ Function to calculate the standardised uptake value and its integral.
 \examples{
 data(pbr28)
 
-t_tac <- pbr28$tacs[[2]]$Times/60
-dur_tac <- pbr28$tacs[[2]]$Duration/60
+t_tac <- pbr28$tacs[[2]]$Times / 60
+dur_tac <- pbr28$tacs[[2]]$Duration / 60
 tac <- pbr28$tacs[[2]]$FC
 
 
-fit1 <- SUV(tac, t_tac, injRad=150, bodymass=85)
-fit2 <- SUV(tac, dur_tac = dur_tac, injRad=150, bodymass=85)
-
-
+fit1 <- SUV(tac, t_tac, injRad = 150, bodymass = 85)
+fit2 <- SUV(tac, dur_tac = dur_tac, injRad = 150, bodymass = 85)
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}

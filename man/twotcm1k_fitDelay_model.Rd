@@ -35,8 +35,10 @@ delay, inpshift.
 }
 \examples{
 \dontrun{
-twotcm1k_fitDelay_model(t_tac, input, K1=0.1, k2=0.08, k3=0.05,
-                        k4=0.02, Kb=0.25, inpshift=0.1, vB=0.05)
+twotcm1k_fitDelay_model(t_tac, input,
+  K1 = 0.1, k2 = 0.08, k3 = 0.05,
+  k4 = 0.02, Kb = 0.25, inpshift = 0.1, vB = 0.05
+)
 }
 
 }

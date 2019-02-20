@@ -23,19 +23,19 @@ from a kinetic fit object.  The fit needs to be a model utilising AIF (i.e. cann
 \examples{
 data(pbr28)
 
-t_tac <- pbr28$tacs[[2]]$Times/60
+t_tac <- pbr28$tacs[[2]]$Times / 60
 tac <- pbr28$tacs[[2]]$FC
 weights <- pbr28$tacs[[2]]$Weights
 
 input <- blood_interp(
-  pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
-  pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
-  t_parentfrac = 1, parentfrac = 1 )
+  pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+  pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+  t_parentfrac = 1, parentfrac = 1
+)
 
-twotcmout <- twotcm(t_tac, tac, input, weights, frameStartEnd = c(1,25))
+twotcmout <- twotcm(t_tac, tac, input, weights, frameStartEnd = c(1, 25))
 
 plot_inptac_fit(twotcmout)
-
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}

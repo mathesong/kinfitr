@@ -22,7 +22,7 @@ which a fit object is available called \code{outputobject$fit}.
 
 data(pbr28)
 
-t_tac <- pbr28$tacs[[2]]$Times/60
+t_tac <- pbr28$tacs[[2]]$Times / 60
 reftac <- pbr28$tacs[[2]]$CBL
 roitac <- pbr28$tacs[[2]]$STR
 weights <- pbr28$tacs[[2]]$Weights
@@ -30,7 +30,6 @@ weights <- pbr28$tacs[[2]]$Weights
 srtmout <- srtm(t_tac, reftac, roitac)
 
 plot_residuals(srtmout)
-
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}

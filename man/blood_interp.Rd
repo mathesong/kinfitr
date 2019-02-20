@@ -57,12 +57,14 @@ functions.
 }
 \examples{
 \dontrun{
-input <- blood_interp(t_blood = blooddata$Time.sec./60,
-           blood = blooddata$Cbl.nCi.cc.,
-           t_plasma = plasmadata$Time.sec./60,
-           plasma = plasmadata$Cpl.nCi.cc.,
-           t_parentfrac = parentdata$Times/60,
-           parentfrac = parentdata$Fraction)
+input <- blood_interp(
+  t_blood = blooddata$Time.sec. / 60,
+  blood = blooddata$Cbl.nCi.cc.,
+  t_plasma = plasmadata$Time.sec. / 60,
+  plasma = plasmadata$Cpl.nCi.cc.,
+  t_parentfrac = parentdata$Times / 60,
+  parentfrac = parentdata$Fraction
+)
 }
 
 }

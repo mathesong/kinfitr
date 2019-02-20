@@ -26,5 +26,5 @@ Predicted values
 This is the model function for fitting of the classic power function.
 }
 \examples{
-metab_power_model(seq(0, 60*60, by=120), 0.004, 4.5, 0.27, 1, 0)
+metab_power_model(seq(0, 60 * 60, by = 120), 0.004, 4.5, 0.27, 1, 0)
 }

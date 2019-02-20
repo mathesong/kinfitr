@@ -37,7 +37,7 @@ Function to identify where t* is for the non-invasive Logan plot.
 }
 \examples{
 \dontrun{
-refLogan_tstar(t_tac, reftac, taclow, tacmed, tachigh, k2prime, 'demonstration')
+refLogan_tstar(t_tac, reftac, taclow, tacmed, tachigh, k2prime, "demonstration")
 }
 
 }

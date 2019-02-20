@@ -38,7 +38,8 @@ Function to identify where t* is for the non-invasive multilinear Logan plot.
 \examples{
 \dontrun{
 refmlLogan_tstar(t_tac, reftac, taclow, tacmed, tachigh,
-                 k2prime = k2prime, 'demonstration')
+  k2prime = k2prime, "demonstration"
+)
 }
 
 }

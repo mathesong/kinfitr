@@ -50,8 +50,10 @@ Function to identify where t* is for the Logan Plot.
 }
 \examples{
 \dontrun{
-Logan_tstar(t_tac, lowroi, medroi, highroi, input, filename='demonstration',
-            inpshift = onetcmout$par$inpshift, vB = 0.05, gridbreaks=4)
+Logan_tstar(t_tac, lowroi, medroi, highroi, input,
+  filename = "demonstration",
+  inpshift = onetcmout$par$inpshift, vB = 0.05, gridbreaks = 4
+)
 }
 
 }

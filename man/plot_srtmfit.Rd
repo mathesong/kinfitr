@@ -26,7 +26,7 @@ Function to visualise the fit of the SRTM model to data.
 
 data(pbr28)
 
-t_tac <- pbr28$tacs[[2]]$Times/60
+t_tac <- pbr28$tacs[[2]]$Times / 60
 reftac <- pbr28$tacs[[2]]$CBL
 roitac <- pbr28$tacs[[2]]$STR
 weights <- pbr28$tacs[[2]]$Weights
@@ -34,7 +34,6 @@ weights <- pbr28$tacs[[2]]$Weights
 fit <- srtm(t_tac, reftac, roitac)
 
 plot_srtmfit(fit)
-
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}

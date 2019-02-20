@@ -24,7 +24,7 @@ of t*.
 
 data(pbr28)
 
-t_tac <- pbr28$tacs[[2]]$Times/60
+t_tac <- pbr28$tacs[[2]]$Times / 60
 reftac <- pbr28$tacs[[2]]$CBL
 roitac <- pbr28$tacs[[2]]$STR
 weights <- pbr28$tacs[[2]]$Weights
@@ -32,7 +32,6 @@ weights <- pbr28$tacs[[2]]$Weights
 refloganout <- refLogan(t_tac, reftac, roitac, 0.1, tstarIncludedFrames = 9)
 
 maxpercres(refloganout)
-
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}

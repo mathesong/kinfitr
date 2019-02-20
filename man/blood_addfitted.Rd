@@ -27,8 +27,10 @@ This function adds the predicted values of an external function to a blooddata o
 }
 \examples{
 \dontrun{
-blooddata <- blood_addfitpars(blooddata, matlabout$time,
-             matlabout$predicted, "AIF")
+blooddata <- blood_addfitpars(
+  blooddata, matlabout$time,
+  matlabout$predicted, "AIF"
+)
 }
 }
 \author{

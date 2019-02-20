@@ -37,7 +37,7 @@ This function fits the inverted gamma function to parent fraction data.
 }
 \examples{
 \dontrun{
-pf <- blooddata_getdata(blooddata, output="parentFraction")
+pf <- blooddata_getdata(blooddata, output = "parentFraction")
 metab_invgamma(pf$time, pf$parentFraction)
 }
 }

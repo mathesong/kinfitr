@@ -24,5 +24,5 @@ Predicted values
 This is the model function for fitting of the inverse Gamma function for the parent fraction.
 }
 \examples{
-metab_invgamma_model(seq(0, 60*60, by=120), 1.97, 708, 1, 0)
+metab_invgamma_model(seq(0, 60 * 60, by = 120), 1.97, 708, 1, 0)
 }

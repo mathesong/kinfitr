@@ -28,7 +28,7 @@ Predicts and interpolates all of the functions to create an input object, or to 
 \examples{
 \dontrun{
 blooddata_getdata(blooddata)
-blooddata_getdata(blooddata, output="parentFraction")
+blooddata_getdata(blooddata, output = "parentFraction")
 }
 }
 \author{

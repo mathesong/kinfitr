@@ -21,19 +21,19 @@ Function to visualise the fit of the Two Tissue Compartment Model with Irreversi
 
 data(pbr28)
 
-t_tac <- pbr28$tacs[[2]]$Times/60
+t_tac <- pbr28$tacs[[2]]$Times / 60
 tac <- pbr28$tacs[[2]]$FC
 weights <- pbr28$tacs[[2]]$Weights
 
 input <- blood_interp(
-  pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
-  pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
-  t_parentfrac = 1, parentfrac = 1 )
+  pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+  pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+  t_parentfrac = 1, parentfrac = 1
+)
 
 fit <- twotcm1k(t_tac, tac, input, weights)
 
 plot_2tcm1kfit(fit)
-
 }
 \references{
 Rizzo, G., Veronese, M., Tonietto, M., Zanotti-Fregonara, P., Turkheimer, F. E., & Bertoldo, A. (2014). Kinetic modeling without accounting for the vascular component impairs the quantification of [11C] PBR28 brain PET data. Journal of Cerebral Blood Flow & Metabolism, 34(6), 1060-1069.

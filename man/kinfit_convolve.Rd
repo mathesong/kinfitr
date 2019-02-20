@@ -22,10 +22,9 @@ Function to convolve two vectors of equal length for kinetic modelling.
 \examples{
 a <- rnorm(20)
 b <- rnorm(20)
-stepsize = 1
+stepsize <- 1
 
-kinfit_convolve(a,b,stepsize)
-
+kinfit_convolve(a, b, stepsize)
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}

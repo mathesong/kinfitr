@@ -23,15 +23,14 @@ Function to visualise the fit of the refLogan model to data.
 
 data(pbr28)
 
-t_tac <- pbr28$tacs[[2]]$Times/60
+t_tac <- pbr28$tacs[[2]]$Times / 60
 reftac <- pbr28$tacs[[2]]$CBL
 roitac <- pbr28$tacs[[2]]$STR
 weights <- pbr28$tacs[[2]]$Weights
 
-fit <- refLogan(t_tac, reftac, roitac, k2prime=0.1, tstarIncludedFrames=10, weights=weights)
+fit <- refLogan(t_tac, reftac, roitac, k2prime = 0.1, tstarIncludedFrames = 10, weights = weights)
 
 plot_refLoganfit(fit)
-
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}

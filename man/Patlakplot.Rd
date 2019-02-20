@@ -48,17 +48,17 @@ Function to fit the Patlak Plot of of Patlak et al (1983) to data.
 
 data(pbr28)
 
-t_tac <- pbr28$tacs[[2]]$Times/60
+t_tac <- pbr28$tacs[[2]]$Times / 60
 tac <- pbr28$tacs[[2]]$FC
 weights <- pbr28$tacs[[2]]$Weights
 
 input <- blood_interp(
-  pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
-  pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
-  t_parentfrac = 1, parentfrac = 1 )
+  pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+  pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+  t_parentfrac = 1, parentfrac = 1
+)
 
-fit <- Patlakplot(t_tac, tac, input, 10, weights, inpshift = 0.1  )
-
+fit <- Patlakplot(t_tac, tac, input, 10, weights, inpshift = 0.1)
 }
 \references{
 Patlak CS, Blasberg RG, Fenstermacher JD. Graphical evaluation of blood-to-brain transfer constants from multiple-time uptake data. Journal of Cerebral Blood Flow & Metabolism. 1983 Mar 1;3(1):1-7.

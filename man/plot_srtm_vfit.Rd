@@ -25,17 +25,18 @@ Function to visualise the fit of the SRTM_V model to data.
 
 data(pbr28)
 
-t_tac <- pbr28$tacs[[2]]$Times/60
+t_tac <- pbr28$tacs[[2]]$Times / 60
 reftac <- pbr28$tacs[[2]]$CBL
 roitac <- pbr28$tacs[[2]]$STR
 weights <- pbr28$tacs[[2]]$Weights
 
 input <- pbr28$input[[2]]
+
 newvals <- shift_timings(
   t_tac,
   roitac,
   input,
-  inpshift=0
+  inpshift = 0
 )
 
 bloodtac <- pracma::interp1(newvals$input$Time, newvals$input$Blood, t_tac)
@@ -43,7 +44,6 @@ bloodtac <- pracma::interp1(newvals$input$Time, newvals$input$Blood, t_tac)
 fit <- srtm_v(t_tac, reftac, roitac, bloodtac, weights)
 
 plot_srtm_vfit(fit)
-
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}

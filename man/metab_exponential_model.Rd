@@ -26,5 +26,5 @@ Predicted values
 This is the model function for fitting of the classic exponential function.
 }
 \examples{
-metab_exponential_model(seq(0, 60*60, by=120), 0.02, 0, 0.001, 1, 0)
+metab_exponential_model(seq(0, 60 * 60, by = 120), 0.02, 0, 0.001, 1, 0)
 }

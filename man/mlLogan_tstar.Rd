@@ -43,8 +43,10 @@ Function to identify where t* is for the multilinear Logan Plot.
 }
 \examples{
 \dontrun{
-mlLogan_tstar(t_tac, lowroi, medroi, highroi, input, filename='demonstration',
-              inpshift = onetcmout$par$inpshift, vB = 0.05, gridbreaks=4)
+mlLogan_tstar(t_tac, lowroi, medroi, highroi, input,
+  filename = "demonstration",
+  inpshift = onetcmout$par$inpshift, vB = 0.05, gridbreaks = 4
+)
 }
 
 }
