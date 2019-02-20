@@ -4,7 +4,7 @@
 \alias{metab_power_model}
 \title{Power Model for Parent Fraction}
 \usage{
-metab_power_model(time, a, b, c, ppf0 = 0, delay = 1)
+metab_power_model(time, a, b, c, ppf0 = 1, delay = 0)
 }
 \arguments{
 \item{time}{Time in seconds.}

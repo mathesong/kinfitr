@@ -14,7 +14,7 @@
 #'
 #' @examples
 #' metab_hill_model(seq(0, 60*60, by=120), 0.05, 2.6, 6.9, 1, 0)
-metab_hill_model <- function(time, a, b, c, ppf0=0, delay=1) {
+metab_hill_model <- function(time, a, b, c, ppf0=1, delay=0) {
 
   tcorr <- time-delay
   t_before <- tcorr[ which(!(tcorr > 0)) ]
@@ -127,7 +127,7 @@ metab_hill <- function(time, parentFraction,
 # #'
 # #' @examples
 # #' metab_hillextended_model(seq(0, 60*60, by=120), 0.1, 3, 6.9, 0, 1, 0)
-# metab_hillextended_model <- function(time, a, b, c, d, ppf0=0, delay=1) {
+# metab_hillextended_model <- function(time, a, b, c, d, ppf0=1, delay=0) {
 #
 #   tcorr <- time-delay
 #   t_before <- tcorr[ which(!(tcorr > 0)) ]
@@ -219,7 +219,7 @@ metab_hill <- function(time, parentFraction,
 #'
 #' @examples
 #' metab_hillguo_model(seq(0, 60*60, by=120), 7, 0.6, 0.04, 1, 0)
-metab_hillguo_model <- function(time, a, b, c, ppf0=0, delay=1) {
+metab_hillguo_model <- function(time, a, b, c, ppf0=1, delay=0) {
 
   tcorr <- time-delay
   t_before <- tcorr[ which(!(tcorr > 0)) ]
@@ -332,7 +332,7 @@ metab_hillguo <- function(time, parentFraction,
 #'
 #' @examples
 #' metab_power_model(seq(0, 60*60, by=120), 0.004, 4.5, 0.27, 1, 0)
-metab_power_model <- function(time, a, b, c, ppf0=0, delay=1) {
+metab_power_model <- function(time, a, b, c, ppf0=1, delay=0) {
 
   tcorr <- time-delay
   t_before <- tcorr[ which(!(tcorr > 0)) ]
@@ -440,7 +440,7 @@ metab_power <- function(time, parentFraction,
 #'
 #' @examples
 #' metab_exponential_model(seq(0, 60*60, by=120), 0.02, 0, 0.001, 1, 0)
-metab_exponential_model <- function(time, a, b, c, ppf0=0, delay=1) {
+metab_exponential_model <- function(time, a, b, c, ppf0=1, delay=0) {
 
   tcorr <- time-delay
   t_before <- tcorr[ which(!(tcorr > 0)) ]
@@ -548,7 +548,7 @@ metab_exponential <- function(time, parentFraction,
 #'
 #' @examples
 #' metab_invgamma_model(seq(0, 60*60, by=120), 1.97, 708, 1, 0)
-metab_invgamma_model <- function(time, shape, rate, ppf0=0, delay=1) {
+metab_invgamma_model <- function(time, shape, rate, ppf0=1, delay=0) {
 
   tcorr <- time-delay
   t_before <- tcorr[ which(!(tcorr > 0)) ]

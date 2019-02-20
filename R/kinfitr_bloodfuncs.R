@@ -198,7 +198,7 @@ shift_timings <- function(t_tac, tac, input, inpshift, shifttac=T) {
     input <- input[1:last_n, ]
     input$Time[last_n] <- max(tacdf$Time)
   } else if (max(input$Time) < max(tacdf$Time)) {
-    input <- rbind(input, c(max(tacdf$Time), as.numeric(tail(input, 1)[2:4])))
+    input <- rbind(input, c(max(tacdf$Time), as.numeric(tail(input, 1)[-1])))
   }
 
   # Interpolating everything to the same time space
@@ -496,7 +496,7 @@ plot_input <- function(input) {
   input$BPR <- input$Blood / input$Plasma
   input$Blood <- input$Blood / max( c(input$Blood, input$Plasma) )
   input$Plasma <- input$Plasma / max( c(input$Blood, input$Plasma) )
-  input$AIF <- input$Plasma * input$ParentFraction
+  input$AIF <- input$AIF
 
   input <- dplyr::rename(input, "Parent Fraction" = ParentFraction,
                          "Blood-Plasma Ratio" = BPR)

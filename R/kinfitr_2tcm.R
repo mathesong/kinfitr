@@ -395,7 +395,7 @@ plot_2tcmfit <- function(twotcmout, roiname=NULL) {
 
   inputdf <- data.frame(
     Time = twotcmout$input$Time,
-    Radioactivity = twotcmout$input$Plasma * twotcmout$input$ParentFraction,
+    Radioactivity = twotcmout$input$AIF,
     Weights = 1,
     Region = "AIF"
   )

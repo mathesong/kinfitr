@@ -4,8 +4,8 @@
 \alias{Patlakplot}
 \title{Patlak Plot}
 \usage{
-Patlakplot(t_tac, tac, input, tstarIncludedFrames, weights, inpshift = 0,
-  vB = 0, frameStartEnd = NULL)
+Patlakplot(t_tac, tac, input, tstarIncludedFrames, weights = NULL,
+  inpshift = 0, vB = 0, frameStartEnd = NULL)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a

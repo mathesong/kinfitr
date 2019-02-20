@@ -427,7 +427,7 @@ plot_2tcm1kfit <- function(twotcm1kout, roiname=NULL) {
 
   inputdf <- data.frame(
     Time = twotcm1kout$input$Time,
-    Radioactivity = twotcm1kout$input$Plasma * twotcm1kout$input$ParentFraction,
+    Radioactivity = twotcm1kout$input$AIF,
     Weights = 1,
     Region = "AIF"
   )
@@ -455,7 +455,8 @@ plot_2tcm1kfit <- function(twotcm1kout, roiname=NULL) {
   names(myColors) <- levels(plotdf$Region)
   colScale <- scale_colour_manual(name = "Region", values = myColors)
 
-  outplot <- ggplot(plotdf, aes(x = Time, y = Radioactivity, colour = Region)) + colScale +
+  outplot <- ggplot(plotdf, aes(x = Time, y = Radioactivity, colour = Region)) +
+    colScale +
     geom_point(data = subset(plotdf, plotdf$Region == paste0(roiname, ".Measured")), aes(shape = "a", size = Weights)) +
     geom_line(data = subset(plotdf, plotdf$Region != paste0(roiname, ".Measured"))) +
     guides(shape = FALSE, color = guide_legend(order = 1)) + scale_size(range = c(1, 3)) + coord_cartesian(ylim = c(0, max(measureddf$Radioactivity) * 1.5))

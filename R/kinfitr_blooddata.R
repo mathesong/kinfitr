@@ -39,6 +39,40 @@
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
+#' @example
+#' \dontrun{
+#' blooddata2 <- create_blooddata_components(
+#'    Blood.Discrete.Data.Values.sampleStartTime =
+#'      blooddata$Data$Blood$Discrete$Data$Values$sampleStartTime,
+#'    Blood.Discrete.Data.Values.sampleDuration =
+#'      blooddata$Data$Blood$Discrete$Data$Values$sampleDuration,
+#'    Blood.Discrete.Data.Values.activity =
+#'      blooddata$Data$Blood$Discrete$Data$Values$activity,
+#'    Plasma.Data.Values.sampleStartTime =
+#'      blooddata$Data$Plasma$Data$Values$sampleStartTime,
+#'    Plasma.Data.Values.sampleDuration =
+#'      blooddata$Data$Plasma$Data$Values$sampleDuration,
+#'    Plasma.Data.Values.activity =
+#'      blooddata$Data$Plasma$Data$Values$activity,
+#'    Metabolite.Data.Values.sampleStartTime =
+#'      blooddata$Data$Metabolite$Data$Values$sampleStartTime,
+#'    Metabolite.Data.Values.sampleDuration =
+#'      blooddata$Data$Metabolite$Data$Values$sampleDuration,
+#'    Metabolite.Data.Values.parentFraction =
+#'      blooddata$Data$Metabolite$Data$Values$parentFraction,
+#'    Blood.Continuous.Data.Values.time =
+#'      blooddata$Data$Blood$Continuous$Data$Values$time,
+#'    Blood.Continuous.Data.Values.activity =
+#'      blooddata$Data$Blood$Continuous$Data$Values$activity,
+#'    Blood.Continuous.WithdrawalRate =
+#'      blooddata$Data$Blood$Continuous$WithdrawalRate,
+#'    Blood.Continuous.DispersionConstant =
+#'      blooddata$Data$Blood$Continuous$DispersionConstant,
+#'    Blood.Continuous.DispersionConstantUnits =
+#'      blooddata$Data$Blood$Continuous$DispersionConstantUnits,
+#'    Blood.Continuous.DispersionCorrected = FALSE,
+#'    TimeShift = 0)
+#' }
 create_blooddata_components <- function(
   Blood.Discrete.Data.Values.sampleStartTime,
   Blood.Discrete.Data.Values.sampleDuration = 0,
@@ -103,7 +137,8 @@ create_blooddata_components <- function(
                                    Metabolite.Data.Values.sampleStartTime,
                                  sampleDuration =
                                    Metabolite.Data.Values.sampleDuration,
-                                 parentFraction = Metabolite.Data.Values.activity))
+                                 parentFraction =
+                                   Metabolite.Data.Values.parentFraction))
   )
 
   blooddata <- list(
@@ -473,7 +508,8 @@ blooddata_getdata <- function(blooddata,
            sampleStartTime + sampleDuration),
       with(blooddata$Data$Metabolite$Data$Values,
            sampleStartTime + sampleDuration),
-      blooddata$Data$Blood$Continuous$Data$Values$time) )
+      blooddata$Data$Blood$Continuous$Data$Values$time) ,
+      na.rm = T)
 
   }
 
@@ -494,11 +530,15 @@ blooddata_getdata <- function(blooddata,
   blood_discrete <- blooddata$Data$Blood$Discrete$Data$Values
   blood_discrete$time <- blood_discrete$sampleStartTime +
     0.5*blood_discrete$sampleDuration
+  blood_discrete <- dplyr::filter(blood_discrete, !is.na(activity))
   blood_discrete <- dplyr::arrange(blood_discrete, time)
 
+
   blood_continuous <- blooddata$Data$Blood$Continuous$Data$Values
+  blood_continuous <- dplyr::filter(blood_continuous, !is.na(activity))
 
   blood <- dplyr::bind_rows(blood_discrete, blood_continuous)
+  blood <- dplyr::filter(blood, !is.na(activity))
   blood <- dplyr::arrange(blood, time)
   blood$Method <- ifelse(is.na(blood$sampleDuration),
                          yes = "Continuous",
@@ -519,7 +559,7 @@ blooddata_getdata <- function(blooddata,
       ### samples can mess stuff up.
 
       if(nrow(blood_continuous) > 0) {
-        if( max(blood_continuous$time) > min(blood_discrete) ) {
+        if( max(blood_continuous$time) > min(blood_discrete$time) ) {
           overlap_start <- min(blood_discrete$time)
           overlap_stop <- max(blood_continuous$time)
           overlap_time <- overlap_stop - overlap_start
@@ -550,6 +590,9 @@ blooddata_getdata <- function(blooddata,
       i_blood <- tibble::tibble(time = interptime,
                                 activity = predict(blooddata$Models$Blood$Data,
                                                    newdata = list(time = interptime) ))
+
+      blood$activity <- predict(blooddata$Models$Blood$Data,
+                           newdata = list(time = blood$time) )
     }
 
     ## Fit pars
@@ -562,6 +605,12 @@ blooddata_getdata <- function(blooddata,
       i_blood <- tibble::tibble(time = interptime,
                                 activity = do.call(what = modelname,
                                                    args = Pars) )
+
+      Pars <- append(list(time=blood$time),
+                     as.list(blooddata$Models$Blood$Data$Pars))
+
+      blood$activity <- do.call(what = modelname,
+                           args = Pars)
     }
 
     ## Fitted
@@ -569,15 +618,22 @@ blooddata_getdata <- function(blooddata,
 
       i_blood <- tibble::tibble(time = interptime,
                                 activity = interpends(blooddata$Models$Blood$Data$time,
-                                                      blooddata$Models$Blood$Data$activity,
+                                                      blooddata$Models$Blood$Data$predicted,
                                                       interptime,
                                                       method = "linear",
                                                       yzero=0))
+
+      blood$activity <- interpends(blooddata$Models$Blood$Data$time,
+                              blooddata$Models$Blood$Data$predicted,
+                              blood$time,
+                              method = "linear")
     }
 
   # Blood-to-Plasma Ratio
 
   plasma <- blooddata$Data$Plasma$Data$Values
+  plasma <- dplyr::filter(plasma, !is.na(activity))
+
   plasma$time <- plasma$sampleStartTime +
     0.5*plasma$sampleDuration
   plasma <- dplyr::arrange(plasma, time)
@@ -638,12 +694,13 @@ blooddata_getdata <- function(blooddata,
     if(blooddata$Models$BPR$Method == "fitted") {
 
       i_bpr <- tibble::tibble(time = interptime,
-                                activity = interpends(blooddata$Models$BPR$Data$time,
-                                                      blooddata$Models$BPR$Data$activity,
+                                bpr = interpends(blooddata$Models$BPR$Data$time,
+                                                      blooddata$Models$BPR$Data$predicted,
                                                       interptime,
                                                       method = "linear"))
+
       blood$bpr <- interpends(blooddata$Models$BPR$Data$time,
-                              blooddata$Models$BPR$Data$activity,
+                              blooddata$Models$BPR$Data$predicted,
                               blood$time,
                               method = "linear")
 
@@ -653,6 +710,7 @@ blooddata_getdata <- function(blooddata,
   # Parent Fraction
 
   pf <- blooddata$Data$Metabolite$Data$Values
+  pf <- dplyr::filter(pf, !is.na(parentFraction))
   pf$time <- pf$sampleStartTime + 0.5*pf$sampleDuration
 
   if(output == "parentFraction") {
@@ -693,7 +751,7 @@ blooddata_getdata <- function(blooddata,
                      as.list(blooddata$Models$parentFraction$Data$Pars))
 
       i_pf <- tibble::tibble(time = interptime,
-                              activity = do.call(what = modelname,
+                             parentFraction = do.call(what = modelname,
                                                  args = Pars) )
 
       Pars <- append(list(time=blood$time),
@@ -707,17 +765,19 @@ blooddata_getdata <- function(blooddata,
     if(blooddata$Models$parentFraction$Method == "fitted") {
 
       i_pf <- tibble::tibble(time = interptime,
-                              parentFraction = interpends(blooddata$Models$parentFraction$Data$time,
-                                                    blooddata$Models$parentFraction$Data$parentFraction,
-                                                    interptime,
-                                                    method = "linear",
-                                                    yzero = 1))
+                              parentFraction = interpends(
+                                blooddata$Models$parentFraction$Data$time,
+                                blooddata$Models$parentFraction$Data$predicted,
+                                interptime,
+                                method = "linear",
+                                yzero = 1))
 
-      blood$parentFraction <- interpends(blooddata$Models$parentFraction$Data$time,
-                              blooddata$Models$parentFraction$Data$parentFraction,
-                              blood$time,
-                              method = "linear",
-                              yzero=1)
+      blood$parentFraction <- interpends(
+        blooddata$Models$parentFraction$Data$time,
+        blooddata$Models$parentFraction$Data$predicted,
+        blood$time,
+        method = "linear",
+        yzero=1)
     }
 
   # AIF
@@ -744,7 +804,7 @@ blooddata_getdata <- function(blooddata,
       ### samples can mess stuff up.
 
       if(nrow(blood_continuous) > 0) {
-        if( max(blood_continuous$time) > min(blood_discrete) ) {
+        if( max(blood_continuous$time) > min(blood_discrete$time) ) {
 
           overlap_start <- min(blood_discrete$time)
           overlap_stop <- max(blood_continuous$time)
@@ -795,11 +855,12 @@ blooddata_getdata <- function(blooddata,
     if(blooddata$Models$AIF$Method == "fitted") {
 
       i_aif <- tibble::tibble(time = interptime,
-                              aif = interpends(blooddata$Models$AIF$Data$time,
-                                               blooddata$Models$AIF$Data$aif,
-                                               interptime,
-                                               method = "linear",
-                                               yzero = 0))
+                              aif = interpends(
+                                blooddata$Models$AIF$Data$time,
+                                blooddata$Models$AIF$Data$predicted,
+                                interptime,
+                                method = "linear",
+                                yzero = 0))
     }
 
   if(output == "input") {
@@ -926,7 +987,7 @@ plot_blooddata <- function(blooddata,
   input$`Blood-Plasma Ratio` <- input$Blood / input$Plasma
   input <- dplyr::rename(input, "Parent Fraction" = ParentFraction)
 
-  bloodmax <- max(input$Blood)
+  bloodmax <- max( c(input$Blood, input$AIF) )
   input$Blood <- input$Blood / bloodmax
   input$AIF <- input$AIF / bloodmax
   input <- dplyr::select(input, -Plasma)
@@ -961,7 +1022,8 @@ plot_blooddata <- function(blooddata,
 
   # Plot
 
-  plotmax <- min(c(1.2, max(bpr$Value)))
+  plotmax <- min(c(1.2, max(bpr$Value, na.rm = T)))
+  if(plotmax < 1) { plotmax = 1 }
 
   ggplot(data=measured, aes(x=Time, y=Value, colour=Outcome)) +
     geom_point(aes(shape=Measurement, size=dotsize)) +

@@ -4,7 +4,7 @@
 \alias{metab_invgamma_model}
 \title{Inverse Gamma Function Model for Parent Fraction}
 \usage{
-metab_invgamma_model(time, shape, rate, ppf0 = 0, delay = 1)
+metab_invgamma_model(time, shape, rate, ppf0 = 1, delay = 0)
 }
 \arguments{
 \item{time}{Time in seconds.}

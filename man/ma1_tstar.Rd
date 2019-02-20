@@ -4,8 +4,8 @@
 \alias{ma1_tstar}
 \title{Tstar Finder: Ichise Multilinear Analysis 1}
 \usage{
-ma1_tstar(t_tac, lowroi, medroi, highroi, input, filename, inpshift = 0,
-  frameStartEnd = NULL, gridbreaks = 2)
+ma1_tstar(t_tac, lowroi, medroi, highroi, input, filename = NULL,
+  inpshift = 0, vB = 0, frameStartEnd = NULL, gridbreaks = 2)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
@@ -24,6 +24,11 @@ using the \code{blood_interp} function.}
 
 \item{inpshift}{Optional. The number of minutes by which to shift the timing of the input data frame forwards or backwards.
 If not specified, this will be set to 0. This can be fitted using 1TCM or 2TCM.}
+
+\item{vB}{Optional. The blood volume fraction.  If not specified, this will
+be ignored and assumed to be 0%. If specified, it will be corrected for
+prior to parameter estimation using the following equation: \deqn{C_{T}(t)
+= \frac{C_{Measured}(t) - vB\times C_{B}(t)}{1-vB}}}
 
 \item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 This is to assess time stability.}

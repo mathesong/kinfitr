@@ -9,6 +9,10 @@ roitac <- pbr28$tacs[[meas]]$STR
 t_tac <- pbr28$tacs[[meas]]$Times / 60
 weights <- pbr28$tacs[[meas]]$Weights
 
+lowroi <- pbr28$tacs[[meas]]$FC
+medroi <- pbr28$tacs[[meas]]$THA
+highroi <- pbr28$tacs[[meas]]$STR
+
 
 #### Reversible
 
@@ -64,6 +68,14 @@ test_that("refLogan works with frameStartEnd", {
   expect_true( any(class(plot(refLoganout))=="ggplot") )
 })
 
+test_that("refLogan tstarfinder works", {
+  suppressWarnings(
+    tstar <- refLogan_tstar(t_tac, reftac, lowroi, medroi, highroi,
+                         k2prime=0.1)
+  )
+  expect_true( any(class(plot(tstar))=="ggplot") )
+})
+
 
 # refmlLogan
 
@@ -80,6 +92,14 @@ test_that("refmlLogan works with frameStartEnd", {
   expect_gt(refmlLoganout$par$bp, -1)
   expect_lt(refmlLoganout$par$bp, 0)
   expect_true( any(class(plot(refmlLoganout))=="ggplot") )
+})
+
+test_that("refmlLogan tstarfinder works", {
+  suppressWarnings(
+    tstar <- refmlLogan_tstar(t_tac, reftac, lowroi, medroi, highroi,
+                            k2prime=0.1)
+  )
+  expect_true( any(class(plot(tstar))=="ggplot") )
 })
 
 
@@ -117,6 +137,13 @@ test_that("mrtm1 works with tstar and frameStartEnd", {
   expect_true( any(class(plot(mrtm1out))=="ggplot") )
 })
 
+test_that("mrtm1 tstarfinder works", {
+  suppressWarnings(
+    tstar <- mrtm1_tstar(t_tac, reftac, lowroi, medroi, highroi)
+  )
+  expect_true( any(class(plot(tstar))=="ggplot") )
+})
+
 
 # MRTM2
 
@@ -150,6 +177,14 @@ test_that("mrtm2 works with tstar and frameStartEnd", {
   expect_gt(mrtm2out$par$bp, -1)
   expect_lt(mrtm2out$par$bp, 0)
   expect_true( any(class(plot(mrtm2out))=="ggplot") )
+})
+
+test_that("mrtm2 tstarfinder works", {
+  suppressWarnings(
+    tstar <- mrtm2_tstar(t_tac, reftac, lowroi, medroi, highroi,
+                            k2prime=0.1)
+  )
+  expect_true( any(class(plot(tstar))=="ggplot") )
 })
 
 
@@ -230,4 +265,11 @@ test_that("refPatlak works with frameStartEnd", {
   expect_gt(refPatlakout$par$K, -1)
   expect_lt(refPatlakout$par$K, 0.5)
   expect_true( any(class(plot(refPatlakout))=="ggplot") )
+})
+
+test_that("refPatlak tstarfinder works", {
+  suppressWarnings(
+    tstar <- refPatlak_tstar(t_tac, reftac, lowroi, medroi, highroi)
+  )
+  expect_true( any(class(plot(tstar))=="ggplot") )
 })

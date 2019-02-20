@@ -4,7 +4,7 @@
 \alias{metab_exponential_model}
 \title{Exponential Function Model for Parent Fraction}
 \usage{
-metab_exponential_model(time, a, b, c, ppf0 = 0, delay = 1)
+metab_exponential_model(time, a, b, c, ppf0 = 1, delay = 0)
 }
 \arguments{
 \item{time}{Time in seconds.}

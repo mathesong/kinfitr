@@ -362,7 +362,7 @@ plot_1tcmfit <- function(onetcmout, roiname=NULL) {
 
   inputdf <- data.frame(
     Time = onetcmout$input$Time,
-    Radioactivity = onetcmout$input$Plasma * onetcmout$input$ParentFraction,
+    Radioactivity = onetcmout$input$AIF,
     Weights = 1,
     Region = "AIF"
   )

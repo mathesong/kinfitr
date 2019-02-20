@@ -4,7 +4,7 @@
 \alias{metab_hillguo_model}
 \title{Hill Function Model modified by Guo et al for Parent Fraction}
 \usage{
-metab_hillguo_model(time, a, b, c, ppf0 = 0, delay = 1)
+metab_hillguo_model(time, a, b, c, ppf0 = 1, delay = 0)
 }
 \arguments{
 \item{time}{Time in seconds.}
