@@ -38,20 +38,22 @@
 #'
 #' @examples
 #' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' 
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tacdf <- dplyr::select(pbr28$tacs[[2]], FC:CBL)
 #' weights <- pbr28$tacs[[2]]$Weights
-#'
+#' 
 #' input <- blood_interp(
-#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
-#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
-#'   t_parentfrac = 1, parentfrac = 1 )
-#'
-#' Vndgrid <- seq(from=0, to=3, by=0.5)
-#' SIMEout <-  SIME(t_tac, tacdf, input, Vndgrid, weights = weights,
-#'                  inpshift = 0.1, vB = 0.05)
-#'
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1
+#' )
+#' 
+#' Vndgrid <- seq(from = 0, to = 3, by = 0.5)
+#' SIMEout <- SIME(t_tac, tacdf, input, Vndgrid,
+#'   weights = weights,
+#'   inpshift = 0.1, vB = 0.05
+#' )
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
@@ -61,7 +63,7 @@
 #' @importFrom dplyr "%>%"
 
 SIME <- function(t_tac, tacdf, input, Vndgrid, weights = NULL, roiweights = NULL,
-                 inpshift = 0, vB = NULL, twotcmstart=NULL, frameStartEnd = NULL,
+                 inpshift = 0, vB = NULL, twotcmstart = NULL, frameStartEnd = NULL,
                  k2.start = 0.1, k2.lower = 0, k2.upper = 0.5,
                  k3.start = 0.1, k3.lower = 0, k3.upper = 0.5,
                  k4.start = 0.1, k4.lower = 0, k4.upper = 0.5) {
@@ -124,7 +126,8 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights = NULL, roiweights = NULL
 
   if (!is.null(twotcmstart)) {
     twotcmout <- twotcm(
-      newvals$t_tac, tac = tacdf[, twotcmstart], input,
+      newvals$t_tac,
+      tac = tacdf[, twotcmstart], input,
       weights = weights, inpshift = inpshift,
       vB = vB
     )
@@ -173,7 +176,7 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights = NULL, roiweights = NULL
     )
 
     output <- broom::glance(fit)
-    output$RSS <- sum(weights(fit) * residuals(fit) ^ 2)
+    output$RSS <- sum(weights(fit) * residuals(fit)^2)
 
     return(output)
   }
@@ -193,7 +196,7 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights = NULL, roiweights = NULL
 
   tidypars <- dplyr::mutate(
     tidytacs_nested,
-    success = purrr::map_lgl(fit, ~is.data.frame(.x))
+    success = purrr::map_lgl(fit, ~ is.data.frame(.x))
   )
 
   tidypars <- dplyr::filter(tidypars, success == T)
@@ -253,9 +256,9 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights = NULL, roiweights = NULL
 #'
 #' @examples
 #' \dontrun{
-#' SIME_model(t_tac, input, Vnd=5, k2=0.1, k3=0.05, k4=0.04, vB=0.05)
+#' SIME_model(t_tac, input, Vnd = 5, k2 = 0.1, k3 = 0.05, k4 = 0.04, vB = 0.05)
 #' }
-#'
+#' 
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Ogden RT, Zanderigo F, Parsey RV. Estimation of in vivo nonspecific binding in positron emission tomography studies without requiring a reference region. NeuroImage. 2015 Mar 31;108:234-42.
@@ -271,7 +274,7 @@ SIME_model <- function(t_tac, input, Vnd, k2, k3, k4, vB) {
 
   K1 <- k2 * Vnd
 
-  delta <- sqrt((k2 + k3 + k4) ^ 2 - 4 * k2 * k4)
+  delta <- sqrt((k2 + k3 + k4)^2 - 4 * k2 * k4)
   th1 <- (k2 + k3 + k4 + delta) / 2
   th2 <- (k2 + k3 + k4 - delta) / 2
   ph1 <- K1 * (th1 - k3 - k4) / delta
@@ -307,7 +310,7 @@ SIME_model <- function(t_tac, input, Vnd, k2, k3, k4, vB) {
 #' \dontrun{
 #' plot_SIMEfit(SIMEout)
 #' }
-#'
+#' 
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2
@@ -332,8 +335,8 @@ plot_SIMEfit <- function(SIMEout) {
     xlab(expression(V[ND])) +
     scale_y_log10(
       "Cost",
-      breaks = scales::trans_breaks("log10", function(x) 10 ^ x),
-      labels = scales::trans_format("log10", scales::math_format(10 ^ .x))
+      breaks = scales::trans_breaks("log10", function(x) 10^x),
+      labels = scales::trans_format("log10", scales::math_format(10^.x))
     )
 
   return(outplot)

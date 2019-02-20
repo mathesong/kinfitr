@@ -29,23 +29,22 @@
 #' @examples
 #' # Note: Reference region models, and irreversible binding models, should not
 #' # be used for PBR28 - this is just to demonstrate function
-#'
+#' 
 #' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' 
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' reftac <- pbr28$tacs[[2]]$CBL
 #' roitac <- pbr28$tacs[[2]]$STR
 #' weights <- pbr28$tacs[[2]]$Weights
-#'
-#' fit <- mrtm2(t_tac, reftac, roitac, 0.001, weights=weights)
-#'
+#' 
+#' fit <- mrtm2(t_tac, reftac, roitac, 0.001, weights = weights)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references @references Ichise M, Liow JS, Lu JQ, Takano A, Model K, Toyama H, Suhara T, Suzuki K, Innis RB, Carson RE. Linearized Reference Tissue Parametric Imaging Methods: Application to [11C]DASB Positron Emission Tomography Studies of the Serotonin Transporter in Human Brain. Journal of Cerebral Blood Flow & Metabolism. 2003 Sep 1;23(9):1096-112.
 #'
 #' @export
 
-mrtm2 <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames=NULL, weights=NULL, frameStartEnd=NULL) {
+mrtm2 <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames = NULL, weights = NULL, frameStartEnd = NULL) {
 
 
   # Tidying
@@ -122,18 +121,17 @@ mrtm2 <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames=NULL, weig
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#'
+#' 
 #' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' 
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' reftac <- pbr28$tacs[[2]]$CBL
 #' roitac <- pbr28$tacs[[2]]$STR
 #' weights <- pbr28$tacs[[2]]$Weights
-#'
-#' fit <- mrtm2(t_tac, reftac, roitac, 0.001, weights=weights)
-#'
+#' 
+#' fit <- mrtm2(t_tac, reftac, roitac, 0.001, weights = weights)
+#' 
 #' plot_mrtm2fit(fit)
-#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2
@@ -169,12 +167,14 @@ plot_mrtm2fit <- function(mrtm2out, roiname = NULL, refname = NULL) {
   fitted <- plyr::rename(fitted, c("ROI.fitted" = paste0(roiname, ".fitted")))
 
   tidymeasured <- tidyr::gather(
-    measured, key = Region, value = Radioactivity,
+    measured,
+    key = Region, value = Radioactivity,
     -Time, -Weights, factor_key = F
   )
 
   tidyfitted <- tidyr::gather(
-    fitted, key = Region, value = Radioactivity,
+    fitted,
+    key = Region, value = Radioactivity,
     -Time, -Weights, factor_key = F
   )
 
@@ -215,16 +215,16 @@ plot_mrtm2fit <- function(mrtm2out, roiname = NULL, refname = NULL) {
 #'
 #' @examples
 #' \dontrun{
-#' mrtm2_tstar(t_tac, reftac, taclow, tacmed, tachigh, 'demonstration')
+#' mrtm2_tstar(t_tac, reftac, taclow, tacmed, tachigh, "demonstration")
 #' }
-#'
+#' 
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2
 #'
 #' @export
 
-mrtm2_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, filename=NULL, frameStartEnd = NULL, gridbreaks = 2) {
+mrtm2_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, filename = NULL, frameStartEnd = NULL, gridbreaks = 2) {
   frames <- length(reftac)
 
   lowroi_fit <- mrtm2(t_tac, reftac, lowroi, k2prime = k2prime, frameStartEnd = frameStartEnd)
@@ -261,24 +261,24 @@ mrtm2_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, filenam
   }
 
   xlabel <- "Number of Included Frames"
-  ylab_r2 <- expression(R ^ 2)
+  ylab_r2 <- expression(R^2)
   ylab_mp <- "Maximum Percentage Variance"
 
 
   # R Squared plots
 
-  low_r2plot <- ggplot(r2_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim=c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
-  med_r2plot <- ggplot(r2_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim=c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
-  high_r2plot <- ggplot(r2_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim=c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
+  low_r2plot <- ggplot(r2_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
+  med_r2plot <- ggplot(r2_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
+  high_r2plot <- ggplot(r2_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
 
   # Max Percentage Variation Plots
 
   maxperc_df$inclmins <- rev(max(t_tac) - t_tac)[-c(1, 2)]
   maxperc_df$tstar <- rev(t_tac)[-c(1, 2)]
 
-  low_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim=c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
-  med_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim=c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
-  high_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim=c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
+  low_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
+  med_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
+  high_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
 
 
   # TAC Plot
@@ -305,14 +305,14 @@ mrtm2_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, filenam
 
   # Output
 
-  linrow <- cowplot::plot_grid(low_linplot, med_linplot, high_linplot, nrow=1)
-  r2row <- cowplot::plot_grid(low_r2plot, med_r2plot, high_r2plot, nrow=1)
-  mprow <- cowplot::plot_grid(low_mpplot, med_mpplot, high_mpplot, nrow=1)
-  outrow <- cowplot::plot_grid(tacplot, bpplot, rel_widths = c(2,1))
+  linrow <- cowplot::plot_grid(low_linplot, med_linplot, high_linplot, nrow = 1)
+  r2row <- cowplot::plot_grid(low_r2plot, med_r2plot, high_r2plot, nrow = 1)
+  mprow <- cowplot::plot_grid(low_mpplot, med_mpplot, high_mpplot, nrow = 1)
+  outrow <- cowplot::plot_grid(tacplot, bpplot, rel_widths = c(2, 1))
 
   totalplot <- cowplot::plot_grid(linrow, r2row, mprow, outrow, nrow = 4)
 
-  if(!is.null(filename)) {
+  if (!is.null(filename)) {
     jpeg(filename = paste0(filename, "_mrtm2.jpeg"), width = 300, height = 400, units = "mm", res = 600)
     totalplot
     dev.off()

@@ -11,11 +11,11 @@
 #' \dontrun{
 #' loganout <- Loganplot(t_tac, tac, input, 10, weights)
 #' plot(loganout)
-#'
+#' 
 #' srtmout <- srtm(t_tac, reftac, roitac)
-#' plot(srtmout, roiname = 'Putamen', refname = 'Cerebellum')
+#' plot(srtmout, roiname = "Putamen", refname = "Cerebellum")
 #' }
-#'
+#' 
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
@@ -38,7 +38,7 @@ plot.kinfit <- function(x, ...) {
 #' input <- blooddata_getdata(blooddata)
 #' plot(input)
 #' }
-#'
+#' 
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
@@ -60,11 +60,10 @@ plot.interpblood <- function(x, ...) {
 #' \dontrun{
 #' plot(blooddata)
 #' }
-#'
+#' 
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
 plot.blooddata <- function(x, ...) {
   plot_blooddata(x, ...)
 }
-

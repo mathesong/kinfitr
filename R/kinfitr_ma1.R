@@ -29,26 +29,26 @@
 #'
 #' @examples
 #' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' 
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#'
+#' 
 #' input <- blood_interp(
-#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
-#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
-#'   t_parentfrac = 1, parentfrac = 1 )
-#'
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1
+#' )
+#' 
 #' fit1 <- ma1(t_tac, tac, input, 10, weights)
-#' fit2 <- ma1(t_tac, tac, input, 10, weights, inpshift = 0.1, vB=0.05)
-#'
+#' fit2 <- ma1(t_tac, tac, input, 10, weights, inpshift = 0.1, vB = 0.05)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Ichise M, Toyama H, Innis RB, Carson RE. Strategies to improve neuroreceptor parameter estimation by linear regression analysis. Journal of Cerebral Blood Flow & Metabolism. 2002 Oct 1;22(10):1271-81.
 #'
 #' @export
 
-ma1 <- function(t_tac, tac, input, tstarIncludedFrames, weights=NULL, inpshift = 0, vB = 0, frameStartEnd=NULL) {
+ma1 <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL, inpshift = 0, vB = 0, frameStartEnd = NULL) {
 
 
   # Tidying
@@ -137,19 +137,19 @@ ma1 <- function(t_tac, tac, input, tstarIncludedFrames, weights=NULL, inpshift =
 #'
 #' @examples
 #' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' 
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#'
+#' 
 #' input <- blood_interp(
-#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
-#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
-#'   t_parentfrac = 1, parentfrac = 1 )
-#'
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1
+#' )
+#' 
 #' fit <- ma1(t_tac, tac, input, 10, weights)
 #' plot_ma1fit(fit)
-#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2
@@ -178,12 +178,14 @@ plot_ma1fit <- function(ma1out, roiname = NULL) {
   fitted <- plyr::rename(fitted, c("Target.fitted" = paste0(roiname, ".fitted")))
 
   tidymeasured <- tidyr::gather(
-    measured, key = Region, value = Radioactivity,
+    measured,
+    key = Region, value = Radioactivity,
     -Time, -Weights, factor_key = F
   )
 
   tidyfitted <- tidyr::gather(
-    fitted, key = Region, value = Radioactivity,
+    fitted,
+    key = Region, value = Radioactivity,
     -Time, -Weights, factor_key = F
   )
 
@@ -229,10 +231,12 @@ plot_ma1fit <- function(ma1out, roiname = NULL) {
 #'
 #' @examples
 #' \dontrun{
-#' ma1_tstar(t_tac, lowroi, medroi, highroi, input, filename='demonstration',
-#'           inpshift = onetcmout$par$inpshift, frameStartEnd, gridbreaks=4)
+#' ma1_tstar(t_tac, lowroi, medroi, highroi, input,
+#'   filename = "demonstration",
+#'   inpshift = onetcmout$par$inpshift, frameStartEnd, gridbreaks = 4
+#' )
 #' }
-#'
+#' 
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2
@@ -240,11 +244,11 @@ plot_ma1fit <- function(ma1out, roiname = NULL) {
 #' @export
 
 
-ma1_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename =NULL, inpshift = 0, vB = 0, frameStartEnd=NULL, gridbreaks=2) {
+ma1_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, inpshift = 0, vB = 0, frameStartEnd = NULL, gridbreaks = 2) {
   frames <- length(t_tac)
-  lowroi_fit <- ma1(t_tac, lowroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB=vB, frameStartEnd = frameStartEnd)
-  medroi_fit <- ma1(t_tac, medroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB=vB, frameStartEnd = frameStartEnd)
-  highroi_fit <- ma1(t_tac, highroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB=vB, frameStartEnd = frameStartEnd)
+  lowroi_fit <- ma1(t_tac, lowroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+  medroi_fit <- ma1(t_tac, medroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+  highroi_fit <- ma1(t_tac, highroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
 
   low_linplot <- plot_ma1fit(lowroi_fit) + ggtitle("Low") + ylim(0, max(lowroi_fit$tacs$Target * 1.1)) + theme(legend.position = "none")
   med_linplot <- plot_ma1fit(medroi_fit) + ggtitle("Medium") + ylim(0, max(medroi_fit$tacs$Target * 1.1)) + theme(legend.position = "none")
@@ -258,9 +262,9 @@ ma1_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename =NULL, inp
   vt_df <- data.frame(Frames = tstarInclFrames, Time = t_tac[ tstarInclFrames ], Low = zeros, Medium = zeros, High = zeros)
 
   for (i in 1:length(tstarInclFrames)) {
-    lowfit <- ma1(t_tac, lowroi, input, tstarIncludedFrames = tstarInclFrames[i], inpshift = inpshift, vB=vB, frameStartEnd = frameStartEnd)
-    medfit <- ma1(t_tac, medroi, input, tstarIncludedFrames = tstarInclFrames[i], inpshift = inpshift, vB=vB, frameStartEnd = frameStartEnd)
-    highfit <- ma1(t_tac, highroi, input, tstarIncludedFrames = tstarInclFrames[i], inpshift = inpshift, vB=vB, frameStartEnd = frameStartEnd)
+    lowfit <- ma1(t_tac, lowroi, input, tstarIncludedFrames = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+    medfit <- ma1(t_tac, medroi, input, tstarIncludedFrames = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+    highfit <- ma1(t_tac, highroi, input, tstarIncludedFrames = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
 
     r2_df$Low[i] <- summary(lowfit$fit)$r.squared
     r2_df$Medium[i] <- summary(medfit$fit)$r.squared
@@ -276,24 +280,24 @@ ma1_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename =NULL, inp
   }
 
   xlabel <- "Number of Included Frames"
-  ylab_r2 <- expression(R ^ 2)
+  ylab_r2 <- expression(R^2)
   ylab_mp <- "Maximum Percentage Variance"
 
 
   # R Squared plots
 
-  low_r2plot <- ggplot(r2_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim=c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
-  med_r2plot <- ggplot(r2_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim=c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
-  high_r2plot <- ggplot(r2_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim=c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
+  low_r2plot <- ggplot(r2_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
+  med_r2plot <- ggplot(r2_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
+  high_r2plot <- ggplot(r2_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
 
   # Max Percentage Variation Plots
 
   maxperc_df$inclmins <- rev(max(t_tac) - t_tac)[-c(1, 2)]
   maxperc_df$tstar <- rev(t_tac)[-c(1, 2)]
 
-  low_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim=c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
-  med_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim=c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
-  high_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim=c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
+  low_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
+  med_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
+  high_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
 
 
   # TAC Plot
@@ -325,14 +329,14 @@ ma1_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename =NULL, inp
 
   # Output
 
-  linrow <- cowplot::plot_grid(low_linplot, med_linplot, high_linplot, nrow=1)
-  r2row <- cowplot::plot_grid(low_r2plot, med_r2plot, high_r2plot, nrow=1)
-  mprow <- cowplot::plot_grid(low_mpplot, med_mpplot, high_mpplot, nrow=1)
-  outrow <- cowplot::plot_grid(tacplot, vtplot, rel_widths = c(2,1))
+  linrow <- cowplot::plot_grid(low_linplot, med_linplot, high_linplot, nrow = 1)
+  r2row <- cowplot::plot_grid(low_r2plot, med_r2plot, high_r2plot, nrow = 1)
+  mprow <- cowplot::plot_grid(low_mpplot, med_mpplot, high_mpplot, nrow = 1)
+  outrow <- cowplot::plot_grid(tacplot, vtplot, rel_widths = c(2, 1))
 
   totalplot <- cowplot::plot_grid(linrow, r2row, mprow, outrow, nrow = 4)
 
-  if(!is.null(filename)) {
+  if (!is.null(filename)) {
     jpeg(filename = paste0(filename, "_ma1.jpeg"), width = 300, height = 400, units = "mm", res = 600)
     totalplot
     dev.off()

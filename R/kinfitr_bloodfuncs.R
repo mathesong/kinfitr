@@ -42,20 +42,21 @@
 #'
 #' @examples
 #' \dontrun{
-#' input <- blood_interp(t_blood = blooddata$Time.sec./60,
-#'            blood = blooddata$Cbl.nCi.cc.,
-#'            t_plasma = plasmadata$Time.sec./60,
-#'            plasma = plasmadata$Cpl.nCi.cc.,
-#'            t_parentfrac = parentdata$Times/60,
-#'            parentfrac = parentdata$Fraction)
+#' input <- blood_interp(
+#'   t_blood = blooddata$Time.sec. / 60,
+#'   blood = blooddata$Cbl.nCi.cc.,
+#'   t_plasma = plasmadata$Time.sec. / 60,
+#'   plasma = plasmadata$Cpl.nCi.cc.,
+#'   t_parentfrac = parentdata$Times / 60,
+#'   parentfrac = parentdata$Fraction
+#' )
 #' }
-#'
+#' 
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
 
 blood_interp <- function(t_blood, blood, t_plasma, plasma, t_parentfrac, parentfrac, interpPoints = 6000) {
-
   if (max(t_blood) > 300 || max(t_plasma) > 300 || max(t_parentfrac) > 300) {
     warning("
             ***********************************************************************
@@ -93,17 +94,22 @@ blood_interp <- function(t_blood, blood, t_plasma, plasma, t_parentfrac, parentf
 
   interptime <- pracma::linspace(0, maxtime, interpPoints)
 
-  interpcurves <- plyr::dlply(input, "Measure",
-                              function(x) pracma::interp1(x$Time,
-                                                          x$Value,
-                                                          interptime,
-                                                          method = "linear"))
+  interpcurves <- plyr::dlply(
+    input, "Measure",
+    function(x) pracma::interp1(x$Time,
+        x$Value,
+        interptime,
+        method = "linear"
+      )
+  )
 
-  input <- tibble::tibble(Time = interptime,
-                             Blood = interpcurves$Blood,
-                             Plasma = interpcurves$Plasma,
-                             ParentFraction = interpcurves$ParentFrac,
-                             AIF = interpcurves$Plasma * interpcurves$ParentFrac)
+  input <- tibble::tibble(
+    Time = interptime,
+    Blood = interpcurves$Blood,
+    Plasma = interpcurves$Plasma,
+    ParentFraction = interpcurves$ParentFrac,
+    AIF = interpcurves$Plasma * interpcurves$ParentFrac
+  )
 
   class(input) <- c("interpblood", class(input))
 
@@ -145,18 +151,18 @@ blood_interp <- function(t_blood, blood, t_plasma, plasma, t_parentfrac, parentf
 #'
 #' @examples
 #' \dontrun{
-#' inpshift = 0.25   # 15 seconds
+#' inpshift <- 0.25 # 15 seconds
 #' newValues <- shift_timings(t_tac, tac, input, inpshift)
 #' t_tac <- newValues$t_tac
 #' tac <- newValues$tac
 #' input <- newValues$input
 #' }
-#'
+#' 
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
 
-shift_timings <- function(t_tac, tac, input, inpshift, shifttac=T) {
+shift_timings <- function(t_tac, tac, input, inpshift, shifttac = T) {
   interpPoints <- nrow(input)
 
   tacdf <- data.frame(Time = t_tac, Value = tac)
@@ -208,13 +214,18 @@ shift_timings <- function(t_tac, tac, input, inpshift, shifttac=T) {
   input <- tibble::tibble(
     Time = interptime,
     Blood = pracma::interp1(input$Time, input$Blood, interptime,
-                            method = "linear"),
+      method = "linear"
+    ),
     Plasma = pracma::interp1(input$Time, input$Plasma, interptime,
-                             method = "linear"),
+      method = "linear"
+    ),
     ParentFraction = pracma::interp1(input$Time, input$ParentFraction, interptime,
-                                     method = "linear"),
+      method = "linear"
+    ),
     AIF = pracma::interp1(input$Time, input$AIF, interptime,
-                          method = "linear") )
+      method = "linear"
+    )
+  )
 
   class(input) <- c("interpblood", class(input))
 
@@ -259,18 +270,18 @@ shift_timings <- function(t_tac, tac, input, inpshift, shifttac=T) {
 #'
 #' @examples
 #' \dontrun{
-#' inpshift = 0.25   # 15 seconds
+#' inpshift <- 0.25 # 15 seconds
 #' newValues <- shift_timings(t_tac, tac, input, inpshift)
 #' t_tac <- newValues$t_tac
 #' tac <- newValues$tac
 #' input <- newValues$input
 #' }
-#'
+#' 
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
 
-shift_timings_df <- function(t_tac, tacsdf, input, inpshift, shifttac=T) {
+shift_timings_df <- function(t_tac, tacsdf, input, inpshift, shifttac = T) {
   interpPoints <- nrow(input)
 
   tacdf <- data.frame(Time = t_tac)
@@ -310,13 +321,18 @@ shift_timings_df <- function(t_tac, tacsdf, input, inpshift, shifttac=T) {
   input <- tibble::tibble(
     Time = interptime,
     Blood = pracma::interp1(input$Time, input$Blood, interptime,
-                            method = "linear"),
+      method = "linear"
+    ),
     Plasma = pracma::interp1(input$Time, input$Plasma, interptime,
-                             method = "linear"),
+      method = "linear"
+    ),
     ParentFraction = pracma::interp1(input$Time, input$ParentFraction, interptime,
-                                     method = "linear"),
+      method = "linear"
+    ),
     AIF = pracma::interp1(input$Time, input$AIF, interptime,
-                          method = "linear") )
+      method = "linear"
+    )
+  )
 
   class(input) <- c("interpblood", class(input))
 
@@ -348,24 +364,24 @@ shift_timings_df <- function(t_tac, tacsdf, input, inpshift, shifttac=T) {
 #'
 #' @examples
 #' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' 
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
-#'
+#' 
 #' input <- blood_interp(
-#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
-#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
-#'   t_parentfrac = 1, parentfrac = 1 )
-#'
-#' plot_inptac_timings(t_tac, tac, input, inpshift=0.12, zoomTime=5)
-#'
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1
+#' )
+#' 
+#' plot_inptac_timings(t_tac, tac, input, inpshift = 0.12, zoomTime = 5)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2
 #'
 #' @export
 
-plot_inptac_timings <- function(t_tac, tac, input, inpshift, zoomTime=5) {
+plot_inptac_timings <- function(t_tac, tac, input, inpshift, zoomTime = 5) {
   newvals <- shift_timings(t_tac, tac, input, inpshift)
 
   inp <- newvals$input$Plasma * newvals$input$ParentFraction
@@ -375,7 +391,8 @@ plot_inptac_timings <- function(t_tac, tac, input, inpshift, zoomTime=5) {
   i_df <- data.frame(interptime, TAC = i_tac, AIF = inp)
 
   i_df_tidy <- tidyr::gather(
-    i_df, key = Curve, value = Radioactivity,
+    i_df,
+    key = Curve, value = Radioactivity,
     TAC, AIF
   )
 
@@ -387,7 +404,7 @@ plot_inptac_timings <- function(t_tac, tac, input, inpshift, zoomTime=5) {
 
   outplot <- ggplot(i_df_tidy, aes(x = interptime, y = Radioactivity, colour = Curve)) +
     geom_line() + xlab("Time (min)") +
-    colScale + coord_cartesian(ylim = c(0, max(tac)*1.5), xlim = c(0, zoomTime))
+    colScale + coord_cartesian(ylim = c(0, max(tac) * 1.5), xlim = c(0, zoomTime))
 
   return(outplot)
 }
@@ -407,27 +424,27 @@ plot_inptac_timings <- function(t_tac, tac, input, inpshift, zoomTime=5) {
 #'
 #' @examples
 #' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' 
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#'
+#' 
 #' input <- blood_interp(
-#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
-#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
-#'   t_parentfrac = 1, parentfrac = 1 )
-#'
-#' twotcmout <- twotcm(t_tac, tac, input, weights, frameStartEnd = c(1,25))
-#'
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1
+#' )
+#' 
+#' twotcmout <- twotcm(t_tac, tac, input, weights, frameStartEnd = c(1, 25))
+#' 
 #' plot_inptac_fit(twotcmout)
-#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2
 #'
 #' @export
 
-plot_inptac_fit <- function(fitout, roiname = NULL, zoomTime=5) {
+plot_inptac_fit <- function(fitout, roiname = NULL, zoomTime = 5) {
   if (is.null(roiname)) {
     roiname <- "ROI"
   }
@@ -476,38 +493,38 @@ plot_inptac_fit <- function(fitout, roiname = NULL, zoomTime=5) {
 #' @return A ggplot2 object
 #'
 #' @examples
-#'
+#' 
 #' data(pbr28)
-#'
+#' 
 #' input <- blood_interp(
-#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
-#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
-#'   t_parentfrac = 1, parentfrac = 1 )
-#'
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1
+#' )
+#' 
 #' plot_input(input)
-#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2
 #'
 #' @export
 plot_input <- function(input) {
-
   input$BPR <- input$Blood / input$Plasma
-  input$Blood <- input$Blood / max( c(input$Blood, input$Plasma) )
-  input$Plasma <- input$Plasma / max( c(input$Blood, input$Plasma) )
+  input$Blood <- input$Blood / max(c(input$Blood, input$Plasma))
+  input$Plasma <- input$Plasma / max(c(input$Blood, input$Plasma))
   input$AIF <- input$AIF
 
-  input <- dplyr::rename(input, "Parent Fraction" = ParentFraction,
-                         "Blood-Plasma Ratio" = BPR)
+  input <- dplyr::rename(input,
+    "Parent Fraction" = ParentFraction,
+    "Blood-Plasma Ratio" = BPR
+  )
 
   tidyinput <- tidyr::gather(input, Data, Radioactivity, -Time) %>%
     dplyr::mutate(Data = forcats::as_factor(Data))
 
-  ggplot(tidyinput, aes(x=Time, y=Radioactivity, colour=Data)) +
+  ggplot(tidyinput, aes(x = Time, y = Radioactivity, colour = Data)) +
     geom_line() +
     coord_cartesian(ylim = c(0, 1))
-
 }
 
 #' Perform dispersion correction on blood data collected using ABSS
@@ -535,38 +552,36 @@ plot_input <- function(input) {
 #' @examples
 #' time <- 1:20
 #' activity <- rnorm(20)
-#' tau = 2.5
-#'
+#' tau <- 2.5
+#' 
 #' blood_dispcor(time, activity, tau, 1)
-#'
 blood_dispcor <- function(time, activity, tau, timedelta = NULL,
-                          keep_interpolated=T, smooth_iterations = 0) {
-
-  if(is.null(timedelta)) {
+                          keep_interpolated = T, smooth_iterations = 0) {
+  if (is.null(timedelta)) {
     diffs <- diff(head(time, 20))
-    deltas <- sort(table(diffs),decreasing=TRUE)
+    deltas <- sort(table(diffs), decreasing = TRUE)
     timedelta <- as.numeric(names(deltas)[1])
   }
 
   # linear interpolation of time and blood into seconds, in case values missing
-  i_time <- seq(from=min(time), to = max(time), by = timedelta)
+  i_time <- seq(from = min(time), to = max(time), by = timedelta)
   i_activity <- pracma::interp1(time, activity, i_time, method = "linear")
 
   # Adding a value on each side to make the output the same length
-  i_time <- c( head(i_time, 1), i_time, tail(i_time, 1) )
-  i_activity <- c( head(i_activity, 1)-timedelta, i_activity, tail(i_activity, 1)+timedelta )
+  i_time <- c(head(i_time, 1), i_time, tail(i_time, 1))
+  i_activity <- c(head(i_activity, 1) - timedelta, i_activity, tail(i_activity, 1) + timedelta)
 
   i_integ_activity <- pracma::cumtrapz(i_time, i_activity)
-  i_integ_true <- tau*i_activity + i_integ_activity
+  i_integ_true <- tau * i_activity + i_integ_activity
 
-  ind <- 2:(length(i_time)-1)
+  ind <- 2:(length(i_time) - 1)
 
   time_out <- i_time[ind]
-  activity_out <- ( i_integ_true[ind+1] - i_integ_true[ind-1] ) / 2*timedelta
+  activity_out <- (i_integ_true[ind + 1] - i_integ_true[ind - 1]) / 2 * timedelta
 
-  out <- tibble::tibble(time=time_out, activity=activity_out)
+  out <- tibble::tibble(time = time_out, activity = activity_out)
 
-  if(!keep_interpolated) {
+  if (!keep_interpolated) {
     meastimes <- time
     out <- dplyr::filter(out, time %in% meastimes)
   }
@@ -574,7 +589,6 @@ blood_dispcor <- function(time, activity, tau, timedelta = NULL,
   out <- blood_smooth(time_out, activity_out, smooth_iterations)
 
   return(out)
-
 }
 
 
@@ -597,22 +611,17 @@ blood_dispcor <- function(time, activity, tau, timedelta = NULL,
 #' @examples
 #' time <- 1:20
 #' activity <- rnorm(20)
-#'
+#' 
 #' blood_smooth(time, activity, 5)
-#'
-blood_smooth <- function(time, activity, iterations=1) {
+blood_smooth <- function(time, activity, iterations = 1) {
+  if (iterations > 0) {
+    for (i in 1:iterations) {
+      idx <- 1:(length(time) - 1)
 
-  if( iterations > 0 ) {
-
-    for(i in 1:iterations) {
-      idx <- 1:(length(time)-1)
-
-      time <- (time[idx] + time[idx+1])/2
-      activity <- (activity[idx] + activity[idx+1])/2
+      time <- (time[idx] + time[idx + 1]) / 2
+      activity <- (activity[idx] + activity[idx + 1]) / 2
     }
   }
 
-  tibble::tibble(time=time, activity=activity)
+  tibble::tibble(time = time, activity = activity)
 }
-
-

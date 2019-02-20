@@ -28,30 +28,29 @@
 #' tstarIncludedFrames value \code{out$tstarIncludedFrames}.
 #'
 #' @examples
-#'
+#' 
 #' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' 
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#'
+#' 
 #' input <- blood_interp(
-#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
-#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
-#'   t_parentfrac = 1, parentfrac = 1 )
-#'
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1
+#' )
+#' 
 #' fit1 <- Loganplot(t_tac, tac, input, 10, weights)
-#' fit2 <- Loganplot(t_tac, tac, input, 10, weights, inpshift = 0.1, vB=0.05)
-#'
-#'
+#' fit2 <- Loganplot(t_tac, tac, input, 10, weights, inpshift = 0.1, vB = 0.05)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Logan J, Fowler JS, Volkow ND, Wolf AP, Dewey SL, Schlyer DJ, MacGregor RR, Hitzemann R, Bendriem B, Gatley SJ, Christman DR. Graphical Analysis of Reversible Radioligand Binding from Time-Activity Measurements Applied to [N-11C-Methyl]-(-)-Cocaine PET Studies in Human Subjects. Journal of Cerebral Blood Flow & Metabolism. 1990 Sep 1;10(5):740-7.
 #'
 #' @export
 
-Loganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights=NULL,
-                      inpshift = 0, vB = 0, frameStartEnd=NULL) {
+Loganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL,
+                      inpshift = 0, vB = 0, frameStartEnd = NULL) {
 
   # Tidying
 
@@ -136,21 +135,21 @@ Loganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights=NULL,
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#'
+#' 
 #' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' 
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#'
+#' 
 #' input <- blood_interp(
-#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
-#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
-#'   t_parentfrac = 1, parentfrac = 1 )
-#'
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1
+#' )
+#' 
 #' fit <- Loganplot(t_tac, tac, input, 10, weights)
 #' plot_Loganfit(fit)
-#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2
@@ -227,18 +226,19 @@ plot_Loganfit <- function(loganout, roiname = NULL) {
 #'
 #' @examples
 #' \dontrun{
-#' Logan_tstar(t_tac, lowroi, medroi, highroi, input, filename='demonstration',
-#'             inpshift = onetcmout$par$inpshift, vB = 0.05, gridbreaks=4)
+#' Logan_tstar(t_tac, lowroi, medroi, highroi, input,
+#'   filename = "demonstration",
+#'   inpshift = onetcmout$par$inpshift, vB = 0.05, gridbreaks = 4
+#' )
 #' }
-#'
+#' 
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2
 #'
 #' @export
 
-Logan_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, inpshift = 0, vB = 0.05, frameStartEnd = NULL, gridbreaks=2) {
-
+Logan_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, inpshift = 0, vB = 0.05, frameStartEnd = NULL, gridbreaks = 2) {
   frames <- length(t_tac)
   lowroi_fit <- Loganplot(t_tac, lowroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
   medroi_fit <- Loganplot(t_tac, medroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
@@ -281,15 +281,15 @@ Logan_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, 
   }
 
   xlabel <- "Number of Included Frames"
-  ylab_r2 <- expression(R ^ 2)
+  ylab_r2 <- expression(R^2)
   ylab_mp <- "Maximum Percentage Variance"
 
 
   # R Squared plots
 
-  low_r2plot <- ggplot(r2_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim=c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
-  med_r2plot <- ggplot(r2_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim=c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
-  high_r2plot <- ggplot(r2_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim=c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
+  low_r2plot <- ggplot(r2_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
+  med_r2plot <- ggplot(r2_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
+  high_r2plot <- ggplot(r2_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
 
 
   # Max Percentage Variation Plots
@@ -297,9 +297,9 @@ Logan_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, 
   maxperc_df$inclmins <- rev(max(t_tac) - t_tac)[-c(1, 2)]
   maxperc_df$tstar <- rev(t_tac)[-c(1, 2)]
 
-  low_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim=c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
-  med_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim=c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
-  high_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim=c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
+  low_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
+  med_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
+  high_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
 
 
 
@@ -327,14 +327,14 @@ Logan_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, 
 
   # Output
 
-  linrow <- cowplot::plot_grid(low_linplot, med_linplot, high_linplot, nrow=1)
-  r2row <- cowplot::plot_grid(low_r2plot, med_r2plot, high_r2plot, nrow=1)
-  mprow <- cowplot::plot_grid(low_mpplot, med_mpplot, high_mpplot, nrow=1)
-  outrow <- cowplot::plot_grid(tacplot, vtplot, rel_widths = c(2,1))
+  linrow <- cowplot::plot_grid(low_linplot, med_linplot, high_linplot, nrow = 1)
+  r2row <- cowplot::plot_grid(low_r2plot, med_r2plot, high_r2plot, nrow = 1)
+  mprow <- cowplot::plot_grid(low_mpplot, med_mpplot, high_mpplot, nrow = 1)
+  outrow <- cowplot::plot_grid(tacplot, vtplot, rel_widths = c(2, 1))
 
   totalplot <- cowplot::plot_grid(linrow, r2row, mprow, outrow, nrow = 4)
 
-  if(!is.null(filename)) {
+  if (!is.null(filename)) {
     jpeg(filename = paste0(filename, "_Loganplot.jpeg"), width = 300, height = 400, units = "mm", res = 600)
     totalplot
     dev.off()

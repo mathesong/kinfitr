@@ -13,18 +13,17 @@
 #' @export
 #'
 #' @examples
-#' metab_hill_model(seq(0, 60*60, by=120), 0.05, 2.6, 6.9, 1, 0)
-metab_hill_model <- function(time, a, b, c, ppf0=1, delay=0) {
-
-  tcorr <- time-delay
+#' metab_hill_model(seq(0, 60 * 60, by = 120), 0.05, 2.6, 6.9, 1, 0)
+metab_hill_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
+  tcorr <- time - delay
   t_before <- tcorr[ which(!(tcorr > 0)) ]
   t_after <- tcorr[ which(tcorr > 0) ]
 
-  ind1_out <- rep(ppf0, length.out=length(t_before))
+  ind1_out <- rep(ppf0, length.out = length(t_before))
   ind2_out <- ppf0 - (
-    ( (ppf0-a) * t_after^b) /
-      ( 10^c + (t_after)^b )
-    )
+    ((ppf0 - a) * t_after^b) /
+      (10^c + (t_after)^b)
+  )
 
   out <- c(ind1_out, ind2_out)
 
@@ -52,33 +51,32 @@ metab_hill_model <- function(time, a, b, c, ppf0=1, delay=0) {
 #'
 #' @examples
 #' \dontrun{
-#' pf <- blooddata_getdata(blooddata, output="parentFraction")
+#' pf <- blooddata_getdata(blooddata, output = "parentFraction")
 #' metab_hill(pf$time, pf$parentFraction)
 #' }
 metab_hill <- function(time, parentFraction,
                        fit_ppf0 = FALSE,
                        fit_delay = FALSE,
-                       lower = list(a=0, b=1, c=0, ppf0=0.8, delay=-30),
-                       upper = list(a=1, b=100, c=100, ppf0=1.1, delay=30),
+                       lower = list(a = 0, b = 1, c = 0, ppf0 = 0.8, delay = -30),
+                       upper = list(a = 1, b = 100, c = 100, ppf0 = 1.1, delay = 30),
                        multstart_lower = NULL,
                        multstart_upper = NULL,
-                       multstart_iter=100) {
-
-
+                       multstart_iter = 100) {
   pf <- tibble::tibble(time = time, parentFraction = parentFraction)
   pf <- dplyr::arrange(pf, time)
 
   formula <- paste("parentFraction ~ metab_hill_model(time, a, b, c, ",
-                   "ppf0", ifelse(fit_ppf0, "", "=1"), ", ",
-                   "delay", ifelse(fit_delay, "", "=0"), ")",
-                   sep = "")
+    "ppf0", ifelse(fit_ppf0, "", "=1"), ", ",
+    "delay", ifelse(fit_delay, "", "=0"), ")",
+    sep = ""
+  )
 
-  if(!fit_ppf0) {
+  if (!fit_ppf0) {
     lower$ppf0 <- NULL
     upper$ppf0 <- NULL
   }
 
-  if(!fit_delay) {
+  if (!fit_delay) {
     lower$delay <- NULL
     upper$delay <- NULL
   }
@@ -86,27 +84,27 @@ metab_hill <- function(time, parentFraction,
   lower <- as.numeric(as.data.frame(lower))
   upper <- as.numeric(as.data.frame(upper))
 
-  if(is.null(multstart_lower)) {
+  if (is.null(multstart_lower)) {
     multstart_lower <- lower
   } else {
     multstart_lower <- as.numeric(as.data.frame(multstart_lower))
   }
 
-  if(is.null(multstart_upper)) {
+  if (is.null(multstart_upper)) {
     multstart_upper <- upper
   } else {
     multstart_upper <- as.numeric(as.data.frame(multstart_upper))
   }
 
   nls.multstart::nls_multstart(as.formula(formula),
-                                    data=pf,
-                                    lower=lower,
-                                    upper=upper,
-                                    start_lower = multstart_lower,
-                                    start_upper = multstart_upper,
-                                    iter = multstart_iter,
-                                    supp_errors = "Y")
-
+    data = pf,
+    lower = lower,
+    upper = upper,
+    start_lower = multstart_lower,
+    start_upper = multstart_upper,
+    iter = multstart_iter,
+    supp_errors = "Y"
+  )
 }
 
 
@@ -218,17 +216,16 @@ metab_hill <- function(time, parentFraction,
 #' @references Guo Q, Colasanti A, Owen DR, et al. Quantification of the specific translocator protein signal of 18F-PBR111 in healthy humans: a genetic polymorphism effect on in vivo binding. J Nucl Med 2013; 54: 1915–1923.
 #'
 #' @examples
-#' metab_hillguo_model(seq(0, 60*60, by=120), 7, 0.6, 0.04, 1, 0)
-metab_hillguo_model <- function(time, a, b, c, ppf0=1, delay=0) {
-
-  tcorr <- time-delay
+#' metab_hillguo_model(seq(0, 60 * 60, by = 120), 7, 0.6, 0.04, 1, 0)
+metab_hillguo_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
+  tcorr <- time - delay
   t_before <- tcorr[ which(!(tcorr > 0)) ]
   t_after <- tcorr[ which(tcorr > 0) ]
 
-  ind1_out <- rep(ppf0, length.out=length(t_before))
+  ind1_out <- rep(ppf0, length.out = length(t_before))
 
-  ind2_inner <- 1 - ( t_after^3 / ( t_after^3 + 10^a ) )
-  ind2_out <- (ind2_inner^b + c) / (1+c)
+  ind2_inner <- 1 - (t_after^3 / (t_after^3 + 10^a))
+  ind2_out <- (ind2_inner^b + c) / (1 + c)
 
   out <- c(ind1_out, ind2_out)
 
@@ -257,33 +254,32 @@ metab_hillguo_model <- function(time, a, b, c, ppf0=1, delay=0) {
 #'
 #' @examples
 #' \dontrun{
-#' pf <- blooddata_getdata(blooddata, output="parentFraction")
+#' pf <- blooddata_getdata(blooddata, output = "parentFraction")
 #' metab_hillguo(pf$time, pf$parentFraction)
 #' }
 metab_hillguo <- function(time, parentFraction,
-                       fit_ppf0 = FALSE,
-                       fit_delay = FALSE,
-                       lower = list(a=0, b=0, c=0, ppf0=0.8, delay=-30),
-                       upper = list(a=100, b=100, c=100, ppf0=1.1, delay=30),
-                       multstart_lower = NULL,
-                       multstart_upper = NULL,
-                       multstart_iter=100) {
-
-
+                          fit_ppf0 = FALSE,
+                          fit_delay = FALSE,
+                          lower = list(a = 0, b = 0, c = 0, ppf0 = 0.8, delay = -30),
+                          upper = list(a = 100, b = 100, c = 100, ppf0 = 1.1, delay = 30),
+                          multstart_lower = NULL,
+                          multstart_upper = NULL,
+                          multstart_iter = 100) {
   pf <- tibble::tibble(time = time, parentFraction = parentFraction)
   pf <- dplyr::arrange(pf, time)
 
   formula <- paste("parentFraction ~ metab_hillguo_model(time, a, b, c, ",
-                   "ppf0", ifelse(fit_ppf0, "", "=1"), ", ",
-                   "delay", ifelse(fit_delay, "", "=0"), ")",
-                   sep = "")
+    "ppf0", ifelse(fit_ppf0, "", "=1"), ", ",
+    "delay", ifelse(fit_delay, "", "=0"), ")",
+    sep = ""
+  )
 
-  if(!fit_ppf0) {
+  if (!fit_ppf0) {
     lower$ppf0 <- NULL
     upper$ppf0 <- NULL
   }
 
-  if(!fit_delay) {
+  if (!fit_delay) {
     lower$delay <- NULL
     upper$delay <- NULL
   }
@@ -291,27 +287,27 @@ metab_hillguo <- function(time, parentFraction,
   lower <- as.numeric(as.data.frame(lower))
   upper <- as.numeric(as.data.frame(upper))
 
-  if(is.null(multstart_lower)) {
+  if (is.null(multstart_lower)) {
     multstart_lower <- lower
   } else {
     multstart_lower <- as.numeric(as.data.frame(multstart_lower))
   }
 
-  if(is.null(multstart_upper)) {
+  if (is.null(multstart_upper)) {
     multstart_upper <- upper
   } else {
     multstart_upper <- as.numeric(as.data.frame(multstart_upper))
   }
 
   nls.multstart::nls_multstart(as.formula(formula),
-                               data=pf,
-                               lower=lower,
-                               upper=upper,
-                               start_lower = multstart_lower,
-                               start_upper = multstart_upper,
-                               iter = multstart_iter,
-                               supp_errors = "Y")
-
+    data = pf,
+    lower = lower,
+    upper = upper,
+    start_lower = multstart_lower,
+    start_upper = multstart_upper,
+    iter = multstart_iter,
+    supp_errors = "Y"
+  )
 }
 
 
@@ -331,15 +327,14 @@ metab_hillguo <- function(time, parentFraction,
 #' @export
 #'
 #' @examples
-#' metab_power_model(seq(0, 60*60, by=120), 0.004, 4.5, 0.27, 1, 0)
-metab_power_model <- function(time, a, b, c, ppf0=1, delay=0) {
-
-  tcorr <- time-delay
+#' metab_power_model(seq(0, 60 * 60, by = 120), 0.004, 4.5, 0.27, 1, 0)
+metab_power_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
+  tcorr <- time - delay
   t_before <- tcorr[ which(!(tcorr > 0)) ]
   t_after <- tcorr[ which(tcorr > 0) ]
 
-  ind1_out <- rep(ppf0, length.out=length(t_before))
-  ind2_out <- ppf0 / (1+( a*(t_after) )^b )^c
+  ind1_out <- rep(ppf0, length.out = length(t_before))
+  ind2_out <- ppf0 / (1 + (a * (t_after))^b)^c
 
   out <- c(ind1_out, ind2_out)
 
@@ -366,33 +361,32 @@ metab_power_model <- function(time, a, b, c, ppf0=1, delay=0) {
 #'
 #' @examples
 #' \dontrun{
-#' pf <- blooddata_getdata(blooddata, output="parentFraction")
+#' pf <- blooddata_getdata(blooddata, output = "parentFraction")
 #' metab_power(pf$time, pf$parentFraction)
 #' }
 metab_power <- function(time, parentFraction,
-                          fit_ppf0 = FALSE,
-                          fit_delay = FALSE,
-                          lower = list(a=0, b=1, c=0, ppf0=0.8, delay=-30),
-                          upper = list(a=1, b=10, c=5, ppf0=1.1, delay=30),
-                          multstart_lower = NULL,
-                          multstart_upper = NULL,
-                          multstart_iter=100) {
-
-
+                        fit_ppf0 = FALSE,
+                        fit_delay = FALSE,
+                        lower = list(a = 0, b = 1, c = 0, ppf0 = 0.8, delay = -30),
+                        upper = list(a = 1, b = 10, c = 5, ppf0 = 1.1, delay = 30),
+                        multstart_lower = NULL,
+                        multstart_upper = NULL,
+                        multstart_iter = 100) {
   pf <- tibble::tibble(time = time, parentFraction = parentFraction)
   pf <- dplyr::arrange(pf, time)
 
   formula <- paste("parentFraction ~ metab_power_model(time, a, b, c, ",
-                   "ppf0", ifelse(fit_ppf0, "", "=1"), ", ",
-                   "delay", ifelse(fit_delay, "", "=0"), ")",
-                   sep = "")
+    "ppf0", ifelse(fit_ppf0, "", "=1"), ", ",
+    "delay", ifelse(fit_delay, "", "=0"), ")",
+    sep = ""
+  )
 
-  if(!fit_ppf0) {
+  if (!fit_ppf0) {
     lower$ppf0 <- NULL
     upper$ppf0 <- NULL
   }
 
-  if(!fit_delay) {
+  if (!fit_delay) {
     lower$delay <- NULL
     upper$delay <- NULL
   }
@@ -400,27 +394,27 @@ metab_power <- function(time, parentFraction,
   lower <- as.numeric(as.data.frame(lower))
   upper <- as.numeric(as.data.frame(upper))
 
-  if(is.null(multstart_lower)) {
+  if (is.null(multstart_lower)) {
     multstart_lower <- lower
   } else {
     multstart_lower <- as.numeric(as.data.frame(multstart_lower))
   }
 
-  if(is.null(multstart_upper)) {
+  if (is.null(multstart_upper)) {
     multstart_upper <- upper
   } else {
     multstart_upper <- as.numeric(as.data.frame(multstart_upper))
   }
 
   nls.multstart::nls_multstart(as.formula(formula),
-                               data=pf,
-                               lower=lower,
-                               upper=upper,
-                               start_lower = multstart_lower,
-                               start_upper = multstart_upper,
-                               iter = multstart_iter,
-                               supp_errors = "Y")
-
+    data = pf,
+    lower = lower,
+    upper = upper,
+    start_lower = multstart_lower,
+    start_upper = multstart_upper,
+    iter = multstart_iter,
+    supp_errors = "Y"
+  )
 }
 
 
@@ -439,15 +433,14 @@ metab_power <- function(time, parentFraction,
 #' @export
 #'
 #' @examples
-#' metab_exponential_model(seq(0, 60*60, by=120), 0.02, 0, 0.001, 1, 0)
-metab_exponential_model <- function(time, a, b, c, ppf0=1, delay=0) {
-
-  tcorr <- time-delay
+#' metab_exponential_model(seq(0, 60 * 60, by = 120), 0.02, 0, 0.001, 1, 0)
+metab_exponential_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
+  tcorr <- time - delay
   t_before <- tcorr[ which(!(tcorr > 0)) ]
   t_after <- tcorr[ which(tcorr > 0) ]
 
-  ind1_out <- rep(ppf0, length.out=length(t_before))
-  ind2_out <- a*exp(-b*t_after) + (ppf0-a)*exp(-c*t_after)
+  ind1_out <- rep(ppf0, length.out = length(t_before))
+  ind2_out <- a * exp(-b * t_after) + (ppf0 - a) * exp(-c * t_after)
 
   out <- c(ind1_out, ind2_out)
 
@@ -475,33 +468,32 @@ metab_exponential_model <- function(time, a, b, c, ppf0=1, delay=0) {
 #'
 #' @examples
 #' \dontrun{
-#' pf <- blooddata_getdata(blooddata, output="parentFraction")
+#' pf <- blooddata_getdata(blooddata, output = "parentFraction")
 #' metab_exponential(pf$time, pf$parentFraction)
 #' }
 metab_exponential <- function(time, parentFraction,
-                        fit_ppf0 = FALSE,
-                        fit_delay = FALSE,
-                        lower = list(a=0, b=0, c=0, ppf0=0.8, delay=-30),
-                        upper = list(a=1, b=1, c=1, ppf0=1.1, delay=30),
-                        multstart_lower = NULL,
-                        multstart_upper = NULL,
-                        multstart_iter=100) {
-
-
+                              fit_ppf0 = FALSE,
+                              fit_delay = FALSE,
+                              lower = list(a = 0, b = 0, c = 0, ppf0 = 0.8, delay = -30),
+                              upper = list(a = 1, b = 1, c = 1, ppf0 = 1.1, delay = 30),
+                              multstart_lower = NULL,
+                              multstart_upper = NULL,
+                              multstart_iter = 100) {
   pf <- tibble::tibble(time = time, parentFraction = parentFraction)
   pf <- dplyr::arrange(pf, time)
 
   formula <- paste("parentFraction ~ metab_exponential_model(time, a, b, c, ",
-                   "ppf0", ifelse(fit_ppf0, "", "=1"), ", ",
-                   "delay", ifelse(fit_delay, "", "=0"), ")",
-                   sep = "")
+    "ppf0", ifelse(fit_ppf0, "", "=1"), ", ",
+    "delay", ifelse(fit_delay, "", "=0"), ")",
+    sep = ""
+  )
 
-  if(!fit_ppf0) {
+  if (!fit_ppf0) {
     lower$ppf0 <- NULL
     upper$ppf0 <- NULL
   }
 
-  if(!fit_delay) {
+  if (!fit_delay) {
     lower$delay <- NULL
     upper$delay <- NULL
   }
@@ -509,27 +501,27 @@ metab_exponential <- function(time, parentFraction,
   lower <- as.numeric(as.data.frame(lower))
   upper <- as.numeric(as.data.frame(upper))
 
-  if(is.null(multstart_lower)) {
+  if (is.null(multstart_lower)) {
     multstart_lower <- lower
   } else {
     multstart_lower <- as.numeric(as.data.frame(multstart_lower))
   }
 
-  if(is.null(multstart_upper)) {
+  if (is.null(multstart_upper)) {
     multstart_upper <- upper
   } else {
     multstart_upper <- as.numeric(as.data.frame(multstart_upper))
   }
 
   nls.multstart::nls_multstart(as.formula(formula),
-                               data=pf,
-                               lower=lower,
-                               upper=upper,
-                               start_lower = multstart_lower,
-                               start_upper = multstart_upper,
-                               iter = multstart_iter,
-                               supp_errors = "Y")
-
+    data = pf,
+    lower = lower,
+    upper = upper,
+    start_lower = multstart_lower,
+    start_upper = multstart_upper,
+    iter = multstart_iter,
+    supp_errors = "Y"
+  )
 }
 
 
@@ -547,14 +539,13 @@ metab_exponential <- function(time, parentFraction,
 #' @export
 #'
 #' @examples
-#' metab_invgamma_model(seq(0, 60*60, by=120), 1.97, 708, 1, 0)
-metab_invgamma_model <- function(time, shape, rate, ppf0=1, delay=0) {
-
-  tcorr <- time-delay
+#' metab_invgamma_model(seq(0, 60 * 60, by = 120), 1.97, 708, 1, 0)
+metab_invgamma_model <- function(time, shape, rate, ppf0 = 1, delay = 0) {
+  tcorr <- time - delay
   t_before <- tcorr[ which(!(tcorr > 0)) ]
   t_after <- tcorr[ which(tcorr > 0) ]
 
-  ind1_out <- rep(ppf0, length.out=length(t_before))
+  ind1_out <- rep(ppf0, length.out = length(t_before))
   ind2_out <- ppf0 - invgamma::pinvgamma(t_after, shape, rate)
 
   out <- c(ind1_out, ind2_out)
@@ -583,33 +574,32 @@ metab_invgamma_model <- function(time, shape, rate, ppf0=1, delay=0) {
 #'
 #' @examples
 #' \dontrun{
-#' pf <- blooddata_getdata(blooddata, output="parentFraction")
+#' pf <- blooddata_getdata(blooddata, output = "parentFraction")
 #' metab_invgamma(pf$time, pf$parentFraction)
 #' }
 metab_invgamma <- function(time, parentFraction,
-                              fit_ppf0 = FALSE,
-                              fit_delay = FALSE,
-                              lower = list(shape=0, rate=0, ppf0=0.8, delay=-30),
-                              upper = list(shape=1000, rate=1000, ppf0=1.1, delay=30),
-                              multstart_lower = NULL,
-                              multstart_upper = NULL,
-                              multstart_iter=100) {
-
-
+                           fit_ppf0 = FALSE,
+                           fit_delay = FALSE,
+                           lower = list(shape = 0, rate = 0, ppf0 = 0.8, delay = -30),
+                           upper = list(shape = 1000, rate = 1000, ppf0 = 1.1, delay = 30),
+                           multstart_lower = NULL,
+                           multstart_upper = NULL,
+                           multstart_iter = 100) {
   pf <- tibble::tibble(time = time, parentFraction = parentFraction)
   pf <- dplyr::arrange(pf, time)
 
   formula <- paste("parentFraction ~ metab_invgamma_model(time, shape, rate, ",
-                   "ppf0", ifelse(fit_ppf0, "", "=1"), ", ",
-                   "delay", ifelse(fit_delay, "", "=0"), ")",
-                   sep = "")
+    "ppf0", ifelse(fit_ppf0, "", "=1"), ", ",
+    "delay", ifelse(fit_delay, "", "=0"), ")",
+    sep = ""
+  )
 
-  if(!fit_ppf0) {
+  if (!fit_ppf0) {
     lower$ppf0 <- NULL
     upper$ppf0 <- NULL
   }
 
-  if(!fit_delay) {
+  if (!fit_delay) {
     lower$delay <- NULL
     upper$delay <- NULL
   }
@@ -617,25 +607,25 @@ metab_invgamma <- function(time, parentFraction,
   lower <- as.numeric(as.data.frame(lower))
   upper <- as.numeric(as.data.frame(upper))
 
-  if(is.null(multstart_lower)) {
+  if (is.null(multstart_lower)) {
     multstart_lower <- lower
   } else {
     multstart_lower <- as.numeric(as.data.frame(multstart_lower))
   }
 
-  if(is.null(multstart_upper)) {
+  if (is.null(multstart_upper)) {
     multstart_upper <- upper
   } else {
     multstart_upper <- as.numeric(as.data.frame(multstart_upper))
   }
 
   nls.multstart::nls_multstart(as.formula(formula),
-                               data=pf,
-                               lower=lower,
-                               upper=upper,
-                               start_lower = multstart_lower,
-                               start_upper = multstart_upper,
-                               iter = multstart_iter,
-                               supp_errors = "Y")
-
+    data = pf,
+    lower = lower,
+    upper = upper,
+    start_lower = multstart_lower,
+    start_upper = multstart_upper,
+    iter = multstart_iter,
+    supp_errors = "Y"
+  )
 }

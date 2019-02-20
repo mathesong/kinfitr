@@ -61,38 +61,38 @@
 #' fitted \code{vB}.
 #'
 #' @examples
-#'
+#' 
 #' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' 
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#'
+#' 
 #' input <- blood_interp(
-#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
-#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
-#'   t_parentfrac = 1, parentfrac = 1 )
-#'
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1
+#' )
+#' 
 #' fit1 <- twotcm1k(t_tac, tac, input, weights)
-#' fit2 <- twotcm1k(t_tac, tac, input, weights, inpshift=0.1, vB=0.05)
-#'
+#' fit2 <- twotcm1k(t_tac, tac, input, weights, inpshift = 0.1, vB = 0.05)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Rizzo, G., Veronese, M., Tonietto, M., Zanotti-Fregonara, P., Turkheimer, F. E., & Bertoldo, A. (2014). Kinetic modeling without accounting for the vascular component impairs the quantification of [11C] PBR28 brain PET data. Journal of Cerebral Blood Flow & Metabolism, 34(6), 1060-1069.
 #'
 #' @export
 
-twotcm1k <- function(t_tac, tac, input, weights=NULL, inpshift=NULL, vB=NULL,
-                     frameStartEnd=NULL,
+twotcm1k <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL,
+                     frameStartEnd = NULL,
                      K1.start = 0.1, K1.lower = 0.0001, K1.upper = 0.5,
                      k2.start = 0.1, k2.lower = 0.0001, k2.upper = 0.5,
                      k3.start = 0.1, k3.lower = 0.0001, k3.upper = 0.5,
                      k4.start = 0.1, k4.lower = 0.0001, k4.upper = 0.5,
                      Kb.start = 0.25, Kb.lower = 0.0001, Kb.upper = 1,
-                     inpshift.start = 0, inpshift.lower= -0.5, inpshift.upper = 0.5,
+                     inpshift.start = 0, inpshift.lower = -0.5, inpshift.upper = 0.5,
                      vB.start = 0.05, vB.lower = 0.01, vB.upper = 0.1,
-                     multstart_iter=1, multstart_lower=NULL, multstart_upper=NULL,
-                     printvals=F) {
+                     multstart_iter = 1, multstart_lower = NULL, multstart_upper = NULL,
+                     printvals = F) {
 
   # Tidying
 
@@ -211,9 +211,11 @@ twotcm1k <- function(t_tac, tac, input, weights=NULL, inpshift=NULL, vB=NULL,
   # Output
 
   if (inpshift_fitted == T) {
-    newvals <- shift_timings(modeldata$t_tac,
-                             modeldata$tac, modeldata$input,
-                             as.numeric(coef(output)[["inpshift"]]))
+    newvals <- shift_timings(
+      modeldata$t_tac,
+      modeldata$tac, modeldata$input,
+      as.numeric(coef(output)[["inpshift"]])
+    )
 
     tacs <- data.frame(Time = newvals$t_tac, Target = newvals$tac, Target_fitted = as.numeric(fitted(output)))
     input <- newvals$input
@@ -266,9 +268,9 @@ twotcm1k <- function(t_tac, tac, input, weights=NULL, inpshift=NULL, vB=NULL,
 #'
 #' @examples
 #' \dontrun{
-#' twotcm1k_model(t_tac, input, K1=0.1, k2=0.08, k3=0.05, k4=0.02, Kb=0.25, vB=0.05)
+#' twotcm1k_model(t_tac, input, K1 = 0.1, k2 = 0.08, k3 = 0.05, k4 = 0.02, Kb = 0.25, vB = 0.05)
 #' }
-#'
+#' 
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Rizzo, G., Veronese, M., Tonietto, M., Zanotti-Fregonara, P., Turkheimer, F. E., & Bertoldo, A. (2014). Kinetic modeling without accounting for the vascular component impairs the quantification of [11C] PBR28 brain PET data. Journal of Cerebral Blood Flow & Metabolism, 34(6), 1060-1069.
@@ -282,9 +284,9 @@ twotcm1k_model <- function(t_tac, input, K1, k2, k3, k4, Kb, vB) {
   i_blood <- input$Blood
   aif <- input$AIF
 
-  alpha <- ((k2 + k3 + k4) - sqrt((k2 + k3 + k4) ^ 2 - (4 * k2 * k4))) / 2
+  alpha <- ((k2 + k3 + k4) - sqrt((k2 + k3 + k4)^2 - (4 * k2 * k4))) / 2
 
-  beta <- ((k2 + k3 + k4) + sqrt((k2 + k3 + k4) ^ 2 - (4 * k2 * k4))) / 2
+  beta <- ((k2 + k3 + k4) + sqrt((k2 + k3 + k4)^2 - (4 * k2 * k4))) / 2
 
 
   A <- ((k3 + k4 - alpha) / (beta - alpha)) * exp(-alpha * interptime)
@@ -330,10 +332,12 @@ twotcm1k_model <- function(t_tac, input, K1, k2, k3, k4, Kb, vB) {
 #'
 #' @examples
 #' \dontrun{
-#' twotcm1k_fitDelay_model(t_tac, input, K1=0.1, k2=0.08, k3=0.05,
-#'                         k4=0.02, Kb=0.25, inpshift=0.1, vB=0.05)
+#' twotcm1k_fitDelay_model(t_tac, input,
+#'   K1 = 0.1, k2 = 0.08, k3 = 0.05,
+#'   k4 = 0.02, Kb = 0.25, inpshift = 0.1, vB = 0.05
+#' )
 #' }
-#'
+#' 
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Rizzo, G., Veronese, M., Tonietto, M., Zanotti-Fregonara, P., Turkheimer, F. E., & Bertoldo, A. (2014). Kinetic modeling without accounting for the vascular component impairs the quantification of [11C] PBR28 brain PET data. Journal of Cerebral Blood Flow & Metabolism, 34(6), 1060-1069.
@@ -351,9 +355,9 @@ twotcm1k_fitDelay_model <- function(t_tac, input, K1, k2, k3, k4, Kb, inpshift, 
   interptime <- newvals$input$Time
   step <- interptime[2] - interptime[1]
 
-  alpha <- ((k2 + k3 + k4) - sqrt((k2 + k3 + k4) ^ 2 - (4 * k2 * k4))) / 2
+  alpha <- ((k2 + k3 + k4) - sqrt((k2 + k3 + k4)^2 - (4 * k2 * k4))) / 2
 
-  beta <- ((k2 + k3 + k4) + sqrt((k2 + k3 + k4) ^ 2 - (4 * k2 * k4))) / 2
+  beta <- ((k2 + k3 + k4) + sqrt((k2 + k3 + k4)^2 - (4 * k2 * k4))) / 2
 
 
   A <- ((k3 + k4 - alpha) / (beta - alpha)) * exp(-alpha * interptime)
@@ -389,22 +393,22 @@ twotcm1k_fitDelay_model <- function(t_tac, input, K1, k2, k3, k4, Kb, inpshift, 
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#'
+#' 
 #' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' 
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#'
+#' 
 #' input <- blood_interp(
-#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
-#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
-#'   t_parentfrac = 1, parentfrac = 1 )
-#'
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1
+#' )
+#' 
 #' fit <- twotcm1k(t_tac, tac, input, weights)
-#'
+#' 
 #' plot_2tcm1kfit(fit)
-#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Rizzo, G., Veronese, M., Tonietto, M., Zanotti-Fregonara, P., Turkheimer, F. E., & Bertoldo, A. (2014). Kinetic modeling without accounting for the vascular component impairs the quantification of [11C] PBR28 brain PET data. Journal of Cerebral Blood Flow & Metabolism, 34(6), 1060-1069.
@@ -413,7 +417,7 @@ twotcm1k_fitDelay_model <- function(t_tac, input, K1, k2, k3, k4, Kb, inpshift, 
 #'
 #' @export
 
-plot_2tcm1kfit <- function(twotcm1kout, roiname=NULL) {
+plot_2tcm1kfit <- function(twotcm1kout, roiname = NULL) {
   if (is.null(roiname)) {
     roiname <- "ROI"
   }

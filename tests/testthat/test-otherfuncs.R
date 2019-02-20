@@ -24,15 +24,19 @@ test_that("SUV works with durations", {
 })
 
 test_that("SUV works with trapz and frameStartEnd", {
-  SUVout <- SUV(tac, t_tac = t_tac, injRad = 150,
-                bodymass = 85, frameStartEnd = c(1,33))
+  SUVout <- SUV(tac,
+    t_tac = t_tac, injRad = 150,
+    bodymass = 85, frameStartEnd = c(1, 33)
+  )
   expect_gt(SUVout$par$intSUV, 150)
   expect_lt(SUVout$par$intSUV, 500)
 })
 
 test_that("SUV works with durations and frameStartEnd", {
-  SUVout <- SUV(tac, dur_tac = dur_tac, injRad = 150,
-                bodymass = 85, frameStartEnd = c(1,33))
+  SUVout <- SUV(tac,
+    dur_tac = dur_tac, injRad = 150,
+    bodymass = 85, frameStartEnd = c(1, 33)
+  )
   expect_gt(SUVout$par$intSUV, 150)
   expect_lt(SUVout$par$intSUV, 500)
 })

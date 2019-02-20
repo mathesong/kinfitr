@@ -59,33 +59,33 @@
 #'
 #' @examples
 #' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' 
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#'
+#' 
 #' input <- blood_interp(
-#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
-#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
-#'   t_parentfrac = 1, parentfrac = 1 )
-#'
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1
+#' )
+#' 
 #' fit1 <- twotcm(t_tac, tac, input, weights)
-#' fit2 <- twotcm(t_tac, tac, input, weights, inpshift=0.1, vB=0.05)
-#'
+#' fit2 <- twotcm(t_tac, tac, input, weights, inpshift = 0.1, vB = 0.05)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
 
-twotcm <- function(t_tac, tac, input, weights=NULL, inpshift=NULL, vB=NULL,
-                   frameStartEnd=NULL,
+twotcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL,
+                   frameStartEnd = NULL,
                    K1.start = 0.1, K1.lower = 0.0001, K1.upper = 0.5,
                    k2.start = 0.1, k2.lower = 0.0001, k2.upper = 0.5,
                    k3.start = 0.1, k3.lower = 0.0001, k3.upper = 0.5,
                    k4.start = 0.1, k4.lower = 0.0001, k4.upper = 0.5,
-                   inpshift.start = 0, inpshift.lower= -0.5, inpshift.upper = 0.5,
+                   inpshift.start = 0, inpshift.lower = -0.5, inpshift.upper = 0.5,
                    vB.start = 0.05, vB.lower = 0.01, vB.upper = 0.1,
-                   multstart_iter=1, multstart_lower=NULL, multstart_upper=NULL,
-                   printvals=F) {
+                   multstart_iter = 1, multstart_lower = NULL, multstart_upper = NULL,
+                   printvals = F) {
 
   # Tidying
 
@@ -204,9 +204,11 @@ twotcm <- function(t_tac, tac, input, weights=NULL, inpshift=NULL, vB=NULL,
   # Output
 
   if (inpshift_fitted == T) {
-    newvals <- shift_timings(modeldata$t_tac,
-                             modeldata$tac, modeldata$input,
-                             as.numeric(coef(output)[["inpshift"]]))
+    newvals <- shift_timings(
+      modeldata$t_tac,
+      modeldata$tac, modeldata$input,
+      as.numeric(coef(output)[["inpshift"]])
+    )
 
     tacs <- data.frame(Time = newvals$t_tac, Target = newvals$tac, Target_fitted = as.numeric(fitted(output)))
     input <- newvals$input
@@ -258,9 +260,9 @@ twotcm <- function(t_tac, tac, input, weights=NULL, inpshift=NULL, vB=NULL,
 #'
 #' @examples
 #' \dontrun{
-#' twotcm_model(t_tac, input, K1=0.1, k2=0.08, k3=0.05, k4=0.02, vB=0.05)
+#' twotcm_model(t_tac, input, K1 = 0.1, k2 = 0.08, k3 = 0.05, k4 = 0.02, vB = 0.05)
 #' }
-#'
+#' 
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
@@ -272,7 +274,7 @@ twotcm_model <- function(t_tac, input, K1, k2, k3, k4, vB) {
   i_blood <- input$Blood
   aif <- input$AIF
 
-  delta <- sqrt((k2 + k3 + k4) ^ 2 - 4 * k2 * k4)
+  delta <- sqrt((k2 + k3 + k4)^2 - 4 * k2 * k4)
   th1 <- (k2 + k3 + k4 + delta) / 2
   th2 <- (k2 + k3 + k4 - delta) / 2
   ph1 <- K1 * (th1 - k3 - k4) / delta
@@ -311,9 +313,9 @@ twotcm_model <- function(t_tac, input, K1, k2, k3, k4, vB) {
 #'
 #' @examples
 #' \dontrun{
-#' twotcm_model(t_tac, input, K1=0.1, k2=0.08, k3=0.05, k4=0.02, vB=0.05)
+#' twotcm_model(t_tac, input, K1 = 0.1, k2 = 0.08, k3 = 0.05, k4 = 0.02, vB = 0.05)
 #' }
-#'
+#' 
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
@@ -329,7 +331,7 @@ twotcm_fitDelay_model <- function(t_tac, input, K1, k2, k3, k4, inpshift, vB) {
   interptime <- newvals$input$Time
   step <- interptime[2] - interptime[1]
 
-  delta <- sqrt((k2 + k3 + k4) ^ 2 - 4 * k2 * k4)
+  delta <- sqrt((k2 + k3 + k4)^2 - 4 * k2 * k4)
   th1 <- (k2 + k3 + k4 + delta) / 2
   th2 <- (k2 + k3 + k4 - delta) / 2
   ph1 <- K1 * (th1 - k3 - k4) / delta
@@ -359,29 +361,29 @@ twotcm_fitDelay_model <- function(t_tac, input, K1, k2, k3, k4, inpshift, vB) {
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#'
+#' 
 #' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' 
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#'
+#' 
 #' input <- blood_interp(
-#'   pbr28$procblood[[2]]$Time/60 , pbr28$procblood[[2]]$Cbl_dispcorr,
-#'   pbr28$procblood[[2]]$Time /60 , pbr28$procblood[[2]]$Cpl_metabcorr,
-#'   t_parentfrac = 1, parentfrac = 1 )
-#'
-#' fit <- twotcm(t_tac, tac, input, weights, inpshift=0.1, vB=0.05)
-#'
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1
+#' )
+#' 
+#' fit <- twotcm(t_tac, tac, input, weights, inpshift = 0.1, vB = 0.05)
+#' 
 #' plot_2tcmfit(fit)
-#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2
 #'
 #' @export
 
-plot_2tcmfit <- function(twotcmout, roiname=NULL) {
+plot_2tcmfit <- function(twotcmout, roiname = NULL) {
   if (is.null(roiname)) {
     roiname <- "ROI"
   }

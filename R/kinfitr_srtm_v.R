@@ -63,30 +63,29 @@
 #'   \code{out$tacs}.
 #'
 #' @examples
-#'
+#' 
 #' # Note: Reference region models, and irreversible binding models, should not
 #' # be used for PBR28 - this is just to demonstrate function
-#'
+#' 
 #' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' 
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' reftac <- pbr28$tacs[[2]]$CBL
 #' roitac <- pbr28$tacs[[2]]$STR
 #' weights <- pbr28$tacs[[2]]$Weights
-#'
+#' 
 #' input <- pbr28$input[[2]]
-
+#' 
 #' newvals <- shift_timings(
 #'   t_tac,
 #'   roitac,
 #'   input,
-#'   inpshift=0
+#'   inpshift = 0
 #' )
-#'
+#' 
 #' bloodtac <- pracma::interp1(newvals$input$Time, newvals$input$Blood, t_tac)
-#'
+#' 
 #' fit <- srtm_v(t_tac, reftac, roitac, bloodtac, weights)
-#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Tomasi, G., Edison, P., ... & Turkheimer, F. E. (2008). Novel
@@ -98,12 +97,12 @@
 
 srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights = NULL, vBr = NULL, frameStartEnd = NULL,
                    R1.start = 1, R1.lower = 0.0001, R1.upper = 10,
-                   k2.start=0.1, k2.lower = 0.0001, k2.upper=1,
-                   bp.start=1.5, bp.lower=-10, bp.upper=15,
-                   vBr.start=0.05, vBr.lower=0.0001, vBr.upper=0.15,
-                   vBt.start=0.05, vBt.lower=0.0001, vBt.upper=0.15,
-                   multstart_iter=1, multstart_lower = NULL, multstart_upper = NULL,
-                   printvals=F) {
+                   k2.start = 0.1, k2.lower = 0.0001, k2.upper = 1,
+                   bp.start = 1.5, bp.lower = -10, bp.upper = 15,
+                   vBr.start = 0.05, vBr.lower = 0.0001, vBr.upper = 0.15,
+                   vBt.start = 0.05, vBt.lower = 0.0001, vBt.upper = 0.15,
+                   multstart_iter = 1, multstart_lower = NULL, multstart_upper = NULL,
+                   printvals = F) {
 
 
   # Tidying
@@ -201,9 +200,9 @@ srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights = NULL, vBr = NULL, 
 #'
 #' @examples
 #' \dontrun{
-#' srtm_v_model(t_tac, reftac, R1=0.9, k2=0.1, bp=1.5, vBr=0.05, vBt=0.05)
+#' srtm_v_model(t_tac, reftac, R1 = 0.9, k2 = 0.1, bp = 1.5, vBr = 0.05, vBt = 0.05)
 #' }
-#'
+#' 
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Tomasi, G., Edison, P., ... & Turkheimer, F. E. (2008). Novel
@@ -254,29 +253,28 @@ srtm_v_model <- function(t_tac, reftac, bloodtac, R1, k2, bp, vBr, vBt) {
 #' @examples
 #' # Note: Reference region models, and irreversible binding models, should not
 #' # be used for PBR28 - this is just to demonstrate function
-#'
+#' 
 #' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' 
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' reftac <- pbr28$tacs[[2]]$CBL
 #' roitac <- pbr28$tacs[[2]]$STR
 #' weights <- pbr28$tacs[[2]]$Weights
-#'
+#' 
 #' input <- pbr28$input[[2]]
-
+#' 
 #' newvals <- shift_timings(
 #'   t_tac,
 #'   roitac,
 #'   input,
-#'   inpshift=0
+#'   inpshift = 0
 #' )
-#'
+#' 
 #' bloodtac <- pracma::interp1(newvals$input$Time, newvals$input$Blood, t_tac)
-#'
+#' 
 #' fit <- srtm_v(t_tac, reftac, roitac, bloodtac, weights)
-#'
+#' 
 #' plot_srtm_vfit(fit)
-#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2
@@ -313,12 +311,14 @@ plot_srtm_vfit <- function(srtmvout, roiname = NULL, refname = NULL) {
   fitted <- plyr::rename(fitted, c("ROI.fitted" = paste0(roiname, ".fitted")))
 
   tidymeasured <- tidyr::gather(
-    measured, key = Region, value = Radioactivity,
+    measured,
+    key = Region, value = Radioactivity,
     -Time, -Weights, -Blood, factor_key = F
   )
 
   tidyfitted <- tidyr::gather(
-    fitted, key = Region, value = Radioactivity,
+    fitted,
+    key = Region, value = Radioactivity,
     -Time, -Weights, factor_key = F
   )
 
