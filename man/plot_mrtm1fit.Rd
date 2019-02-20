@@ -25,15 +25,14 @@ Function to visualise the fit of the MRTM1 model to data.
 
 data(pbr28)
 
-t_tac <- pbr28$tacs[[2]]$Times/60
+t_tac <- pbr28$tacs[[2]]$Times / 60
 reftac <- pbr28$tacs[[2]]$CBL
 roitac <- pbr28$tacs[[2]]$STR
 weights <- pbr28$tacs[[2]]$Weights
 
-fit <- mrtm1(t_tac, reftac, roitac, weights=weights)
+fit <- mrtm1(t_tac, reftac, roitac, weights = weights)
 
 plot_mrtm1fit(fit)
-
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}

@@ -109,23 +109,23 @@ Function to fit the SRTM_V model of Tomasi et al (2008) to data.
 
 data(pbr28)
 
-t_tac <- pbr28$tacs[[2]]$Times/60
+t_tac <- pbr28$tacs[[2]]$Times / 60
 reftac <- pbr28$tacs[[2]]$CBL
 roitac <- pbr28$tacs[[2]]$STR
 weights <- pbr28$tacs[[2]]$Weights
 
 input <- pbr28$input[[2]]
+
 newvals <- shift_timings(
   t_tac,
   roitac,
   input,
-  inpshift=0
+  inpshift = 0
 )
 
-bloodtac <- pracma::interp1(newvals$input$Time, newvals$input$blood, t_tac)
+bloodtac <- pracma::interp1(newvals$input$Time, newvals$input$Blood, t_tac)
 
 fit <- srtm_v(t_tac, reftac, roitac, bloodtac, weights)
-
 }
 \references{
 Tomasi, G., Edison, P., ... & Turkheimer, F. E. (2008). Novel

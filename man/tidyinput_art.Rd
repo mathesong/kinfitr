@@ -32,12 +32,11 @@ times are in minutes and not in seconds.
 
 data(pbr28)
 
-t_tac <- pbr28$tacs[[2]]$Times/60
+t_tac <- pbr28$tacs[[2]]$Times / 60
 tac <- pbr28$tacs[[2]]$STR
 weights <- pbr28$tacs[[2]]$Weights
 
-tidyinput_art(t_tac, tac, weights, frameStartEnd=c(1,10))
-
+tidyinput_art(t_tac, tac, weights, frameStartEnd = c(1, 10))
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}

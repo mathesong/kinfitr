@@ -31,7 +31,7 @@ This is the SIME Model model itself by which predicted values are generated.
 }
 \examples{
 \dontrun{
-SIME_model(t_tac, input, Vnd=5, k2=0.1, k3=0.05, k4=0.04, vB=0.05)
+SIME_model(t_tac, input, Vnd = 5, k2 = 0.1, k3 = 0.05, k4 = 0.04, vB = 0.05)
 }
 
 }

@@ -25,7 +25,7 @@ This is the SRTM model itself by which predicted values are generated.
 }
 \examples{
 \dontrun{
-srtm_model(t_tac, reftac, R1=0.9, k2=0.1, bp=1.5)
+srtm_model(t_tac, reftac, R1 = 0.9, k2 = 0.1, bp = 1.5)
 }
 
 }

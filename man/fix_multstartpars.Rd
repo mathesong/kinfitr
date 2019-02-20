@@ -30,13 +30,12 @@ the lengths of the multstart bounds
 }
 \examples{
 start <- list(a = 1, b = 2, c = 3)
-upper <- lapply(start, function(x) x+1)
-lower <- lapply(start, function(x) x-1)
+upper <- lapply(start, function(x) x + 1)
+lower <- lapply(start, function(x) x - 1)
 multstart_iter <- 5
 
 multstart_lower <- NULL
 multstart_upper <- NULL
 
 fix_multstartpars(start, lower, upper, multstart_iter, multstart_lower, multstart_upper)
-
 }

@@ -4,8 +4,8 @@
 \alias{mrtm2_tstar}
 \title{Tstar Finder: MRTM2}
 \usage{
-mrtm2_tstar(t_tac, reftac, lowroi, medroi, highroi, k2prime, filename,
-  frameStartEnd = NULL, gridbreaks = 2)
+mrtm2_tstar(t_tac, reftac, lowroi, medroi, highroi, k2prime,
+  filename = NULL, frameStartEnd = NULL, gridbreaks = 2)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
@@ -38,7 +38,7 @@ tissue compartment model (like SRTM).
 }
 \examples{
 \dontrun{
-mrtm2_tstar(t_tac, reftac, taclow, tacmed, tachigh, 'demonstration')
+mrtm2_tstar(t_tac, reftac, taclow, tacmed, tachigh, "demonstration")
 }
 
 }

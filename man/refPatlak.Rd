@@ -41,15 +41,12 @@ Function to fit the Patlak Reference Tissue Model of Patlak & Blasbert (1985) to
 
 data(pbr28)
 
-t_tac <- pbr28$tacs[[2]]$Times/60
+t_tac <- pbr28$tacs[[2]]$Times / 60
 reftac <- pbr28$tacs[[2]]$CBL
 roitac <- pbr28$tacs[[2]]$STR
 weights <- pbr28$tacs[[2]]$Weights
 
-fit <- refPatlak(t_tac, reftac, roitac, tstarIncludedFrames=10, weights=weights)
-
-
-
+fit <- refPatlak(t_tac, reftac, roitac, tstarIncludedFrames = 10, weights = weights)
 }
 \references{
 Patlak CS, Blasberg RG. Graphical evaluation of blood-to-brain transfer constants from multiple-time uptake data. Generalizations. Journal of Cerebral Blood Flow & Metabolism. 1985 Dec 1;5(4):584-90.

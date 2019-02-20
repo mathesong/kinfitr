@@ -69,19 +69,21 @@ Function to fit the SIME Model of Ogden et al (2015) to data to estimate Vnd for
 \examples{
 data(pbr28)
 
-t_tac <- pbr28$tacs[[2]]$Times/60
+t_tac <- pbr28$tacs[[2]]$Times / 60
 tacdf <- dplyr::select(pbr28$tacs[[2]], FC:CBL)
 weights <- pbr28$tacs[[2]]$Weights
 
 input <- blood_interp(
-  pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
-  pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
-  t_parentfrac = 1, parentfrac = 1 )
+  pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+  pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+  t_parentfrac = 1, parentfrac = 1
+)
 
-Vndgrid <- seq(from=0, to=3, by=0.5)
-SIMEout <-  SIME(t_tac, tacdf, input, Vndgrid, weights = weights,
-                 inpshift = 0.1, vB = 0.05)
-
+Vndgrid <- seq(from = 0, to = 3, by = 0.5)
+SIMEout <- SIME(t_tac, tacdf, input, Vndgrid,
+  weights = weights,
+  inpshift = 0.1, vB = 0.05
+)
 }
 \references{
 Ogden RT, Zanderigo F, Parsey RV. Estimation of in vivo nonspecific binding in positron emission tomography studies without requiring a reference region. NeuroImage. 2015 Mar 31;108:234-42.

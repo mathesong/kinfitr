@@ -27,7 +27,7 @@ This is the One Tissue Compartment Model model itself by which predicted values 
 \examples{
 
 \dontrun{
-onetcm_model(t_tac, input, K1=0.1, k2=0.08, vB=0.05)
+onetcm_model(t_tac, input, K1 = 0.1, k2 = 0.08, vB = 0.05)
 }
 
 }

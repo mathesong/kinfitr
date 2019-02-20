@@ -40,20 +40,19 @@
 #' values \code{out$tacs}.
 #'
 #' @examples
-#'
+#' 
 #' # Note: Reference region models, and irreversible binding models, should not
 #' # be used for PBR28 - this is just to demonstrate function
-#'
+#' 
 #' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' 
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' reftac <- pbr28$tacs[[2]]$CBL
 #' roitac <- pbr28$tacs[[2]]$STR
 #' weights <- pbr28$tacs[[2]]$Weights
-#'
+#' 
 #' fit1 <- srtm(t_tac, reftac, roitac)
-#' fit2 <- srtm(t_tac, reftac, roitac, weights, frameStartEnd = c(1,33))
-#'
+#' fit2 <- srtm(t_tac, reftac, roitac, weights, frameStartEnd = c(1, 33))
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Lammertsma AA, Hume SP. Simplified reference tissue model for PET receptor studies. Neuroimage. 1996 Dec 31;4(3):153-8.
@@ -62,10 +61,10 @@
 
 srtm <- function(t_tac, reftac, roitac, weights = NULL, frameStartEnd = NULL,
                  R1.start = 1, R1.lower = 0, R1.upper = 10,
-                 k2.start=0.1, k2.lower = 0, k2.upper=1,
-                 bp.start=1.5, bp.lower=-10, bp.upper=15,
-                 multstart_iter=1, multstart_lower = NULL, multstart_upper = NULL,
-                 printvals=F) {
+                 k2.start = 0.1, k2.lower = 0, k2.upper = 1,
+                 bp.start = 1.5, bp.lower = -10, bp.upper = 15,
+                 multstart_iter = 1, multstart_lower = NULL, multstart_upper = NULL,
+                 printvals = F) {
 
 
   # Tidying
@@ -114,10 +113,12 @@ srtm <- function(t_tac, reftac, roitac, weights = NULL, frameStartEnd = NULL,
 
   # Output
 
-  tacs <- data.frame(Time = modeldata$t_tac,
-                     Reference = modeldata$reftac,
-                     Target = modeldata$roitac,
-                     Target_fitted = as.numeric(fitted(output)))
+  tacs <- data.frame(
+    Time = modeldata$t_tac,
+    Reference = modeldata$reftac,
+    Target = modeldata$roitac,
+    Target_fitted = as.numeric(fitted(output))
+  )
 
   par <- as.data.frame(as.list(coef(output)))
 
@@ -150,9 +151,9 @@ srtm <- function(t_tac, reftac, roitac, weights = NULL, frameStartEnd = NULL,
 #'
 #' @examples
 #' \dontrun{
-#' srtm_model(t_tac, reftac, R1=0.9, k2=0.1, bp=1.5)
+#' srtm_model(t_tac, reftac, R1 = 0.9, k2 = 0.1, bp = 1.5)
 #' }
-#'
+#' 
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Lammertsma AA, Hume SP. Simplified reference tissue model for PET receptor studies. Neuroimage. 1996 Dec 31;4(3):153-8.
@@ -190,21 +191,20 @@ srtm_model <- function(t_tac, reftac, R1, k2, bp) {
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#'
+#' 
 #' #' # Note: Reference region models, and irreversible binding models, should not
 #' # be used for PBR28 - this is just to demonstrate function
-#'
+#' 
 #' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' 
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' reftac <- pbr28$tacs[[2]]$CBL
 #' roitac <- pbr28$tacs[[2]]$STR
 #' weights <- pbr28$tacs[[2]]$Weights
-#'
+#' 
 #' fit <- srtm(t_tac, reftac, roitac)
-#'
+#' 
 #' plot_srtmfit(fit)
-#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2
@@ -240,12 +240,14 @@ plot_srtmfit <- function(srtmout, roiname = NULL, refname = NULL) {
   fitted <- plyr::rename(fitted, c("ROI.fitted" = paste0(roiname, ".fitted")))
 
   tidymeasured <- tidyr::gather(
-    measured, key = Region, value = Radioactivity,
+    measured,
+    key = Region, value = Radioactivity,
     -Time, -Weights, factor_key = F
   )
 
   tidyfitted <- tidyr::gather(
-    fitted, key = Region, value = Radioactivity,
+    fitted,
+    key = Region, value = Radioactivity,
     -Time, -Weights, factor_key = F
   )
 

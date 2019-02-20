@@ -30,16 +30,16 @@ Can be used for assessing the fit of the delay (\code{inpshift}).
 \examples{
 data(pbr28)
 
-t_tac <- pbr28$tacs[[2]]$Times/60
+t_tac <- pbr28$tacs[[2]]$Times / 60
 tac <- pbr28$tacs[[2]]$FC
 
 input <- blood_interp(
-  pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
-  pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
-  t_parentfrac = 1, parentfrac = 1 )
+  pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+  pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+  t_parentfrac = 1, parentfrac = 1
+)
 
-plot_inptac_timings(t_tac, tac, input, inpshift=0.12, zoomTime=5)
-
+plot_inptac_timings(t_tac, tac, input, inpshift = 0.12, zoomTime = 5)
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}

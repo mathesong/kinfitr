@@ -31,7 +31,7 @@ This is the SRTM model itself by which predicted values are generated.
 }
 \examples{
 \dontrun{
-srtm_v_model(t_tac, reftac, R1=0.9, k2=0.1, bp=1.5, vBr=0.05, vBt=0.05)
+srtm_v_model(t_tac, reftac, R1 = 0.9, k2 = 0.1, bp = 1.5, vBr = 0.05, vBt = 0.05)
 }
 
 }

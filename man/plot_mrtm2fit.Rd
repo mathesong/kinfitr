@@ -23,15 +23,14 @@ Function to visualise the fit of the MRTM2 model to data.
 
 data(pbr28)
 
-t_tac <- pbr28$tacs[[2]]$Times/60
+t_tac <- pbr28$tacs[[2]]$Times / 60
 reftac <- pbr28$tacs[[2]]$CBL
 roitac <- pbr28$tacs[[2]]$STR
 weights <- pbr28$tacs[[2]]$Weights
 
-fit <- mrtm2(t_tac, reftac, roitac, 0.001, weights=weights)
+fit <- mrtm2(t_tac, reftac, roitac, 0.001, weights = weights)
 
 plot_mrtm2fit(fit)
-
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}

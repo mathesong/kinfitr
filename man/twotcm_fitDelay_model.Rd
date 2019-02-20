@@ -33,7 +33,7 @@ delay, inpshift.
 }
 \examples{
 \dontrun{
-twotcm_model(t_tac, input, K1=0.1, k2=0.08, k3=0.05, k4=0.02, vB=0.05)
+twotcm_model(t_tac, input, K1 = 0.1, k2 = 0.08, k3 = 0.05, k4 = 0.02, vB = 0.05)
 }
 
 }

@@ -23,7 +23,7 @@ loganout <- Loganplot(t_tac, tac, input, 10, weights)
 plot(loganout)
 
 srtmout <- srtm(t_tac, reftac, roitac)
-plot(srtmout, roiname = 'Putamen', refname = 'Cerebellum')
+plot(srtmout, roiname = "Putamen", refname = "Cerebellum")
 }
 
 }

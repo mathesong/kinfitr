@@ -4,8 +4,8 @@
 \alias{Logan_tstar}
 \title{Tstar Finder: Logan Plot}
 \usage{
-Logan_tstar(t_tac, lowroi, medroi, highroi, input, filename,
-  inpshift = 0, vB = 0, frameStartEnd = NULL, gridbreaks = 2)
+Logan_tstar(t_tac, lowroi, medroi, highroi, input, filename = NULL,
+  inpshift = 0, vB = 0.05, frameStartEnd = NULL, gridbreaks = 2)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the
@@ -50,8 +50,10 @@ Function to identify where t* is for the Logan Plot.
 }
 \examples{
 \dontrun{
-Logan_tstar(t_tac, lowroi, medroi, highroi, input, filename='demonstration',
-            inpshift = onetcmout$par$inpshift, vB = 0.05, gridbreaks=4)
+Logan_tstar(t_tac, lowroi, medroi, highroi, input,
+  filename = "demonstration",
+  inpshift = onetcmout$par$inpshift, vB = 0.05, gridbreaks = 4
+)
 }
 
 }

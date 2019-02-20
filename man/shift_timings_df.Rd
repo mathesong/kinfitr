@@ -45,7 +45,7 @@ to make them consistent. Similar to \code{shift_timings} but for a dataframe of 
 }
 \examples{
 \dontrun{
-inpshift = 0.25   # 15 seconds
+inpshift <- 0.25 # 15 seconds
 newValues <- shift_timings(t_tac, tac, input, inpshift)
 t_tac <- newValues$t_tac
 tac <- newValues$tac

@@ -21,19 +21,19 @@ Function to visualise the fit of the One Tissue Compartment Model to data.
 
 data(pbr28)
 
-t_tac <- pbr28$tacs[[2]]$Times/60
+t_tac <- pbr28$tacs[[2]]$Times / 60
 tac <- pbr28$tacs[[2]]$FC
 weights <- pbr28$tacs[[2]]$Weights
 
 input <- blood_interp(
-  pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
-  pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
-  t_parentfrac = 1, parentfrac = 1 )
+  pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+  pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+  t_parentfrac = 1, parentfrac = 1
+)
 
-fit <- onetcm(t_tac, tac, input, weights, inpshift=0.1, vB=0.05)
+fit <- onetcm(t_tac, tac, input, weights, inpshift = 0.1, vB = 0.05)
 
 plot_1tcmfit(fit)
-
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}

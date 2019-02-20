@@ -4,7 +4,7 @@
 \alias{mrtm1_tstar}
 \title{Tstar Finder: MRTM1}
 \usage{
-mrtm1_tstar(t_tac, reftac, lowroi, medroi, highroi, filename,
+mrtm1_tstar(t_tac, reftac, lowroi, medroi, highroi, filename = NULL,
   frameStartEnd = NULL, gridbreaks = 2)
 }
 \arguments{
@@ -35,7 +35,7 @@ tissue compartment model (like SRTM).
 }
 \examples{
 \dontrun{
-mrtm1_tstar(t_tac, reftac, taclow, tacmed, tachigh, 'demonstration')
+mrtm1_tstar(t_tac, reftac, taclow, tacmed, tachigh, "demonstration")
 }
 
 }

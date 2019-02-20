@@ -4,8 +4,8 @@
 \alias{refLogan_tstar}
 \title{Tstar Finder: Non-Invasive Logan Plot}
 \usage{
-refLogan_tstar(t_tac, reftac, lowroi, medroi, highroi, k2prime, filename,
-  frameStartEnd = NULL, gridbreaks = 2)
+refLogan_tstar(t_tac, reftac, lowroi, medroi, highroi, k2prime,
+  filename = NULL, frameStartEnd = NULL, gridbreaks = 2)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
@@ -37,7 +37,7 @@ Function to identify where t* is for the non-invasive Logan plot.
 }
 \examples{
 \dontrun{
-refLogan_tstar(t_tac, reftac, taclow, tacmed, tachigh, k2prime, 'demonstration')
+refLogan_tstar(t_tac, reftac, taclow, tacmed, tachigh, k2prime, "demonstration")
 }
 
 }

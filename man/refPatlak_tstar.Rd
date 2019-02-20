@@ -4,7 +4,7 @@
 \alias{refPatlak_tstar}
 \title{Tstar Finder: Patlak Reference Tissue Model}
 \usage{
-refPatlak_tstar(t_tac, reftac, lowroi, medroi, highroi, filename,
+refPatlak_tstar(t_tac, reftac, lowroi, medroi, highroi, filename = NULL,
   frameStartEnd = NULL, gridbreaks = 2)
 }
 \arguments{
@@ -34,7 +34,7 @@ Function to identify where t* is for the Patlak Reference Tissue Model.
 }
 \examples{
 \dontrun{
-refPatlak_tstar(t_tac, reftac, taclow, tacmed, tachigh, 'demonstration')
+refPatlak_tstar(t_tac, reftac, taclow, tacmed, tachigh, "demonstration")
 }
 
 }

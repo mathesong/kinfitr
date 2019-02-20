@@ -41,8 +41,8 @@
 #'   to the upper bounds. Named list of whichever parameters' starting bounds should
 #'   be altered.
 #' @param printvals Optional. This displays the parameter values for each iteration of the
-#' model. This is useful for debugging and changing starting values and upper and lower
-#' bounds for parameters.
+#'   model. This is useful for debugging and changing starting values and upper and lower
+#'   bounds for parameters.
 #'
 #'
 #' @return A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit},
@@ -52,33 +52,33 @@
 #' fitted \code{vB}.
 #'
 #' @examples
-#'
+#' 
 #' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' 
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#'
+#' 
 #' input <- blood_interp(
-#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
-#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
-#'   t_parentfrac = 1, parentfrac = 1 )
-#'
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1
+#' )
+#' 
 #' fit1 <- onetcm(t_tac, tac, input, weights)
-#' fit2 <- onetcm(t_tac, tac, input, weights, inpshift=0.1, vB=0.05)
-#'
+#' fit2 <- onetcm(t_tac, tac, input, weights, inpshift = 0.1, vB = 0.05)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
 
-onetcm <- function(t_tac, tac, input, weights=NULL, inpshift=NULL, vB=NULL,
-                   frameStartEnd=NULL,
+onetcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL,
+                   frameStartEnd = NULL,
                    K1.start = 0.1, K1.lower = 0.0001, K1.upper = 0.5,
                    k2.start = 0.1, k2.lower = 0.0001, k2.upper = 0.5,
-                   inpshift.start = 0, inpshift.lower= -0.5, inpshift.upper = 0.5,
+                   inpshift.start = 0, inpshift.lower = -0.5, inpshift.upper = 0.5,
                    vB.start = 0.05, vB.lower = 0.01, vB.upper = 0.1,
-                   multstart_iter=1, multstart_lower=NULL, multstart_upper=NULL,
-                   printvals=F) {
+                   multstart_iter = 1, multstart_lower = NULL, multstart_upper = NULL,
+                   printvals = F) {
 
   # Tidying
 
@@ -137,7 +137,7 @@ onetcm <- function(t_tac, tac, input, weights=NULL, inpshift=NULL, vB=NULL,
     modeldata$tac <- newvals$tac
     modeldata$input <- newvals$input
 
-    if (prod(multstart_iter) == 1) {  # i.e. don't use multstart
+    if (prod(multstart_iter) == 1) { # i.e. don't use multstart
       output <- minpack.lm::nlsLM(
         tac ~ onetcm_model(t_tac, input, K1, k2, vB),
         data = modeldata, start = start,
@@ -189,11 +189,12 @@ onetcm <- function(t_tac, tac, input, weights=NULL, inpshift=NULL, vB=NULL,
   # Output
 
   if (inpshift_fitted == T) {
-
-    newvals <- shift_timings(modeldata$t_tac,
-                             modeldata$tac,
-                             modeldata$input,
-                             as.numeric(coef(output)[["inpshift"]]))
+    newvals <- shift_timings(
+      modeldata$t_tac,
+      modeldata$tac,
+      modeldata$input,
+      as.numeric(coef(output)[["inpshift"]])
+    )
 
     tacs <- data.frame(Time = newvals$t_tac, Target = newvals$tac, Target_fitted = as.numeric(fitted(output)))
     input <- newvals$input
@@ -208,7 +209,7 @@ onetcm <- function(t_tac, tac, input, weights=NULL, inpshift=NULL, vB=NULL,
   names(par.se) <- paste0(names(par.se), ".se")
 
   par$Vt <- par$K1 / par$k2
-  par.se$Vt.se <- par$Vt * sqrt((par.se$K1.se / par$K1) ^ 2 + (par.se$k2.se / par$k2) ^ 2)
+  par.se$Vt.se <- par$Vt * sqrt((par.se$K1.se / par$K1)^2 + (par.se$k2.se / par$k2)^2)
 
   out <- list(
     par = par, par.se = par.se,
@@ -236,11 +237,11 @@ onetcm <- function(t_tac, tac, input, weights=NULL, inpshift=NULL, vB=NULL,
 #' @return A numeric vector of the predicted values of the TAC in the target region.
 #'
 #' @examples
-#'
+#' 
 #' \dontrun{
-#' onetcm_model(t_tac, input, K1=0.1, k2=0.08, vB=0.05)
+#' onetcm_model(t_tac, input, K1 = 0.1, k2 = 0.08, vB = 0.05)
 #' }
-#'
+#' 
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
@@ -250,15 +251,11 @@ onetcm_model <- function(t_tac, input, K1, k2, vB) {
   interptime <- input$Time
   step <- interptime[2] - interptime[1]
 
-  t_inp <- interptime
-  i_blood <- input$blood
-  i_plasma <- input$plasma
-  i_parentfrac <- input$parentfrac
-
-  i_inp <- i_plasma * i_parentfrac
+  i_blood <- input$Blood
+  aif <- input$AIF
 
   a <- K1 * exp(-k2 * interptime)
-  b <- i_inp
+  b <- aif
 
   i_outtac <- kinfit_convolve(a, b, step)
 
@@ -288,9 +285,9 @@ onetcm_model <- function(t_tac, input, K1, k2, vB) {
 #'
 #' @examples
 #' \dontrun{
-#' onetcm_fitDelay_model(t_tac, input, K1=0.1, k2=0.08, inpshift = 0.1, vB=0.05)
+#' onetcm_fitDelay_model(t_tac, input, K1 = 0.1, k2 = 0.08, inpshift = 0.1, vB = 0.05)
 #' }
-#'
+#' 
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
@@ -300,18 +297,15 @@ onetcm_fitDelay_model <- function(t_tac, input, K1, k2, inpshift, vB) {
 
   t_tac <- newvals$t_tac
 
-  t_inp <- newvals$input$Time
-  i_blood <- newvals$input$blood
-  i_plasma <- newvals$input$plasma
-  i_parentfrac <- newvals$input$parentfrac
+  i_blood <- newvals$input$Blood
+  aif <- newvals$input$AIF
 
   interptime <- newvals$input$Time
   step <- interptime[2] - interptime[1]
 
-  i_inp <- i_plasma * i_parentfrac
 
   a <- K1 * exp(-k2 * interptime)
-  b <- i_inp
+  b <- aif
 
   i_outtac <- kinfit_convolve(a, b, step)
 
@@ -333,29 +327,29 @@ onetcm_fitDelay_model <- function(t_tac, input, K1, k2, inpshift, vB) {
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#'
+#' 
 #' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' 
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#'
+#' 
 #' input <- blood_interp(
-#'   pbr28$blooddata[[2]]$Time/60 , pbr28$blooddata[[2]]$Cbl_dispcorr,
-#'   pbr28$blooddata[[2]]$Time /60 , pbr28$blooddata[[2]]$Cpl_metabcorr,
-#'   t_parentfrac = 1, parentfrac = 1 )
-#'
-#' fit <- onetcm(t_tac, tac, input, weights, inpshift=0.1, vB=0.05)
-#'
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1
+#' )
+#' 
+#' fit <- onetcm(t_tac, tac, input, weights, inpshift = 0.1, vB = 0.05)
+#' 
 #' plot_1tcmfit(fit)
-#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2
 #'
 #' @export
 
-plot_1tcmfit <- function(onetcmout, roiname=NULL) {
+plot_1tcmfit <- function(onetcmout, roiname = NULL) {
   if (is.null(roiname)) {
     roiname <- "ROI"
   }
@@ -369,7 +363,7 @@ plot_1tcmfit <- function(onetcmout, roiname=NULL) {
 
   inputdf <- data.frame(
     Time = onetcmout$input$Time,
-    Radioactivity = onetcmout$input$plasma * onetcmout$input$parentfrac,
+    Radioactivity = onetcmout$input$AIF,
     Weights = 1,
     Region = "AIF"
   )
@@ -400,11 +394,17 @@ plot_1tcmfit <- function(onetcmout, roiname=NULL) {
 
   outplot <- ggplot(plotdf, aes(x = Time, y = Radioactivity, colour = Region)) +
     colScale +
-    geom_point(data = subset(plotdf,
-                             plotdf$Region == paste0(roiname, ".Measured")),
-               aes(shape = "a", size = Weights)) +
-    geom_line(data = subset(plotdf,
-                            plotdf$Region != paste0(roiname, ".Measured"))) +
+    geom_point(
+      data = subset(
+        plotdf,
+        plotdf$Region == paste0(roiname, ".Measured")
+      ),
+      aes(shape = "a", size = Weights)
+    ) +
+    geom_line(data = subset(
+      plotdf,
+      plotdf$Region != paste0(roiname, ".Measured")
+    )) +
     guides(shape = FALSE, color = guide_legend(order = 1)) +
     scale_size(range = c(1, 3)) +
     coord_cartesian(ylim = c(0, max(measureddf$Radioactivity) * 1.5))

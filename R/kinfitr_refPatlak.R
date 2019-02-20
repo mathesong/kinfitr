@@ -23,18 +23,15 @@
 #' @examples
 #' # Note: Reference region models, and irreversible binding models, should not
 #' # be used for PBR28 - this is just to demonstrate function
-#'
+#' 
 #' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' 
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' reftac <- pbr28$tacs[[2]]$CBL
 #' roitac <- pbr28$tacs[[2]]$STR
 #' weights <- pbr28$tacs[[2]]$Weights
-#'
-#' fit <- refPatlak(t_tac, reftac, roitac, tstarIncludedFrames=10, weights=weights)
-#'
-#'
-#'
+#' 
+#' fit <- refPatlak(t_tac, reftac, roitac, tstarIncludedFrames = 10, weights = weights)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Patlak CS, Blasberg RG. Graphical evaluation of blood-to-brain transfer constants from multiple-time uptake data. Generalizations. Journal of Cerebral Blood Flow & Metabolism. 1985 Dec 1;5(4):584-90.
@@ -99,18 +96,17 @@ refPatlak <- function(t_tac, reftac, roitac, tstarIncludedFrames, weights = NULL
 #' @examples
 #' # Note: Reference region models, and irreversible binding models, should not
 #' # be used for PBR28 - this is just to demonstrate function
-#'
+#' 
 #' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times/60
+#' 
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' reftac <- pbr28$tacs[[2]]$CBL
 #' roitac <- pbr28$tacs[[2]]$STR
 #' weights <- pbr28$tacs[[2]]$Weights
-#'
-#' fit <- refPatlak(t_tac, reftac, roitac, tstarIncludedFrames=10, weights=weights)
-#'
+#' 
+#' fit <- refPatlak(t_tac, reftac, roitac, tstarIncludedFrames = 10, weights = weights)
+#' 
 #' plot_refPatlakfit(fit)
-#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2
@@ -168,16 +164,16 @@ plot_refPatlakfit <- function(refpatlakout, roiname = NULL) {
 #'
 #' @examples
 #' \dontrun{
-#' refPatlak_tstar(t_tac, reftac, taclow, tacmed, tachigh, 'demonstration')
+#' refPatlak_tstar(t_tac, reftac, taclow, tacmed, tachigh, "demonstration")
 #' }
-#'
+#' 
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2
 #'
 #' @export
 
-refPatlak_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename, frameStartEnd = NULL, gridbreaks = 2) {
+refPatlak_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename = NULL, frameStartEnd = NULL, gridbreaks = 2) {
   frames <- length(reftac)
   lowroi_fit <- refPatlak(t_tac, reftac, lowroi, length(reftac), frameStartEnd = frameStartEnd)
   medroi_fit <- refPatlak(t_tac, reftac, medroi, length(reftac), frameStartEnd = frameStartEnd)
@@ -216,24 +212,24 @@ refPatlak_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename, fr
   }
 
   xlabel <- "Number of Included Frames"
-  ylab_r2 <- expression(R ^ 2)
+  ylab_r2 <- expression(R^2)
   ylab_mp <- "Maximum Percentage Variance"
 
 
   # R Squared plots
 
-  low_r2plot <- ggplot(r2_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + ylim(c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
-  med_r2plot <- ggplot(r2_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + ylim(c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
-  high_r2plot <- ggplot(r2_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + ylim(c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
+  low_r2plot <- ggplot(r2_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
+  med_r2plot <- ggplot(r2_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
+  high_r2plot <- ggplot(r2_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
 
   # Max Percentage Variation Plots
 
   maxperc_df$inclmins <- rev(max(t_tac) - t_tac)[-c(1, 2)]
   maxperc_df$tstar <- rev(t_tac)[-c(1, 2)]
 
-  low_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + ylim(c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
-  med_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + ylim(c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
-  high_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + ylim(c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
+  low_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
+  med_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
+  high_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
 
 
   # TAC Plot
@@ -258,20 +254,20 @@ refPatlak_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename, fr
   kplot <- ggplot(kplotdf, aes(x = Frames, y = K, colour = Region)) + geom_point() + geom_line() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + ylab(expression(K[i])) + colScale
 
 
-  # File Output
+  # Output
 
-  jpeg(filename = paste0(filename, "_refPatlak.jpeg"), width = 300, height = 400, units = "mm", res = 600)
-  grid::pushViewport(grid::viewport(layout = grid::grid.layout(4, 3, heights = unit(c(1, 1), "null"))))
-  print(low_linplot, vp = grid::viewport(layout.pos.row = 1, layout.pos.col = 1))
-  print(med_linplot, vp = grid::viewport(layout.pos.row = 1, layout.pos.col = 2))
-  print(high_linplot, vp = grid::viewport(layout.pos.row = 1, layout.pos.col = 3))
-  print(low_r2plot, vp = grid::viewport(layout.pos.row = 2, layout.pos.col = 1))
-  print(med_r2plot, vp = grid::viewport(layout.pos.row = 2, layout.pos.col = 2))
-  print(high_r2plot, vp = grid::viewport(layout.pos.row = 2, layout.pos.col = 3))
-  print(low_mpplot, vp = grid::viewport(layout.pos.row = 3, layout.pos.col = 1))
-  print(med_mpplot, vp = grid::viewport(layout.pos.row = 3, layout.pos.col = 2))
-  print(high_mpplot, vp = grid::viewport(layout.pos.row = 3, layout.pos.col = 3))
-  print(tacplot, vp = grid::viewport(layout.pos.row = 4, layout.pos.col = 1:2))
-  print(kplot, vp = grid::viewport(layout.pos.row = 4, layout.pos.col = 3))
-  dev.off()
+  linrow <- cowplot::plot_grid(low_linplot, med_linplot, high_linplot, nrow = 1)
+  r2row <- cowplot::plot_grid(low_r2plot, med_r2plot, high_r2plot, nrow = 1)
+  mprow <- cowplot::plot_grid(low_mpplot, med_mpplot, high_mpplot, nrow = 1)
+  outrow <- cowplot::plot_grid(tacplot, kplot, rel_widths = c(2, 1))
+
+  totalplot <- cowplot::plot_grid(linrow, r2row, mprow, outrow, nrow = 4)
+
+  if (!is.null(filename)) {
+    jpeg(filename = paste0(filename, "_refPatlak.jpeg"), width = 300, height = 400, units = "mm", res = 600)
+    totalplot
+    dev.off()
+  }
+
+  return(totalplot)
 }

@@ -76,14 +76,13 @@ Function to fit the SRTM model of Lammertsma and Hume (1996) to data.
 
 data(pbr28)
 
-t_tac <- pbr28$tacs[[2]]$Times/60
+t_tac <- pbr28$tacs[[2]]$Times / 60
 reftac <- pbr28$tacs[[2]]$CBL
 roitac <- pbr28$tacs[[2]]$STR
 weights <- pbr28$tacs[[2]]$Weights
 
 fit1 <- srtm(t_tac, reftac, roitac)
-fit2 <- srtm(t_tac, reftac, roitac, weights, frameStartEnd = c(1,33))
-
+fit2 <- srtm(t_tac, reftac, roitac, weights, frameStartEnd = c(1, 33))
 }
 \references{
 Lammertsma AA, Hume SP. Simplified reference tissue model for PET receptor studies. Neuroimage. 1996 Dec 31;4(3):153-8.

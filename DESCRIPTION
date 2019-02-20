@@ -17,8 +17,6 @@ Imports:
     RColorBrewer,
     plyr,
     tidyr,
-    grid,
-    gridExtra,
     magrittr,
     scales,
     ggplot2,
@@ -30,16 +28,17 @@ Imports:
     grDevices,
     graphics,
     stats,
-    utils
+    utils,
+    tools,
+    jsonlite,
+    invgamma,
+    cowplot
 Suggests:
     knitr,
     devtools,
     roxygen2,
     testthat,
     pspline,
-    LambertW,
-    parallel,
     rmarkdown,
-    pander,
     covr
 VignetteBuilder: knitr
