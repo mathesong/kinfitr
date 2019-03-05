@@ -1,75 +1,98 @@
 #' Two Tissue Compartment Model
 #'
-#' Function to fit the Two Tissue Compartment Model to data. An irreversible model can also be specified by setting the
-#' starting value, upper and lower bounds of k4 to 0.
+#' Function to fit the Two Tissue Compartment Model to data. An irreversible
+#' model can also be specified by setting the starting value, upper and lower
+#' bounds of k4 to 0.
 #'
-#' @param t_tac Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
-#' zero. If a time zero frame is not included, it will be added.
-#' @param tac Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
-#' zero: if not included, it is added.
-#' @param input Data frame containing the blood, plasma, and parent fraction concentrations over time.  This can be generated
-#' using the \code{blood_interp} function.
-#' @param weights Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
-#' if not included, it is added. If not specified, uniform weights will be used.
-#' @param inpshift Optional. The number of minutes by which to shift the timing of the input data frame forwards or backwards.
-#' If not specified, this will be fitted, however this takes longer to compute. Recommended to perform once on a large ROI for
-#' each measurement, and to specify this value for the remainder of the regions. Or perhaps even to use a simpler model, such as
-#' 1TCM.
-#' @param vB  Optional. The blood volume fraction.  If not specified, this will be fitted. Recommended to perform once on a large ROI for
-#' each measurement, and to specify this value for the remainder of the regions.
-#' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
-#' This is to assess time stability.
-#' @param K1.start Optional. Starting parameter for fitting of K1. Default is 0.1.
-#' @param K1.lower Optional. Lower bound for the fitting of K1. Default is 0.0001.
+#' @param t_tac Numeric vector of times for each frame in minutes. We use the
+#'   time halfway through the frame as well as a zero. If a time zero frame is
+#'   not included, it will be added.
+#' @param tac Numeric vector of radioactivity concentrations in the target
+#'   tissue for each frame. We include zero at time zero: if not included, it is
+#'   added.
+#' @param input Data frame containing the blood, plasma, and parent fraction
+#'   concentrations over time.  This can be generated using the
+#'   \code{blood_interp} function.
+#' @param weights Optional. Numeric vector of the weights assigned to each frame
+#'   in the fitting. We include zero at time zero: if not included, it is added.
+#'   If not specified, uniform weights will be used.
+#' @param inpshift Optional. The number of minutes by which to shift the timing
+#'   of the input data frame forwards or backwards. If not specified, this will
+#'   be fitted, however this takes longer to compute. Recommended to perform
+#'   once on a large ROI for each measurement, and to specify this value for the
+#'   remainder of the regions. Or perhaps even to use a simpler model, such as
+#'   1TCM.
+#' @param vB  Optional. The blood volume fraction.  If not specified, this will
+#'   be fitted. Recommended to perform once on a large ROI for each measurement,
+#'   and to specify this value for the remainder of the regions.
+#' @param frameStartEnd Optional: This allows one to specify the beginning and
+#'   final frame to use for modelling, e.g. c(1,20). This is to assess time
+#'   stability.
+#' @param K1.start Optional. Starting parameter for fitting of K1. Default is
+#'   0.1.
+#' @param K1.lower Optional. Lower bound for the fitting of K1. Default is
+#'   0.0001.
 #' @param K1.upper Optional. Upper bound for the fitting of K1. Default is 0.5.
-#' @param k2.start Optional. Starting parameter for fitting of k2. Default is 0.1.
-#' @param k2.lower Optional. Lower bound for the fitting of k2. Default is 0.0001.
+#' @param k2.start Optional. Starting parameter for fitting of k2. Default is
+#'   0.1.
+#' @param k2.lower Optional. Lower bound for the fitting of k2. Default is
+#'   0.0001.
 #' @param k2.upper Optional. Upper bound for the fitting of k2. Default is 0.5.
-#' @param k3.start Optional. Starting parameter for fitting of k3. Default is 0.1.
-#' @param k3.lower Optional. Lower bound for the fitting of k3. Default is 0.0001.
+#' @param k3.start Optional. Starting parameter for fitting of k3. Default is
+#'   0.1.
+#' @param k3.lower Optional. Lower bound for the fitting of k3. Default is
+#'   0.0001.
 #' @param k3.upper Optional. Upper bound for the fitting of k3. Default is 0.5.
-#' @param k4.start Optional. Starting parameter for fitting of k4. Default is 0.1.
-#' @param k4.lower Optional. Lower bound for the fitting of k4. Default is 0.0001.
+#' @param k4.start Optional. Starting parameter for fitting of k4. Default is
+#'   0.1.
+#' @param k4.lower Optional. Lower bound for the fitting of k4. Default is
+#'   0.0001.
 #' @param k4.upper Optional. Upper bound for the fitting of k4. Default is 0.5.
-#' @param inpshift.start Optional. Starting parameter for fitting of inpshift. Default is 0.
-#' @param inpshift.lower Optional. Lower bound for the fitting of inpshift. Default is -0.5.
-#' @param inpshift.upper Optional. Upper bound for the fitting of inpshift. Default is 0.5.
-#' @param vB.start Optional. Starting parameter for fitting of vB. Default is 0.05.
+#' @param inpshift.start Optional. Starting parameter for fitting of inpshift.
+#'   Default is 0.
+#' @param inpshift.lower Optional. Lower bound for the fitting of inpshift.
+#'   Default is -0.5.
+#' @param inpshift.upper Optional. Upper bound for the fitting of inpshift.
+#'   Default is 0.5.
+#' @param vB.start Optional. Starting parameter for fitting of vB. Default is
+#'   0.05.
 #' @param vB.lower Optional. Lower bound for the fitting of vB. Default is 0.01.
 #' @param vB.upper Optional. Upper bound for the fitting of vB. Default is 0.1.
-#' @param multstart_iter Number of iterations for starting parameters. Default is 1.
-#'   For more information, see \code{\link[nls.multstart]{nls_multstart}}. If
-#'   specified as 1 for any parameters, the original starting value will be
+#' @param multstart_iter Number of iterations for starting parameters. Default
+#'   is 1. For more information, see \code{\link[nls.multstart]{nls_multstart}}.
+#'   If specified as 1 for any parameters, the original starting value will be
 #'   used, and the multstart_lower and multstart_upper values ignored.
-#' @param multstart_lower Optional. Lower bounds for starting parameters. Defaults
-#'   to the lower bounds. Named list of whichever parameters' starting bounds should
-#'   be altered.
-#' @param multstart_upper Optional. Upper bounds for starting parameters. Defaults
-#'   to the upper bounds. Named list of whichever parameters' starting bounds should
-#'   be altered.
-#' @param printvals Optional. This displays the parameter values for each iteration of the
-#' model. This is useful for debugging and changing starting values and upper and lower
-#' bounds for parameters.
+#' @param multstart_lower Optional. Lower bounds for starting parameters.
+#'   Defaults to the lower bounds. Named list of whichever parameters' starting
+#'   bounds should be altered.
+#' @param multstart_upper Optional. Upper bounds for starting parameters.
+#'   Defaults to the upper bounds. Named list of whichever parameters' starting
+#'   bounds should be altered.
+#' @param printvals Optional. This displays the parameter values for each
+#'   iteration of the model. This is useful for debugging and changing starting
+#'   values and upper and lower bounds for parameters.
 #'
-#' @return A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit},
-#' a dataframe containing the TACs both of the data and the fitted values \code{out$tacs},
-#' the blood input data frame after time shifting \code{input}, a vector of the weights \code{out$weights},
-#' a logical of whether the inpshift was fitted \code{inpshift_fitted} and a logical of whether the vB was
-#' fitted \code{vB}.
+#' @return A list with a data frame of the fitted parameters \code{out$par},
+#'   their percentage standard errors \code{out$par.se}, the model fit object
+#'   \code{out$fit}, a dataframe containing the TACs both of the data and the
+#'   fitted values \code{out$tacs}, the blood input data frame after time
+#'   shifting \code{input}, a vector of the weights \code{out$weights}, a
+#'   logical of whether the inpshift was fitted \code{inpshift_fitted} and a
+#'   logical of whether the vB was fitted \code{vB}.
 #'
 #' @examples
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#'
 #' input <- blood_interp(
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1
 #' )
-#' 
+#'
 #' fit1 <- twotcm(t_tac, tac, input, weights)
 #' fit2 <- twotcm(t_tac, tac, input, weights, inpshift = 0.1, vB = 0.05)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
@@ -221,13 +244,13 @@ twotcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL
 
   if (inpshift_fitted == F) par$inpshift <- inpshift
 
-  par.se <- as.data.frame(as.list(sqrt(abs(vcov(output)[, 1]))))
+  par.se <- par
+  par.se[1,] <- purrr::map_dbl(names(par), ~ get_se(output, .x))
   names(par.se) <- paste0(names(par.se), ".se")
 
   par$Vt <- (par$K1 / par$k2) * (1 + par$k3 / par$k4)
 
-  par.se$Vt.se <- par$Vt * (par.se$K1.se / par$K1 + par.se$k2.se / par$k2) +
-    par$Vt * (par.se$K1.se / par$K1 + par.se$k2.se / par$k2 + par.se$k3.se / par$k3 + par.se$k4.se / par$k4)
+  par.se$Vt.se <- par.se$Vt.se <- get_se(output, "(K1/k2) * (1+(k3/k4))")
 
 
 
@@ -262,7 +285,7 @@ twotcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL
 #' \dontrun{
 #' twotcm_model(t_tac, input, K1 = 0.1, k2 = 0.08, k3 = 0.05, k4 = 0.02, vB = 0.05)
 #' }
-#' 
+#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
@@ -315,7 +338,7 @@ twotcm_model <- function(t_tac, input, K1, k2, k3, k4, vB) {
 #' \dontrun{
 #' twotcm_model(t_tac, input, K1 = 0.1, k2 = 0.08, k3 = 0.05, k4 = 0.02, vB = 0.05)
 #' }
-#' 
+#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
@@ -361,21 +384,21 @@ twotcm_fitDelay_model <- function(t_tac, input, K1, k2, k3, k4, inpshift, vB) {
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' 
+#'
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#'
 #' input <- blood_interp(
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1
 #' )
-#' 
+#'
 #' fit <- twotcm(t_tac, tac, input, weights, inpshift = 0.1, vB = 0.05)
-#' 
+#'
 #' plot_2tcmfit(fit)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'

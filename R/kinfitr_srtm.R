@@ -2,60 +2,69 @@
 #'
 #' Function to fit the SRTM model of Lammertsma and Hume (1996) to data.
 #'
-#' @param t_tac Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
-#' zero. If a time zero frame is not included, it will be added.
-#' @param reftac Numeric vector of radioactivity concentrations in the reference tissue for each frame. We include zero at
-#' time zero: if not included, it is added.
-#' @param roitac Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
-#' zero: if not included, it is added.
-#' @param weights Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
-#' if not included, it is added. If not specified, uniform weights will be used.
-#' @param frameStartEnd Optional. This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
-#' This is to assess time stability.
+#' @param t_tac Numeric vector of times for each frame in minutes. We use the
+#'   time halfway through the frame as well as a zero. If a time zero frame is
+#'   not included, it will be added.
+#' @param reftac Numeric vector of radioactivity concentrations in the reference
+#'   tissue for each frame. We include zero at time zero: if not included, it is
+#'   added.
+#' @param roitac Numeric vector of radioactivity concentrations in the target
+#'   tissue for each frame. We include zero at time zero: if not included, it is
+#'   added.
+#' @param weights Optional. Numeric vector of the weights assigned to each frame
+#'   in the fitting. We include zero at time zero: if not included, it is added.
+#'   If not specified, uniform weights will be used.
+#' @param frameStartEnd Optional. This allows one to specify the beginning and
+#'   final frame to use for modelling, e.g. c(1,20). This is to assess time
+#'   stability.
 #' @param R1.start Optional. Starting parameter for fitting of R1. Default is 1.
 #' @param R1.lower Optional. Lower bound for the fitting of R1. Default is 0.
 #' @param R1.upper Optional. Upper bound for the fitting of R1. Default is 10.
-#' @param k2.start Optional. Starting parameter for fitting of k2. Default is 0.1.
+#' @param k2.start Optional. Starting parameter for fitting of k2. Default is
+#'   0.1.
 #' @param k2.lower Optional. Lower bound for the fitting of k2. Default is 0.
 #' @param k2.upper Optional. Upper bound for the fitting of k2. Default is 1.
-#' @param bp.start Optional. Starting parameter for fitting of bp. Default is 1.5.
+#' @param bp.start Optional. Starting parameter for fitting of bp. Default is
+#'   1.5.
 #' @param bp.lower Optional. Lower bound for the fitting of bp. Default is -10.
 #' @param bp.upper Optional. Upper bound for the fitting of bp. Default is 15.
-#' @param multstart_iter Number of iterations for starting parameters. Default is 1.
-#'   For more information, see \code{\link[nls.multstart]{nls_multstart}}. If
-#'   specified as 1 for any parameters, the original starting value will be
+#' @param multstart_iter Number of iterations for starting parameters. Default
+#'   is 1. For more information, see \code{\link[nls.multstart]{nls_multstart}}.
+#'   If specified as 1 for any parameters, the original starting value will be
 #'   used, and the multstart_lower and multstart_upper values ignored.
-#' @param multstart_lower Optional. Lower bounds for starting parameters. Defaults
-#'   to the lower bounds.  Named list of whichever parameters' starting bounds should
-#'   be altered.
-#' @param multstart_upper Optional. Upper bounds for starting parameters. Defaults
-#'   to the upper bounds.  Named list of whichever parameters' starting bounds should
-#'   be altered.
-#' @param printvals Optional. This displays the parameter values for each iteration of the
-#' model. This is useful for debugging and changing starting values and upper and lower
-#' bounds for parameters.
+#' @param multstart_lower Optional. Lower bounds for starting parameters.
+#'   Defaults to the lower bounds.  Named list of whichever parameters' starting
+#'   bounds should be altered.
+#' @param multstart_upper Optional. Upper bounds for starting parameters.
+#'   Defaults to the upper bounds.  Named list of whichever parameters' starting
+#'   bounds should be altered.
+#' @param printvals Optional. This displays the parameter values for each
+#'   iteration of the model. This is useful for debugging and changing starting
+#'   values and upper and lower bounds for parameters.
 #'
-#' @return A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit},
-#' the model weights \code{out$weights}, and a dataframe containing the TACs both of the data and the fitted
-#' values \code{out$tacs}.
+#' @return A list with a data frame of the fitted parameters \code{out$par},
+#'   their percentage standard errors \code{out$par.se}, the model fit object
+#'   \code{out$fit}, the model weights \code{out$weights}, and a dataframe
+#'   containing the TACs both of the data and the fitted values \code{out$tacs}.
 #'
 #' @examples
-#' 
+#'
 #' # Note: Reference region models, and irreversible binding models, should not
 #' # be used for PBR28 - this is just to demonstrate function
-#' 
+#'
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' reftac <- pbr28$tacs[[2]]$CBL
 #' roitac <- pbr28$tacs[[2]]$STR
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#'
 #' fit1 <- srtm(t_tac, reftac, roitac)
 #' fit2 <- srtm(t_tac, reftac, roitac, weights, frameStartEnd = c(1, 33))
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
-#' @references Lammertsma AA, Hume SP. Simplified reference tissue model for PET receptor studies. Neuroimage. 1996 Dec 31;4(3):153-8.
+#' @references Lammertsma AA, Hume SP. Simplified reference tissue model for PET
+#'   receptor studies. Neuroimage. 1996 Dec 31;4(3):153-8.
 #'
 #' @export
 
@@ -122,7 +131,8 @@ srtm <- function(t_tac, reftac, roitac, weights = NULL, frameStartEnd = NULL,
 
   par <- as.data.frame(as.list(coef(output)))
 
-  par.se <- as.data.frame(as.list(sqrt(abs(vcov(output)[, 1]))))
+  par.se <- par
+  par.se[1,] <- purrr::map_dbl(names(coef(output)), ~ get_se(output, .x))
   names(par.se) <- paste0(names(par.se), ".se")
 
   out <- list(
@@ -153,7 +163,7 @@ srtm <- function(t_tac, reftac, roitac, weights = NULL, frameStartEnd = NULL,
 #' \dontrun{
 #' srtm_model(t_tac, reftac, R1 = 0.9, k2 = 0.1, bp = 1.5)
 #' }
-#' 
+#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Lammertsma AA, Hume SP. Simplified reference tissue model for PET receptor studies. Neuroimage. 1996 Dec 31;4(3):153-8.
@@ -191,19 +201,19 @@ srtm_model <- function(t_tac, reftac, R1, k2, bp) {
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' 
+#'
 #' #' # Note: Reference region models, and irreversible binding models, should not
 #' # be used for PBR28 - this is just to demonstrate function
-#' 
+#'
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' reftac <- pbr28$tacs[[2]]$CBL
 #' roitac <- pbr28$tacs[[2]]$STR
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#'
 #' fit <- srtm(t_tac, reftac, roitac)
-#' 
+#'
 #' plot_srtmfit(fit)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'

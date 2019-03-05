@@ -26,15 +26,15 @@ tissue for each frame. We include zero at time zero: if not included, it is
 added.}
 
 \item{bloodtac}{Numeric vector of radioactivity concentrations in the blood
-for each frame. We include zero at time zero: if not included, it is
-added.}
+for each frame. We include zero at time zero: if not included, it is added.}
 
 \item{weights}{Optional. Numeric vector of the weights assigned to each frame
 in the fitting. We include zero at time zero: if not included, it is added.
 If not specified, uniform weights will be used.}
 
-\item{vBr}{Optional. The blood volume fraction of the reference region.  If not
-specified, this will be fitted. This parameter was fixed in the original article.}
+\item{vBr}{Optional. The blood volume fraction of the reference region.  If
+not specified, this will be fitted. This parameter was fixed in the
+original article.}
 
 \item{frameStartEnd}{Optional. This allows one to specify the beginning and
 final frame to use for modelling, e.g. c(1,20). This is to assess time
@@ -42,14 +42,16 @@ stability.}
 
 \item{R1.start}{Optional. Starting parameter for fitting of R1. Default is 1.}
 
-\item{R1.lower}{Optional. Lower bound for the fitting of R1. Default is 0.0001.}
+\item{R1.lower}{Optional. Lower bound for the fitting of R1. Default is
+0.0001.}
 
 \item{R1.upper}{Optional. Upper bound for the fitting of R1. Default is 10.}
 
 \item{k2.start}{Optional. Starting parameter for fitting of k2. Default is
 0.1.}
 
-\item{k2.lower}{Optional. Lower bound for the fitting of k2. Default is 0.0001.}
+\item{k2.lower}{Optional. Lower bound for the fitting of k2. Default is
+0.0001.}
 
 \item{k2.upper}{Optional. Upper bound for the fitting of k2. Default is 1.}
 
@@ -63,7 +65,8 @@ stability.}
 \item{vBr.start}{Optional. Starting parameter for fitting of vBr. Default is
 0.05.}
 
-\item{vBr.lower}{Optional. Lower bound for the fitting of vBr. Default is 0.0001.}
+\item{vBr.lower}{Optional. Lower bound for the fitting of vBr. Default is
+0.0001.}
 
 \item{vBr.upper}{Optional. Upper bound for the fitting of vBr. Default is
 0.15.}
@@ -71,33 +74,34 @@ stability.}
 \item{vBt.start}{Optional. Starting parameter for fitting of vBt. Default is
 0.05.}
 
-\item{vBt.lower}{Optional. Lower bound for the fitting of vBt. Default is 0.0001.}
+\item{vBt.lower}{Optional. Lower bound for the fitting of vBt. Default is
+0.0001.}
 
 \item{vBt.upper}{Optional. Upper bound for the fitting of vBt. Default is
 0.15.}
 
-\item{multstart_iter}{Number of iterations for starting parameters. Default is 1.
-For more information, see \code{\link[nls.multstart]{nls_multstart}}. If
-specified as 1 for any parameters, the original starting value will be
+\item{multstart_iter}{Number of iterations for starting parameters. Default
+is 1. For more information, see \code{\link[nls.multstart]{nls_multstart}}.
+If specified as 1 for any parameters, the original starting value will be
 used, and the multstart_lower and multstart_upper values ignored.}
 
-\item{multstart_lower}{Optional. Lower bounds for starting parameters. Defaults
-to the lower bounds. Named list of whichever parameters' starting bounds should
-be altered.}
+\item{multstart_lower}{Optional. Lower bounds for starting parameters.
+Defaults to the lower bounds. Named list of whichever parameters' starting
+bounds should be altered.}
 
-\item{multstart_upper}{Optional. Upper bounds for starting parameters. Defaults
-to the upper bounds. Named list of whichever parameters' starting bounds should
-be altered.}
+\item{multstart_upper}{Optional. Upper bounds for starting parameters.
+Defaults to the upper bounds. Named list of whichever parameters' starting
+bounds should be altered.}
 
 \item{printvals}{Optional. This displays the parameter values for each
 iteration of the model. This is useful for debugging and changing starting
 values and upper and lower bounds for parameters.}
 }
 \value{
-A list with a data frame of the fitted parameters \code{out$par}, the
-  model fit object \code{out$fit}, the model weights \code{out$weights}, and
-  a dataframe containing the TACs both of the data and the fitted values
-  \code{out$tacs}.
+A list with a data frame of the fitted parameters \code{out$par},
+  their percentage standard errors \code{out$par.se}, the model fit object
+  \code{out$fit}, the model weights \code{out$weights}, and a dataframe
+  containing the TACs both of the data and the fitted values \code{out$tacs}.
 }
 \description{
 Function to fit the SRTM_V model of Tomasi et al (2008) to data.

@@ -39,7 +39,7 @@
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
-#' @example
+#' @examples
 #' \dontrun{
 #' blooddata2 <- create_blooddata_components(
 #'    Blood.Discrete.Data.Values.sampleStartTime =
@@ -72,7 +72,7 @@
 #'      blooddata$Data$Blood$Continuous$DispersionConstantUnits,
 #'    Blood.Continuous.DispersionCorrected = FALSE,
 #'    TimeShift = 0)
-#' }
+#'    }
 create_blooddata_components <- function(
                                         Blood.Discrete.Data.Values.sampleStartTime,
                                         Blood.Discrete.Data.Values.sampleDuration = 0,
@@ -1015,7 +1015,7 @@ interpends <- function(x, y, xi, method = "linear", yzero = NULL) {
 #' \dontrun{
 #' blooddata <- blooddata_blood_dispcor(blooddata, 2.5)
 #' }
-#' 
+#'
 blooddata_blood_dispcor <- function(blooddata, tau, timedelta = NULL,
                                     keep_interpolated = T, smooth_iterations = 0) {
   if (is.null(blooddata$Data$Blood$Continuous)) {

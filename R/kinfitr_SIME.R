@@ -37,23 +37,25 @@
 #'
 #'
 #' @examples
+#' \dontrun{
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tacdf <- dplyr::select(pbr28$tacs[[2]], FC:CBL)
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#'
 #' input <- blood_interp(
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1
 #' )
-#' 
+#'
 #' Vndgrid <- seq(from = 0, to = 3, by = 0.5)
 #' SIMEout <- SIME(t_tac, tacdf, input, Vndgrid,
 #'   weights = weights,
 #'   inpshift = 0.1, vB = 0.05
 #' )
+#' }
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
@@ -258,7 +260,7 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights = NULL, roiweights = NULL
 #' \dontrun{
 #' SIME_model(t_tac, input, Vnd = 5, k2 = 0.1, k3 = 0.05, k4 = 0.04, vB = 0.05)
 #' }
-#' 
+#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Ogden RT, Zanderigo F, Parsey RV. Estimation of in vivo nonspecific binding in positron emission tomography studies without requiring a reference region. NeuroImage. 2015 Mar 31;108:234-42.
@@ -310,7 +312,7 @@ SIME_model <- function(t_tac, input, Vnd, k2, k3, k4, vB) {
 #' \dontrun{
 #' plot_SIMEfit(SIMEout)
 #' }
-#' 
+#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2

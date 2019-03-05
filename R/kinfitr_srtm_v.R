@@ -12,22 +12,24 @@
 #'   tissue for each frame. We include zero at time zero: if not included, it is
 #'   added.
 #' @param bloodtac Numeric vector of radioactivity concentrations in the blood
-#'   for each frame. We include zero at time zero: if not included, it is
-#'   added.
+#'   for each frame. We include zero at time zero: if not included, it is added.
 #' @param weights Optional. Numeric vector of the weights assigned to each frame
 #'   in the fitting. We include zero at time zero: if not included, it is added.
 #'   If not specified, uniform weights will be used.
-#' @param vBr Optional. The blood volume fraction of the reference region.  If not
-#'   specified, this will be fitted. This parameter was fixed in the original article.
+#' @param vBr Optional. The blood volume fraction of the reference region.  If
+#'   not specified, this will be fitted. This parameter was fixed in the
+#'   original article.
 #' @param frameStartEnd Optional. This allows one to specify the beginning and
 #'   final frame to use for modelling, e.g. c(1,20). This is to assess time
 #'   stability.
 #' @param R1.start Optional. Starting parameter for fitting of R1. Default is 1.
-#' @param R1.lower Optional. Lower bound for the fitting of R1. Default is 0.0001.
+#' @param R1.lower Optional. Lower bound for the fitting of R1. Default is
+#'   0.0001.
 #' @param R1.upper Optional. Upper bound for the fitting of R1. Default is 10.
 #' @param k2.start Optional. Starting parameter for fitting of k2. Default is
 #'   0.1.
-#' @param k2.lower Optional. Lower bound for the fitting of k2. Default is 0.0001.
+#' @param k2.lower Optional. Lower bound for the fitting of k2. Default is
+#'   0.0001.
 #' @param k2.upper Optional. Upper bound for the fitting of k2. Default is 1.
 #' @param bp.start Optional. Starting parameter for fitting of bp. Default is
 #'   1.5.
@@ -35,56 +37,58 @@
 #' @param bp.upper Optional. Upper bound for the fitting of bp. Default is 15.
 #' @param vBr.start Optional. Starting parameter for fitting of vBr. Default is
 #'   0.05.
-#' @param vBr.lower Optional. Lower bound for the fitting of vBr. Default is 0.0001.
+#' @param vBr.lower Optional. Lower bound for the fitting of vBr. Default is
+#'   0.0001.
 #' @param vBr.upper Optional. Upper bound for the fitting of vBr. Default is
 #'   0.15.
 #' @param vBt.start Optional. Starting parameter for fitting of vBt. Default is
 #'   0.05.
-#' @param vBt.lower Optional. Lower bound for the fitting of vBt. Default is 0.0001.
+#' @param vBt.lower Optional. Lower bound for the fitting of vBt. Default is
+#'   0.0001.
 #' @param vBt.upper Optional. Upper bound for the fitting of vBt. Default is
 #'   0.15.
-#' @param multstart_iter Number of iterations for starting parameters. Default is 1.
-#'   For more information, see \code{\link[nls.multstart]{nls_multstart}}. If
-#'   specified as 1 for any parameters, the original starting value will be
+#' @param multstart_iter Number of iterations for starting parameters. Default
+#'   is 1. For more information, see \code{\link[nls.multstart]{nls_multstart}}.
+#'   If specified as 1 for any parameters, the original starting value will be
 #'   used, and the multstart_lower and multstart_upper values ignored.
-#' @param multstart_lower Optional. Lower bounds for starting parameters. Defaults
-#'   to the lower bounds. Named list of whichever parameters' starting bounds should
-#'   be altered.
-#' @param multstart_upper Optional. Upper bounds for starting parameters. Defaults
-#'   to the upper bounds. Named list of whichever parameters' starting bounds should
-#'   be altered.
+#' @param multstart_lower Optional. Lower bounds for starting parameters.
+#'   Defaults to the lower bounds. Named list of whichever parameters' starting
+#'   bounds should be altered.
+#' @param multstart_upper Optional. Upper bounds for starting parameters.
+#'   Defaults to the upper bounds. Named list of whichever parameters' starting
+#'   bounds should be altered.
 #' @param printvals Optional. This displays the parameter values for each
 #'   iteration of the model. This is useful for debugging and changing starting
 #'   values and upper and lower bounds for parameters.
 #'
-#' @return A list with a data frame of the fitted parameters \code{out$par}, the
-#'   model fit object \code{out$fit}, the model weights \code{out$weights}, and
-#'   a dataframe containing the TACs both of the data and the fitted values
-#'   \code{out$tacs}.
+#' @return A list with a data frame of the fitted parameters \code{out$par},
+#'   their percentage standard errors \code{out$par.se}, the model fit object
+#'   \code{out$fit}, the model weights \code{out$weights}, and a dataframe
+#'   containing the TACs both of the data and the fitted values \code{out$tacs}.
 #'
 #' @examples
-#' 
+#'
 #' # Note: Reference region models, and irreversible binding models, should not
 #' # be used for PBR28 - this is just to demonstrate function
-#' 
+#'
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' reftac <- pbr28$tacs[[2]]$CBL
 #' roitac <- pbr28$tacs[[2]]$STR
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#'
 #' input <- pbr28$input[[2]]
-#' 
+#'
 #' newvals <- shift_timings(
 #'   t_tac,
 #'   roitac,
 #'   input,
 #'   inpshift = 0
 #' )
-#' 
+#'
 #' bloodtac <- pracma::interp1(newvals$input$Time, newvals$input$Blood, t_tac)
-#' 
+#'
 #' fit <- srtm_v(t_tac, reftac, roitac, bloodtac, weights)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -168,7 +172,8 @@ srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights = NULL, vBr = NULL, 
 
   par <- as.data.frame(as.list(coef(output)))
 
-  par.se <- as.data.frame(as.list(sqrt(abs(vcov(output)[, 1]))))
+  par.se <- par
+  par.se[1,] <- purrr::map_dbl(names(coef(output)), ~ get_se(output, .x))
   names(par.se) <- paste0(names(par.se), ".se")
 
   out <- list(
@@ -202,7 +207,7 @@ srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights = NULL, vBr = NULL, 
 #' \dontrun{
 #' srtm_v_model(t_tac, reftac, R1 = 0.9, k2 = 0.1, bp = 1.5, vBr = 0.05, vBt = 0.05)
 #' }
-#' 
+#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Tomasi, G., Edison, P., ... & Turkheimer, F. E. (2008). Novel
@@ -253,27 +258,27 @@ srtm_v_model <- function(t_tac, reftac, bloodtac, R1, k2, bp, vBr, vBt) {
 #' @examples
 #' # Note: Reference region models, and irreversible binding models, should not
 #' # be used for PBR28 - this is just to demonstrate function
-#' 
+#'
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' reftac <- pbr28$tacs[[2]]$CBL
 #' roitac <- pbr28$tacs[[2]]$STR
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#'
 #' input <- pbr28$input[[2]]
-#' 
+#'
 #' newvals <- shift_timings(
 #'   t_tac,
 #'   roitac,
 #'   input,
 #'   inpshift = 0
 #' )
-#' 
+#'
 #' bloodtac <- pracma::interp1(newvals$input$Time, newvals$input$Blood, t_tac)
-#' 
+#'
 #' fit <- srtm_v(t_tac, reftac, roitac, bloodtac, weights)
-#' 
+#'
 #' plot_srtm_vfit(fit)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'

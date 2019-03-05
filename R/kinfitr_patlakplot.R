@@ -2,50 +2,64 @@
 #'
 #' Function to fit the Patlak Plot of of Patlak et al (1983) to data.
 #'
-#' @param t_tac Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
-#' zero. If a time zero frame is not included, it will be added.
-#' @param tac Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
-#' zero: if not included, it is added.
-#' @param input Data frame containing the blood, plasma, and parent fraction concentrations over time.  This can be generated
-#' using the \code{blood_interp} function.
-#' @param tstarIncludedFrames The number of frames to be used in the regression model, i.e. the number of frames for which
-#' the function is linear after pseudo-equilibrium is reached. This is a count from the end of the measurement, so a value of
-#' 10 means that last 10 frames will be used. This value can be estimated using \code{Logan_tstar}.
-#' @param weights Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
-#' if not included, it is added. If not specified, uniform weights will be used.
-#' @param inpshift Optional. The number of minutes by which to shift the timing of the input data frame forwards or backwards.
-#' If not specified, this will be set to 0. This can be fitted using 1TCM or 2TCM.
-#' @param vB Optional. The blood volume fraction.  If not specified, this will be ignored and assumed to be 0%. If specified, it
-#' will be corrected for prior to parameter estimation using the following equation:
-#' \deqn{C_{T}(t) = \frac{C_{Measured}(t) - vB\times C_{B}(t)}{1-vB}}
-#' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
-#' This is to assess time stability.
+#' @param t_tac Numeric vector of times for each frame in minutes. We use the
+#'   time halfway through the frame as well as a zero. If a time zero frame is
+#'   not included, it will be added.
+#' @param tac Numeric vector of radioactivity concentrations in the target
+#'   tissue for each frame. We include zero at time zero: if not included, it is
+#'   added.
+#' @param input Data frame containing the blood, plasma, and parent fraction
+#'   concentrations over time.  This can be generated using the
+#'   \code{blood_interp} function.
+#' @param tstarIncludedFrames The number of frames to be used in the regression
+#'   model, i.e. the number of frames for which the function is linear after
+#'   pseudo-equilibrium is reached. This is a count from the end of the
+#'   measurement, so a value of 10 means that last 10 frames will be used. This
+#'   value can be estimated using \code{Logan_tstar}.
+#' @param weights Optional. Numeric vector of the weights assigned to each frame
+#'   in the fitting. We include zero at time zero: if not included, it is added.
+#'   If not specified, uniform weights will be used.
+#' @param inpshift Optional. The number of minutes by which to shift the timing
+#'   of the input data frame forwards or backwards. If not specified, this will
+#'   be set to 0. This can be fitted using 1TCM or 2TCM.
+#' @param vB Optional. The blood volume fraction.  If not specified, this will
+#'   be ignored and assumed to be 0%. If specified, it will be corrected for
+#'   prior to parameter estimation using the following equation: \deqn{C_{T}(t)
+#'   = \frac{C_{Measured}(t) - vB\times C_{B}(t)}{1-vB}}
+#' @param frameStartEnd Optional: This allows one to specify the beginning and
+#'   final frame to use for modelling, e.g. c(1,20). This is to assess time
+#'   stability.
 #'
 #'
-#' @return A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit},
-#' a dataframe containing the TACs of the data \code{out$tacs}, a dataframe containing the fitted values \code{out$fitvals},
-#' the blood input data frame after time shifting \code{input}, a vector of the weights \code{out$weights},
-#' the inpshift value used \code{inpshift}, the specified vB value \code{out$vB}, and the specified tstarIncludedFrames
-#' value \code{out$tstarIncludedFrames}.
+#' @return A list with a data frame of the fitted parameters \code{out$par},
+#'   their percentage standard errors \code{out$par.se}, the model fit object
+#'   \code{out$fit}, a dataframe containing the TACs of the data
+#'   \code{out$tacs}, a dataframe containing the fitted values
+#'   \code{out$fitvals}, the blood input data frame after time shifting
+#'   \code{input}, a vector of the weights \code{out$weights}, the inpshift
+#'   value used \code{inpshift}, the specified vB value \code{out$vB}, and the
+#'   specified tstarIncludedFrames value \code{out$tstarIncludedFrames}.
 #'
 #' @examples
-#' 
+#'
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#'
 #' input <- blood_interp(
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1
 #' )
-#' 
+#'
 #' fit <- Patlakplot(t_tac, tac, input, 10, weights, inpshift = 0.1)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
-#' @references Patlak CS, Blasberg RG, Fenstermacher JD. Graphical evaluation of blood-to-brain transfer constants from multiple-time uptake data. Journal of Cerebral Blood Flow & Metabolism. 1983 Mar 1;3(1):1-7.
+#' @references Patlak CS, Blasberg RG, Fenstermacher JD. Graphical evaluation of
+#'   blood-to-brain transfer constants from multiple-time uptake data. Journal
+#'   of Cerebral Blood Flow & Metabolism. 1983 Mar 1;3(1):1-7.
 #'
 #' @export
 
@@ -110,8 +124,9 @@ Patlakplot <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL, i
 
   input <- newvals$input
 
-  par.se <- as.data.frame(as.list(sqrt(abs(vcov(patlak_model)[, 1]))))[-1]
-  names(par.se) <- paste0("K", ".se")
+  par.se <- par
+  par.se[1,] <- purrr::map_dbl(names(coef(patlak_model)), ~ get_se(patlak_model, .x))[2]
+  names(par.se) <- paste0(names(par.se), ".se")
 
   out <- list(
     par = par, par.se = par.se, fit = patlak_model, tacs = tacs,
@@ -135,21 +150,21 @@ Patlakplot <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL, i
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' 
+#'
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#'
 #' input <- blood_interp(
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1
 #' )
-#' 
+#'
 #' fit <- Patlakplot(t_tac, tac, input, 10, weights, inpshift = 0.1)
-#' 
+#'
 #' plot_Patlakfit(fit)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -230,7 +245,7 @@ plot_Patlakfit <- function(patlakout, roiname = NULL) {
 #'   inpshift = onetcmout$par$inpshift, vB = 0.05, gridbreaks = 4
 #' )
 #' }
-#' 
+#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2

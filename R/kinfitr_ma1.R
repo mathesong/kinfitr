@@ -29,17 +29,17 @@
 #'
 #' @examples
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#'
 #' input <- blood_interp(
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1
 #' )
-#' 
+#'
 #' fit1 <- ma1(t_tac, tac, input, 10, weights)
 #' fit2 <- ma1(t_tac, tac, input, 10, weights, inpshift = 0.1, vB = 0.05)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
@@ -137,17 +137,17 @@ ma1 <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL, inpshift
 #'
 #' @examples
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#'
 #' input <- blood_interp(
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1
 #' )
-#' 
+#'
 #' fit <- ma1(t_tac, tac, input, 10, weights)
 #' plot_ma1fit(fit)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
@@ -236,7 +236,7 @@ plot_ma1fit <- function(ma1out, roiname = NULL) {
 #'   inpshift = onetcmout$par$inpshift, frameStartEnd, gridbreaks = 4
 #' )
 #' }
-#' 
+#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2

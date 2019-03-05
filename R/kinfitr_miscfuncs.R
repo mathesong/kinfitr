@@ -12,7 +12,7 @@
 #' a <- rnorm(20)
 #' b <- rnorm(20)
 #' stepsize <- 1
-#' 
+#'
 #' kinfit_convolve(a, b, stepsize)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -108,16 +108,16 @@ plot_fitfunc <- function(ymeasured, xmeasured, fitfunction, parameters) {
 #' @examples
 #' # Note: Reference region models, and irreversible binding models, should not
 #' # be used for PBR28 - this is just to demonstrate function
-#' 
+#'
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' reftac <- pbr28$tacs[[2]]$CBL
 #' roitac <- pbr28$tacs[[2]]$STR
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#'
 #' srtmout <- srtm(t_tac, reftac, roitac)
-#' 
+#'
 #' plot_residuals(srtmout)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -163,17 +163,17 @@ plot_residuals <- function(outputobject) {
 #' times are in minutes and not in seconds.
 #'
 #' @examples
-#' 
+#'
 #' #' # Note: Reference region models, and irreversible binding models, should not
 #' # be used for PBR28 - this is just to demonstrate function
-#' 
+#'
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' reftac <- pbr28$tacs[[2]]$CBL
 #' roitac <- pbr28$tacs[[2]]$STR
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#'
 #' tidyinput_ref(t_tac, reftac, roitac, weights, frameStartEnd = c(1, 10))
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -234,13 +234,13 @@ tidyinput_ref <- function(t_tac, reftac, roitac, weights, frameStartEnd) {
 #' times are in minutes and not in seconds.
 #'
 #' @examples
-#' 
+#'
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$STR
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#'
 #' tidyinput_art(t_tac, tac, weights, frameStartEnd = c(1, 10))
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -295,19 +295,19 @@ tidyinput_art <- function(t_tac, tac, weights, frameStartEnd) {
 #' @return The maximum percentage of the fitted value of a residual in the fit.
 #'
 #' @examples
-#' 
+#'
 #' # Note: Reference region models, and irreversible binding models, should not
 #' # be used for PBR28 - this is just to demonstrate function
-#' 
+#'
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' reftac <- pbr28$tacs[[2]]$CBL
 #' roitac <- pbr28$tacs[[2]]$STR
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#'
 #' refloganout <- refLogan(t_tac, reftac, roitac, 0.1, tstarIncludedFrames = 9)
-#' 
+#'
 #' maxpercres(refloganout)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -334,21 +334,21 @@ maxpercres <- function(outputobject) {
 #' @details This function uses the \code{out$model} name to call the correct function to plot the model fit.
 #'
 #' @examples
-#' 
+#'
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#'
 #' input <- blood_interp(
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1
 #' )
-#' 
+#'
 #' fit <- ma1(t_tac, tac, input, 10, weights)
-#' 
+#'
 #' plot_kinfit(fit, roiname = "FC")
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -382,10 +382,10 @@ plot_kinfit <- function(modelout, ...) {
 #' upper <- lapply(start, function(x) x + 1)
 #' lower <- lapply(start, function(x) x - 1)
 #' multstart_iter <- 5
-#' 
+#'
 #' multstart_lower <- NULL
 #' multstart_upper <- NULL
-#' 
+#'
 #' fix_multstartpars(start, lower, upper, multstart_iter, multstart_lower, multstart_upper)
 fix_multstartpars <- function(start, lower, upper, multstart_iter, multstart_lower, multstart_upper) {
   if (length(multstart_iter) == length(start) || length(multstart_iter) == 1) {
@@ -446,4 +446,37 @@ fix_multstartpars <- function(start, lower, upper, multstart_iter, multstart_low
   )
 
   return(out)
+}
+
+#' Estimate the standard error of parameters using the delta method
+#'
+#' This function returns the SE of parameters, as a proportion of their
+#' parameter estimates, calculated using the delta method as implemented in the
+#' car package. If the parameter does not exist, this function will return NA.
+#'
+#' @param fit A fit object for a particular model - in this case the actual lm
+#'   or nls object
+#' @param expression The expression for which the SE is being calculated
+#'
+#' @return The SE as a proportion of the parameter estimate.
+#' @export
+#'
+#' @examples
+#' data(mtcars)
+#' a <- lm(mpg ~ cyl + disp, data=mtcars)
+#'
+#' get_se(a, "cyl")
+#' get_se(a, "cyl/disp")
+#'
+get_se <- function(fit, expression) {
+
+  secov <- function(fit, expression) {
+    carout <- car::deltaMethod(fit, expression)
+    abs( carout$SE / carout$Estimate )
+  }
+
+  possibly_se <- purrr::possibly(secov, otherwise = NA)
+
+  possibly_se(fit, expression)
+
 }

@@ -67,6 +67,7 @@ a vector of the ROI weights \code{out$roiweights}, the inpshift value used \code
 Function to fit the SIME Model of Ogden et al (2015) to data to estimate Vnd for a set of TACs.
 }
 \examples{
+\dontrun{
 data(pbr28)
 
 t_tac <- pbr28$tacs[[2]]$Times / 60
@@ -84,6 +85,7 @@ SIMEout <- SIME(t_tac, tacdf, input, Vndgrid,
   weights = weights,
   inpshift = 0.1, vB = 0.05
 )
+}
 }
 \references{
 Ogden RT, Zanderigo F, Parsey RV. Estimation of in vivo nonspecific binding in positron emission tomography studies without requiring a reference region. NeuroImage. 2015 Mar 31;108:234-42.

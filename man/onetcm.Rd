@@ -13,79 +13,98 @@ onetcm(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL,
   printvals = F)
 }
 \arguments{
-\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
-zero. If a time zero frame is not included, it will be added.}
+\item{t_tac}{Numeric vector of times for each frame in minutes. We use the
+time halfway through the frame as well as a zero. If a time zero frame is
+not included, it will be added.}
 
-\item{tac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
-zero: if not included, it is added.}
+\item{tac}{Numeric vector of radioactivity concentrations in the target
+tissue for each frame. We include zero at time zero: if not included, it is
+added.}
 
-\item{input}{Data frame containing the blood, plasma, and parent fraction concentrations over time.  This can be generated
-using the \code{blood_interp} function.}
+\item{input}{Data frame containing the blood, plasma, and parent fraction
+concentrations over time.  This can be generated using the
+\code{blood_interp} function.}
 
-\item{weights}{Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
-if not included, it is added. If not specified, uniform weights will be used.}
+\item{weights}{Optional. Numeric vector of the weights assigned to each frame
+in the fitting. We include zero at time zero: if not included, it is added.
+If not specified, uniform weights will be used.}
 
-\item{inpshift}{Optional. The number of minutes by which to shift the timing of the input data frame forwards or backwards.
-If not specified, this will be fitted, however this takes longer to compute. Recommended to perform once on a large ROI for
-each measurement, and to specify this value for the remainder of the regions.}
+\item{inpshift}{Optional. The number of minutes by which to shift the timing
+of the input data frame forwards or backwards. If not specified, this will
+be fitted, however this takes longer to compute. Recommended to perform
+once on a large ROI for each measurement, and to specify this value for the
+remainder of the regions.}
 
-\item{vB}{Optional. The blood volume fraction.  If not specified, this will be fitted. Recommended to perform once on a large ROI for
-each measurement, and to specify this value for the remainder of the regions.}
+\item{vB}{Optional. The blood volume fraction.  If not specified, this will
+be fitted. Recommended to perform once on a large ROI for each measurement,
+and to specify this value for the remainder of the regions.}
 
-\item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
-This is to assess time stability.}
+\item{frameStartEnd}{Optional: This allows one to specify the beginning and
+final frame to use for modelling, e.g. c(1,20). This is to assess time
+stability.}
 
-\item{K1.start}{Optional. Starting parameter for fitting of K1. Default is 0.1.}
+\item{K1.start}{Optional. Starting parameter for fitting of K1. Default is
+0.1.}
 
-\item{K1.lower}{Optional. Lower bound for the fitting of K1. Default is 0.0001.}
+\item{K1.lower}{Optional. Lower bound for the fitting of K1. Default is
+0.0001.}
 
 \item{K1.upper}{Optional. Upper bound for the fitting of K1. Default is 0.5.}
 
-\item{k2.start}{Optional. Starting parameter for fitting of k2. Default is 0.1.}
+\item{k2.start}{Optional. Starting parameter for fitting of k2. Default is
+0.1.}
 
-\item{k2.lower}{Optional. Lower bound for the fitting of k2. Default is 0.0001.}
+\item{k2.lower}{Optional. Lower bound for the fitting of k2. Default is
+0.0001.}
 
 \item{k2.upper}{Optional. Upper bound for the fitting of k2. Default is 0.5.}
 
-\item{inpshift.start}{Optional. Starting parameter for fitting of inpshift. Default is 0.}
+\item{inpshift.start}{Optional. Starting parameter for fitting of inpshift.
+Default is 0.}
 
-\item{inpshift.lower}{Optional. Lower bound for the fitting of inpshift. Default is -0.5.}
+\item{inpshift.lower}{Optional. Lower bound for the fitting of inpshift.
+Default is -0.5.}
 
-\item{inpshift.upper}{Optional. Upper bound for the fitting of inpshift. Default is 0.5.}
+\item{inpshift.upper}{Optional. Upper bound for the fitting of inpshift.
+Default is 0.5.}
 
-\item{vB.start}{Optional. Starting parameter for fitting of vB. Default is 0.05.}
+\item{vB.start}{Optional. Starting parameter for fitting of vB. Default is
+0.05.}
 
 \item{vB.lower}{Optional. Lower bound for the fitting of vB. Default is 0.01.}
 
 \item{vB.upper}{Optional. Upper bound for the fitting of vB. Default is 0.1.}
 
-\item{multstart_iter}{Number of iterations for starting parameters. Default is 1.
-For more information, see \code{\link[nls.multstart]{nls_multstart}}. If
-specified as 1 for any parameters, the original starting value will be
+\item{multstart_iter}{Number of iterations for starting parameters. Default
+is 1. For more information, see \code{\link[nls.multstart]{nls_multstart}}.
+If specified as 1 for any parameters, the original starting value will be
 used, and the multstart_lower and multstart_upper values ignored.}
 
-\item{multstart_lower}{Optional. Lower bounds for starting parameters. Defaults
-to the lower bounds. Named list of whichever parameters' starting bounds should
-be altered.}
+\item{multstart_lower}{Optional. Lower bounds for starting parameters.
+Defaults to the lower bounds. Named list of whichever parameters' starting
+bounds should be altered.}
 
-\item{multstart_upper}{Optional. Upper bounds for starting parameters. Defaults
-to the upper bounds. Named list of whichever parameters' starting bounds should
-be altered.}
+\item{multstart_upper}{Optional. Upper bounds for starting parameters.
+Defaults to the upper bounds. Named list of whichever parameters' starting
+bounds should be altered.}
 
-\item{printvals}{Optional. This displays the parameter values for each iteration of the
-model. This is useful for debugging and changing starting values and upper and lower
-bounds for parameters.}
+\item{printvals}{Optional. This displays the parameter values for each
+iteration of the model. This is useful for debugging and changing starting
+values and upper and lower bounds for parameters.}
 }
 \value{
-A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit},
-a dataframe containing the TACs both of the data and the fitted values \code{out$tacs},
-the blood input data frame after time shifting \code{input}, a vector of the weights \code{out$weights},
-a logical of whether the inpshift was fitted \code{inpshift_fitted} and a logical of whether the vB was
-fitted \code{vB}.
+A list with a data frame of the fitted parameters \code{out$par},
+  their percentage standard errors \code{out$par.se}, the model fit object
+  \code{out$fit}, a dataframe containing the TACs both of the data and the
+  fitted values \code{out$tacs}, the blood input data frame after time
+  shifting \code{input}, a vector of the weights \code{out$weights}, a
+  logical of whether the inpshift was fitted \code{inpshift_fitted} and a
+  logical of whether the vB was fitted \code{vB}.
 }
 \description{
-Function to fit the One Tissue Compartment Model to data. An irreversible model can also be specified by setting the
-starting value, upper and lower bounds of k2 to 0.
+Function to fit the One Tissue Compartment Model to data. An irreversible
+model can also be specified by setting the starting value, upper and lower
+bounds of k2 to 0.
 }
 \examples{
 

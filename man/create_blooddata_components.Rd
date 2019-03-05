@@ -72,6 +72,41 @@ Ideally, I recommend storing your data according to the BIDS specification
 and using the create_blooddata_bids command instead. Please refer to the PET
 BIDS standard for further details about the inputs.
 }
+\examples{
+\dontrun{
+blooddata2 <- create_blooddata_components(
+   Blood.Discrete.Data.Values.sampleStartTime =
+     blooddata$Data$Blood$Discrete$Data$Values$sampleStartTime,
+   Blood.Discrete.Data.Values.sampleDuration =
+     blooddata$Data$Blood$Discrete$Data$Values$sampleDuration,
+   Blood.Discrete.Data.Values.activity =
+     blooddata$Data$Blood$Discrete$Data$Values$activity,
+   Plasma.Data.Values.sampleStartTime =
+     blooddata$Data$Plasma$Data$Values$sampleStartTime,
+   Plasma.Data.Values.sampleDuration =
+     blooddata$Data$Plasma$Data$Values$sampleDuration,
+   Plasma.Data.Values.activity =
+     blooddata$Data$Plasma$Data$Values$activity,
+   Metabolite.Data.Values.sampleStartTime =
+     blooddata$Data$Metabolite$Data$Values$sampleStartTime,
+   Metabolite.Data.Values.sampleDuration =
+     blooddata$Data$Metabolite$Data$Values$sampleDuration,
+   Metabolite.Data.Values.parentFraction =
+     blooddata$Data$Metabolite$Data$Values$parentFraction,
+   Blood.Continuous.Data.Values.time =
+     blooddata$Data$Blood$Continuous$Data$Values$time,
+   Blood.Continuous.Data.Values.activity =
+     blooddata$Data$Blood$Continuous$Data$Values$activity,
+   Blood.Continuous.WithdrawalRate =
+     blooddata$Data$Blood$Continuous$WithdrawalRate,
+   Blood.Continuous.DispersionConstant =
+     blooddata$Data$Blood$Continuous$DispersionConstant,
+   Blood.Continuous.DispersionConstantUnits =
+     blooddata$Data$Blood$Continuous$DispersionConstantUnits,
+   Blood.Continuous.DispersionCorrected = FALSE,
+   TimeShift = 0)
+   }
+}
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
 }
