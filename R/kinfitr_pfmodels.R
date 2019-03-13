@@ -51,7 +51,7 @@ metab_hill_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
 #'
 #' @examples
 #' \dontrun{
-#' pf <- blooddata_getdata(blooddata, output = "parentFraction")
+#' pf <- bd_getdata(blooddata, output = "parentFraction")
 #' metab_hill(pf$time, pf$parentFraction)
 #' }
 metab_hill <- function(time, parentFraction,
@@ -254,7 +254,7 @@ metab_hillguo_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
 #'
 #' @examples
 #' \dontrun{
-#' pf <- blooddata_getdata(blooddata, output = "parentFraction")
+#' pf <- bd_getdata(blooddata, output = "parentFraction")
 #' metab_hillguo(pf$time, pf$parentFraction)
 #' }
 metab_hillguo <- function(time, parentFraction,
@@ -361,7 +361,7 @@ metab_power_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
 #'
 #' @examples
 #' \dontrun{
-#' pf <- blooddata_getdata(blooddata, output = "parentFraction")
+#' pf <- bd_getdata(blooddata, output = "parentFraction")
 #' metab_power(pf$time, pf$parentFraction)
 #' }
 metab_power <- function(time, parentFraction,
@@ -468,7 +468,7 @@ metab_exponential_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
 #'
 #' @examples
 #' \dontrun{
-#' pf <- blooddata_getdata(blooddata, output = "parentFraction")
+#' pf <- bd_getdata(blooddata, output = "parentFraction")
 #' metab_exponential(pf$time, pf$parentFraction)
 #' }
 metab_exponential <- function(time, parentFraction,
@@ -574,7 +574,7 @@ metab_invgamma_model <- function(time, shape, rate, ppf0 = 1, delay = 0) {
 #'
 #' @examples
 #' \dontrun{
-#' pf <- blooddata_getdata(blooddata, output = "parentFraction")
+#' pf <- bd_getdata(blooddata, output = "parentFraction")
 #' metab_invgamma(pf$time, pf$parentFraction)
 #' }
 metab_invgamma <- function(time, parentFraction,

@@ -406,7 +406,7 @@ blood_addfitted <- function(blooddata, time, predicted,
 
 
 
-# blooddata_getblood <- function(blooddata) {
+# bd_getblood <- function(blooddata) {
 #
 #   blood_discrete <- blooddata$Data$Blood$Discrete$Data$Values
 #
@@ -427,7 +427,7 @@ blood_addfitted <- function(blooddata, time, predicted,
 #
 # }
 #
-# blooddata_getplasma <- function(blooddata) {
+# bd_getplasma <- function(blooddata) {
 #
 #   plasma <- blooddata$Data$Plasma$Data$Values
 #
@@ -440,10 +440,10 @@ blood_addfitted <- function(blooddata, time, predicted,
 #
 # }
 #
-# blooddata_getbpr <- function(blooddata) {
+# bd_getbpr <- function(blooddata) {
 #
-#   blood <- blooddata_getblood(blooddata)
-#   plasma <- blooddata_getplasma(blooddata)
+#   blood <- bd_getblood(blooddata)
+#   plasma <- bd_getplasma(blooddata)
 #
 #   commonvalues <- intersect(plasma$time, blood_discrete$time)
 #
@@ -457,7 +457,7 @@ blood_addfitted <- function(blooddata, time, predicted,
 #
 # }
 #
-# blooddata_getpf <- function(blooddata) {
+# bd_getpf <- function(blooddata) {
 #
 #   pf <- blooddata$Data$Metabolite$Data$Values
 #   pf$time <- pf$sampleStartTime + 0.5*pf$sampleDuration
@@ -467,10 +467,10 @@ blood_addfitted <- function(blooddata, time, predicted,
 # }
 #
 #
-# blooddata_getaif <- function(blooddata) {
+# bd_getaif <- function(blooddata) {
 #
-#   aif <- blooddata_getblood(blooddata)
-#   bpr <- blooddata_getbpr(blooddata)
+#   aif <- bd_getblood(blooddata)
+#   bpr <- bd_getbpr(blooddata)
 #
 #   aif <- dplyr::rename(aif, blood = activity)
 #   aif <- dplyr::mutate(aif,
@@ -508,10 +508,10 @@ blood_addfitted <- function(blooddata, time, predicted,
 #'
 #' @examples
 #' \dontrun{
-#' blooddata_getdata(blooddata)
-#' blooddata_getdata(blooddata, output = "parentFraction")
+#' bd_getdata(blooddata)
+#' bd_getdata(blooddata, output = "parentFraction")
 #' }
-blooddata_getdata <- function(blooddata,
+bd_getdata <- function(blooddata,
                               startTime = 0,
                               stopTime = NULL,
                               interpPoints = 6000,
@@ -1013,10 +1013,10 @@ interpends <- function(x, y, xi, method = "linear", yzero = NULL) {
 #'
 #' @examples
 #' \dontrun{
-#' blooddata <- blooddata_blood_dispcor(blooddata, 2.5)
+#' blooddata <- bd_blood_dispcor(blooddata, 2.5)
 #' }
 #'
-blooddata_blood_dispcor <- function(blooddata, tau, timedelta = NULL,
+bd_blood_dispcor <- function(blooddata, tau, timedelta = NULL,
                                     keep_interpolated = T, smooth_iterations = 0) {
   if (is.null(blooddata$Data$Blood$Continuous)) {
     stop("There is no continuous blood data to
@@ -1073,7 +1073,7 @@ plot_blooddata <- function(blooddata,
 
   # Predicted
 
-  input <- blooddata_getdata(blooddata, startTime, stopTime, interpPoints)
+  input <- bd_getdata(blooddata, startTime, stopTime, interpPoints)
   input$`Blood-Plasma Ratio` <- input$Blood / input$Plasma
   input <- dplyr::rename(input, "Parent Fraction" = ParentFraction)
 
@@ -1088,19 +1088,19 @@ plot_blooddata <- function(blooddata,
 
   # Measured data
 
-  pf <- blooddata_getdata(blooddata, startTime, stopTime, interpPoints, output = "parentFraction")
+  pf <- bd_getdata(blooddata, startTime, stopTime, interpPoints, output = "parentFraction")
   pf <- dplyr::select(pf, Time = time, Value = parentFraction)
   pf <- dplyr::mutate(pf, Outcome = "Parent Fraction", Measurement = "Discrete")
 
-  bpr <- blooddata_getdata(blooddata, startTime, stopTime, interpPoints, output = "BPR")
+  bpr <- bd_getdata(blooddata, startTime, stopTime, interpPoints, output = "BPR")
   bpr <- dplyr::select(bpr, Time = time, Value = bpr)
   bpr <- dplyr::mutate(bpr, Outcome = "Blood-Plasma Ratio", Measurement = "Discrete")
 
-  blood <- blooddata_getdata(blooddata, startTime, stopTime, interpPoints, output = "Blood")
+  blood <- bd_getdata(blooddata, startTime, stopTime, interpPoints, output = "Blood")
   blood <- dplyr::select(blood, Time = time, Value = activity, Measurement = Method)
   blood <- dplyr::mutate(blood, Outcome = "Blood", Value = Value / bloodmax)
 
-  aif <- blooddata_getdata(blooddata, startTime, stopTime, interpPoints, output = "AIF")
+  aif <- bd_getdata(blooddata, startTime, stopTime, interpPoints, output = "AIF")
   aif <- dplyr::select(aif, Time = time, Value = aif, Measurement = Method)
   aif <- dplyr::mutate(aif, Outcome = "AIF", Value = Value / bloodmax)
 
@@ -1141,7 +1141,7 @@ create_interpinput <- function(blood_input, startTime = 0,
   }
 
   if ("blooddata" %in% class(blood_input)) {
-    blood_input <- blooddata_getdata(
+    blood_input <- bd_getdata(
       blood_input,
       startTime,
       stopTime,

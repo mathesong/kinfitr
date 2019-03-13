@@ -55,25 +55,25 @@ test_that("plotting blooddata works", {
 })
 
 test_that("getting data from blooddata works", {
-  blood <- blooddata_getdata(blooddata, output = "Blood")
+  blood <- bd_getdata(blooddata, output = "Blood")
   expect_true(any(class(blood) == "tbl"))
 
-  bpr <- blooddata_getdata(blooddata, output = "BPR")
+  bpr <- bd_getdata(blooddata, output = "BPR")
   expect_true(any(class(bpr) == "tbl"))
 
-  pf <- blooddata_getdata(blooddata, output = "parentFraction")
+  pf <- bd_getdata(blooddata, output = "parentFraction")
   expect_true(any(class(pf) == "tbl"))
 
-  aif <- blooddata_getdata(blooddata, output = "AIF")
+  aif <- bd_getdata(blooddata, output = "AIF")
   expect_true(any(class(aif) == "tbl"))
 
-  input <- blooddata_getdata(blooddata)
+  input <- bd_getdata(blooddata)
   expect_true(any(class(aif) == "tbl"))
 })
 
 
 test_that("addfit works", {
-  pf <- blooddata_getdata(blooddata, output = "parentFraction")
+  pf <- bd_getdata(blooddata, output = "parentFraction")
   pf_fit <- metab_hillguo(pf$time, pf$parentFraction)
   blooddata <- blood_addfit(blooddata, fit = pf_fit, modeltype = "parentFraction")
 
@@ -83,7 +83,7 @@ test_that("addfit works", {
 })
 
 test_that("addfitted works", {
-  pf <- blooddata_getdata(blooddata, output = "parentFraction")
+  pf <- bd_getdata(blooddata, output = "parentFraction")
   pf_fit <- metab_hillguo(pf$time, pf$parentFraction)
 
   fitted <- tibble::tibble(
@@ -103,7 +103,7 @@ test_that("addfitted works", {
 })
 
 test_that("addfitpars works", {
-  pf <- blooddata_getdata(blooddata, output = "parentFraction")
+  pf <- bd_getdata(blooddata, output = "parentFraction")
   pf_fit <- metab_hillguo(pf$time, pf$parentFraction)
 
   fitpars <- as.list(coef(pf_fit))
@@ -119,7 +119,7 @@ test_that("addfitpars works", {
 })
 
 test_that("bloodsplines works", {
-  blood <- blooddata_getdata(blooddata, output = "Blood")
+  blood <- bd_getdata(blooddata, output = "Blood")
   blood_fit <- blmod_splines(blood$time,
     blood$activity,
     Method = blood$Method

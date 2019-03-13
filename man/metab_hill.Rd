@@ -37,7 +37,7 @@ This function fits a classic Hill Function to parent fraction data.
 }
 \examples{
 \dontrun{
-pf <- blooddata_getdata(blooddata, output = "parentFraction")
+pf <- bd_getdata(blooddata, output = "parentFraction")
 metab_hill(pf$time, pf$parentFraction)
 }
 }

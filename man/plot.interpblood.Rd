@@ -19,7 +19,7 @@ This function provides an idea of how the input object looks.
 }
 \examples{
 \dontrun{
-input <- blooddata_getdata(blooddata)
+input <- bd_getdata(blooddata)
 plot(input)
 }
 

@@ -1,3 +1,21 @@
+#' Blood Model: Splines
+#'
+#' Fits two or three (if both discrete and continuous) splines to blood or AIF data to smooth it
+#'
+#' @param time The time of each measurement in seconds
+#' @param activity The radioactivity of each measurement
+#' @param Method Optional. The method of collection, i.e. "Discrete" or "Continuous"
+#' @param weights Optional. Weights of each measurement.
+#'
+#' @return A model fit including all of the individual models.
+#' @export
+#'
+#' @examples
+#' blooddata <- create_blooddata_bids(pbr28$jsondata[[1]])
+#' blood <- bd_getdata(blooddata, output = "Blood")
+#' blood_fit <- blmod_splines(blood$time,
+#'                            blood$activity,
+#'                            Method = blood$Method)
 blmod_splines <- function(time, activity, Method = NULL, weights = NULL) {
   if (is.null(weights)) {
     weights <- rep(1, length(time))
@@ -67,6 +85,24 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL) {
 }
 
 
+# #' Predict method for blood splines
+# #'
+# #' Predicts values for new times for blood splines fits.
+# #'
+# #' @param object Blood splines fit.
+# #' @param newdata A new data list, including times to be predicted for.
+# #'
+# #' @return Model predictions
+# #' @export
+# #'
+# #' @examples
+# #' blooddata <- create_blooddata_bids(pbr28$jsondata[[1]])
+# #' blood <- bd_getdata(blooddata, output = "Blood")
+# #' blood_fit <- blmod_splines(blood$time,
+# #'                            blood$activity,
+# #'                            Method = blood$Method)
+# #'
+# #' predict(blood_fit, newdata=list(time=1:10))
 predict.blood_splines <- function(object, newdata = NULL) {
   if (is.null(newdata)) {
     pred_before <- predict(object$before)

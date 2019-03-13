@@ -37,7 +37,7 @@ This function fits the modification of the Hill function by Guo et al. (2013) to
 }
 \examples{
 \dontrun{
-pf <- blooddata_getdata(blooddata, output = "parentFraction")
+pf <- bd_getdata(blooddata, output = "parentFraction")
 metab_hillguo(pf$time, pf$parentFraction)
 }
 }

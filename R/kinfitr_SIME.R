@@ -1,39 +1,61 @@
 #' Simultaneous Estimation of Non-Displaceable Binding (SIME)
 #'
-#' Function to fit the SIME Model of Ogden et al (2015) to data to estimate Vnd for a set of TACs.
+#' Function to fit the SIME Model of Ogden et al (2015) to data to estimate Vnd
+#' for a set of TACs.
 #'
-#' @param t_tac Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
-#' zero. If a time zero frame is not included, it will be added.
-#' @param tacdf Named dataframe of TACs in wide format, i.e. each TAC should be a column.
-#' @param input Data frame containing the blood, plasma, and parent fraction concentrations over time.  This can be generated
-#' using the \code{blood_interp} function.
-#' @param Vndgrid The grid of Vnd values which will be tested to see which one has the best fit.
-#' @param weights Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
-#' if not included, it is added. If not specified, uniform weights will be used.
-#' @param roiweights Optional. Numeric vector of the weights assigned to each ROI in the fitting. If not specified, uniform weights
-#' will be used.
-#' @param inpshift Optional. The number of minutes by which to shift the timing of the input data frame forwards or backwards.
-#' If not specified, this will be set to 0. This can be fitted using 1TCM or 2TCM.
-#' @param vB Optional. The blood volume fraction.  If not specified, this will be set to 0.05. This can be fitted using 1TCM or 2TCM.
-#' @param twotcmstart Optional. The function can fit a 2TCM model to one of the ROIs and use the estimated k2, k3 and k4 as starting
-#' parameters for the rest of the fits. If left alone, these parameters will be specified as below. If one wishes to run the 2TCM to
-#' start off, use a numeric value to specify which column of \code{tacdf} to use for fitting this: best to use the largest ROI.
-#' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
-#' This is to assess time stability.
-#' @param k2.start Optional. Starting parameter for fitting of k2. Default is 0.1.
+#' @param t_tac Numeric vector of times for each frame in minutes. We use the
+#'   time halfway through the frame as well as a zero. If a time zero frame is
+#'   not included, it will be added.
+#' @param tacdf Named dataframe of TACs in wide format, i.e. each TAC should be
+#'   a column.
+#' @param input Data frame containing the blood, plasma, and parent fraction
+#'   concentrations over time.  This can be generated using the
+#'   \code{blood_interp} function.
+#' @param Vndgrid The grid of Vnd values which will be tested to see which one
+#'   has the best fit.
+#' @param weights Optional. Numeric vector of the weights assigned to each frame
+#'   in the fitting. We include zero at time zero: if not included, it is added.
+#'   If not specified, uniform weights will be used.
+#' @param roiweights Optional. Numeric vector of the weights assigned to each
+#'   ROI in the fitting. If not specified, uniform weights will be used.
+#' @param inpshift Optional. The number of minutes by which to shift the timing
+#'   of the input data frame forwards or backwards. If not specified, this will
+#'   be set to 0. This can be fitted using 1TCM or 2TCM.
+#' @param vB Optional. The blood volume fraction.  If not specified, this will
+#'   be set to 0.05. This can be fitted using 1TCM or 2TCM.
+#' @param twotcmstart Optional. The function can fit a 2TCM model to one of the
+#'   ROIs and use the estimated k2, k3 and k4 as starting parameters for the
+#'   rest of the fits. If left alone, these parameters will be specified as
+#'   below. If one wishes to run the 2TCM to start off, use a numeric value to
+#'   specify which column of \code{tacdf} to use for fitting this: best to use
+#'   the largest ROI.
+#' @param frameStartEnd Optional: This allows one to specify the beginning and
+#'   final frame to use for modelling, e.g. c(1,20). This is to assess time
+#'   stability.
+#' @param k2.start Optional. Starting parameter for fitting of k2. Default is
+#'   0.1.
 #' @param k2.lower Optional. Lower bound for the fitting of k2. Default is 0.
 #' @param k2.upper Optional. Upper bound for the fitting of k2. Default is 0.5.
-#' @param k3.start Optional. Starting parameter for fitting of k3. Default is 0.1.
+#' @param k3.start Optional. Starting parameter for fitting of k3. Default is
+#'   0.1.
 #' @param k3.lower Optional. Lower bound for the fitting of k3. Default is 0.
 #' @param k3.upper Optional. Upper bound for the fitting of k3. Default is 0.5.
-#' @param k4.start Optional. Starting parameter for fitting of k4. Default is 0.1.
+#' @param k4.start Optional. Starting parameter for fitting of k4. Default is
+#'   0.1.
 #' @param k4.lower Optional. Lower bound for the fitting of k4. Default is 0.
 #' @param k4.upper Optional. Upper bound for the fitting of k4. Default is 0.5.
+#' @param success_cutoff Optional. Should values of Vnd for which a certain
+#'   proportion of ROIs failed be included? Default is 0.5, i.e. 50% should have
+#'   successfully fitted.
 #'
-#' @return A list with a data frame of the fitted parameter \code{out$par}, the dataframe containing the times and TACs \code{out$tacs},
-#' the mean cost values after fitting (after ROI weighting) \code{out$fitvals}, the ROI cost values after fitting (before ROI
-#' weighting) \code{out$roifits}, the blood input data frame after time shifting \code{input}, a vector of the weights \code{out$weights},
-#' a vector of the ROI weights \code{out$roiweights}, the inpshift value used \code{inpshift} and the vB value used \code{out$vB}.
+#' @return A list with a data frame of the fitted parameter \code{out$par}, the
+#'   dataframe containing the times and TACs \code{out$tacs}, the mean cost
+#'   values after fitting (after ROI weighting) \code{out$fitvals}, the ROI cost
+#'   values after fitting (before ROI weighting) \code{out$roifits}, the blood
+#'   input data frame after time shifting \code{input}, a vector of the weights
+#'   \code{out$weights}, a vector of the ROI weights \code{out$roiweights}, the
+#'   inpshift value used \code{inpshift} and the vB value used \code{out$vB},
+#'   and the success cutoff \code{success_cutoff}.
 #'
 #'
 #' @examples
@@ -60,7 +82,9 @@
 #'
 #' @export
 #'
-#' @references Ogden RT, Zanderigo F, Parsey RV. Estimation of in vivo nonspecific binding in positron emission tomography studies without requiring a reference region. NeuroImage. 2015 Mar 31;108:234-42.
+#' @references Ogden RT, Zanderigo F, Parsey RV. Estimation of in vivo
+#'   nonspecific binding in positron emission tomography studies without
+#'   requiring a reference region. NeuroImage. 2015 Mar 31;108:234-42.
 #'
 #' @importFrom dplyr "%>%"
 
@@ -68,7 +92,8 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights = NULL, roiweights = NULL
                  inpshift = 0, vB = NULL, twotcmstart = NULL, frameStartEnd = NULL,
                  k2.start = 0.1, k2.lower = 0, k2.upper = 0.5,
                  k3.start = 0.1, k3.lower = 0, k3.upper = 0.5,
-                 k4.start = 0.1, k4.lower = 0, k4.upper = 0.5) {
+                 k4.start = 0.1, k4.lower = 0, k4.upper = 0.5,
+                 success_cutoff = 0.5) {
 
   # Tidying
 
@@ -201,17 +226,21 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights = NULL, roiweights = NULL
     success = purrr::map_lgl(fit, ~ is.data.frame(.x))
   )
 
+  fit_success = tidypars
+  fit_success = dplyr::group_by(fit_success, Vnd)
+  fit_success = dplyr::summarise(fit_success, prop_success=mean(success))
+
   tidypars <- dplyr::filter(tidypars, success == T)
   tidypars <- dplyr::select(tidypars, -tacs, -success)
   tidypars <- tidyr::unnest(tidypars)
   tidypars <- dplyr::left_join(Regions, tidypars, by = "Region")
   tidypars <- dplyr::mutate(tidypars, RSSw = RSS * roiweights)
-
+  tidypars <- dplyr::left_join(tidypars, fit_success)
 
   # Calculating SSmean
 
-  SSmean <- dplyr::select(tidypars, Region, roiweights, Vnd, RSSw)
-
+  SSmean <- dplyr::select(tidypars, Region, roiweights, Vnd, RSSw, prop_success)
+  SSmean <- dplyr::filter(SSmean, prop_success >= success_cutoff)
   SSmean <- dplyr::group_by(SSmean, Vnd)
   SSmean <- dplyr::summarise(SSmean, RSSw = mean(RSSw))
   SSmean <- dplyr::ungroup(SSmean)
@@ -230,7 +259,8 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights = NULL, roiweights = NULL
 
   out <- list(
     par = par, tacs = tacs, fitvals = fitvals, roifits = tidypars, input = input,
-    weights = weights, roiweights = roiweights, inpshift = inpshift, vB = vB, model = "SIME"
+    weights = weights, roiweights = roiweights, inpshift = inpshift, vB = vB,
+    success_cutoff = success_cutoff, model = "SIME"
   )
 
   class(out) <- c("SIME", "kinfit")
@@ -329,9 +359,10 @@ plot_SIMEfit <- function(SIMEout) {
     max = max(roifits$RSSw)
   )
 
+  roifits$Include = roifits$prop_success >= SIMEout$success_cutoff
 
   outplot <- ggplot(roifits, aes(x = Vnd, y = RSSw)) +
-    geom_point(aes(colour = Region)) +
+    geom_point(aes(colour = Region, shape=Include)) +
     geom_line(data = fitvals, aes(x = Vnd, y = RSSw), size = 1) +
     geom_vline(xintercept = SIMEout$par$Vnd, linetype = "dashed") +
     xlab(expression(V[ND])) +
@@ -339,7 +370,9 @@ plot_SIMEfit <- function(SIMEout) {
       "Cost",
       breaks = scales::trans_breaks("log10", function(x) 10^x),
       labels = scales::trans_format("log10", scales::math_format(10^.x))
-    )
+    ) +
+    scale_shape_manual(values=c(1, 19)) +
+    guides(shape=FALSE)
 
   return(outplot)
 }
