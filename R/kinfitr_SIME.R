@@ -235,7 +235,7 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights = NULL, roiweights = NULL
   tidypars <- tidyr::unnest(tidypars)
   tidypars <- dplyr::left_join(Regions, tidypars, by = "Region")
   tidypars <- dplyr::mutate(tidypars, RSSw = RSS * roiweights)
-  tidypars <- dplyr::left_join(tidypars, fit_success)
+  tidypars <- dplyr::left_join(tidypars, fit_success, by = "Vnd")
 
   # Calculating SSmean
 
@@ -359,10 +359,10 @@ plot_SIMEfit <- function(SIMEout) {
     max = max(roifits$RSSw)
   )
 
-  roifits$Include = roifits$prop_success >= SIMEout$success_cutoff
+  roifits$Exclude = roifits$prop_success < SIMEout$success_cutoff
 
   outplot <- ggplot(roifits, aes(x = Vnd, y = RSSw)) +
-    geom_point(aes(colour = Region, shape=Include)) +
+    geom_point(aes(colour = Region, shape=Exclude)) +
     geom_line(data = fitvals, aes(x = Vnd, y = RSSw), size = 1) +
     geom_vline(xintercept = SIMEout$par$Vnd, linetype = "dashed") +
     xlab(expression(V[ND])) +
@@ -371,7 +371,7 @@ plot_SIMEfit <- function(SIMEout) {
       breaks = scales::trans_breaks("log10", function(x) 10^x),
       labels = scales::trans_format("log10", scales::math_format(10^.x))
     ) +
-    scale_shape_manual(values=c(1, 19)) +
+    scale_shape_manual(values=c(19, 1)) +
     guides(shape=FALSE)
 
   return(outplot)

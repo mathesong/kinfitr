@@ -75,7 +75,7 @@ test_that("getting data from blooddata works", {
 test_that("addfit works", {
   pf <- bd_getdata(blooddata, output = "parentFraction")
   pf_fit <- metab_hillguo(pf$time, pf$parentFraction)
-  blooddata <- blood_addfit(blooddata, fit = pf_fit, modeltype = "parentFraction")
+  blooddata <- bd_addfit(blooddata, fit = pf_fit, modeltype = "parentFraction")
 
   bdplot <- plot(blooddata)
 
@@ -91,7 +91,7 @@ test_that("addfitted works", {
   )
   fitted$pred <- predict(pf_fit, newdata = list(time = fitted$time))
 
-  blooddata <- blood_addfitted(blooddata,
+  blooddata <- bd_addfitted(blooddata,
     time = fitted$time,
     predicted = fitted$pred,
     modeltype = "parentFraction"
@@ -108,7 +108,7 @@ test_that("addfitpars works", {
 
   fitpars <- as.list(coef(pf_fit))
 
-  blooddata <- blood_addfitpars(blooddata,
+  blooddata <- bd_addfitpars(blooddata,
     modelname = "metab_hillguo_model", fitpars = fitpars,
     modeltype = "parentFraction"
   )
@@ -125,7 +125,7 @@ test_that("bloodsplines works", {
     Method = blood$Method
   )
 
-  blooddata <- blood_addfit(blooddata,
+  blooddata <- bd_addfit(blooddata,
     fit = blood_fit,
     modeltype = "Blood"
   )

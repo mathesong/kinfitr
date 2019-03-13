@@ -271,9 +271,9 @@ create_blooddata_bids <- function(bids_data, TimeShift = 0) {
 #'
 #' @examples
 #' \dontrun{
-#' blooddata <- blood_addfit(blooddata, hillfit, "parentFraction")
+#' blooddata <- bd_addfit(blooddata, hillfit, "parentFraction")
 #' }
-blood_addfit <- function(blooddata, fit, modeltype = c(
+bd_addfit <- function(blooddata, fit, modeltype = c(
                            "Blood",
                            "BPR",
                            "parentFraction",
@@ -321,9 +321,9 @@ blood_addfit <- function(blooddata, fit, modeltype = c(
 #'
 #' @examples
 #' \dontrun{
-#' blooddata <- blood_addfitpars(blooddata, hillfit_model, hillfit$pars, "parentFraction")
+#' blooddata <- bd_addfitpars(blooddata, hillfit_model, hillfit$pars, "parentFraction")
 #' }
-blood_addfitpars <- function(blooddata, modelname, fitpars,
+bd_addfitpars <- function(blooddata, modelname, fitpars,
                              modeltype = c("Blood", "BPR", "parentFraction", "AIF")) {
 
 
@@ -379,12 +379,12 @@ blood_addfitpars <- function(blooddata, modelname, fitpars,
 #'
 #' @examples
 #' \dontrun{
-#' blooddata <- blood_addfitpars(
+#' blooddata <- bd_addfitpars(
 #'   blooddata, matlabout$time,
 #'   matlabout$predicted, "AIF"
 #' )
 #' }
-blood_addfitted <- function(blooddata, time, predicted,
+bd_addfitted <- function(blooddata, time, predicted,
                             modeltype = c("Blood", "BPR", "parentFraction", "AIF")) {
   if (length(modeltype) > 1) {
     stop("modeltype should be defined for the model as one of
