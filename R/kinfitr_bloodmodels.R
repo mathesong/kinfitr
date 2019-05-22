@@ -227,6 +227,29 @@ predict.blood_splines <- function(object, newdata = NULL) {
   return(preds)
 }
 
+
+#' Create starting parameters for an exponential blood model
+#'
+#' This function guesses reasonable starting parameters for exponential blood
+#' models. I use the suggestions from page 515 of Pinheiro & Bates Mixed-Effects
+#' Models in S and S-PLUS for creating the exponential starting parameters.
+#'
+#' @param time The time of each measurement.
+#' @param activity The radioactivity of each measurement.
+#' @param fit_exp3 Should a third exponential be fitted, or is a bi-exponential fit desired? Default is TRUE.
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @return A list of the starting parameters
+#' @export
+#'
+#' @examples
+#' blooddata <- create_blooddata_bids(pbr28$jsondata[[1]])
+#' blooddata <- bd_blood_dispcor(blooddata,
+#'                  tau = blooddata$Data$Blood$Continuous$DispersionConstant)
+#' aif <- bd_getdata(blooddata, output = "AIF")
+#' start <- blmod_exp_startpars(aif$time,
+#'                            aif$aif)
 blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE) {
 
   startpars <- list()
@@ -249,46 +272,55 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE) {
   blood_decay <- blood[blood$time > startpars$peaktime,]
   blood_decay$time <- blood_decay$time - startpars$peaktime
 
+
+  # Exponentials
+
   ## Third Exponential
-  blood_exp3 <- blood_decay[(nrow(blood_decay)-1):nrow(blood_decay) , ]
 
-  gamma = ( log(blood_exp3$activity[1]) - log(blood_exp3$activity[2]) ) /
-    ( blood_exp3$time[2] - blood_exp3$time[1] )
+  blood_exp_part3 <- dplyr::filter(blood_decay,
+                                   dplyr::between(time,
+                                                  (1/10)*max(time),
+                                                  max(time)))
 
-  C = blood_exp3$activity[2] * exp( gamma * ( blood_exp3$time[2] ) )
+  exp3_mod <- lm(log(abs(activity)) ~ time,
+                 data=blood_exp_part3)
+
+  exp3_coef <-  as.numeric(coef(exp3_mod))
+
+  C <- exp(exp3_coef[1])
+  gamma <- exp(log(abs(exp3_coef[2])))
 
   if(fit_exp3) {
     startpars$C     <- C
-    startpars$gamma <- ifelse(gamma < 0, 0, gamma)
+    startpars$gamma <- gamma
   } else {
     startpars$C     <- 0
     startpars$gamma <- 0
 
     startpars$B     <- C
-    startpars$beta  <-  ifelse(gamma < 0, 0, gamma)
+    startpars$beta  <-  gamma
   }
 
   ## Second Exponential
-  blood_decay$activity_2ex <- blood_decay$activity - C*exp( gamma * (blood_decay$time) )
+  blood_decay$activity_2ex <- blood_decay$activity -
+    C*exp( -gamma * (blood_decay$time) )
 
-  timepoint2 <- max(blood_decay$time / 9)
-  which_timepoint2 <- which(blood_decay$time ==
-                              max(blood_decay$time[ blood_decay$time < timepoint2]) )
-  blood_exp2 <- blood_decay[which_timepoint2:(which_timepoint2+1) , ]
+  blood_exp_part2 <- dplyr::filter(blood_decay,
+                                   dplyr::between(time,
+                                                  (1/60)*max(time),
+                                                  (1/10)*max(time)))
 
-  # #### If both are >0, then replace with data after removing other exps
-  # blood_exp2$activity <- ifelse( all(blood_exp2$activity_2ex>0),
-  #                                yes = blood_exp2$activity_2ex,
-  #                                no = blood_exp2$activity)
+  exp2_mod <- lm(log(abs(activity_2ex)) ~ time,
+                 data=blood_exp_part2)
 
-  beta = ( log(blood_exp2$activity[1]) - log(blood_exp2$activity[2]) ) /
-    ( blood_exp2$time[2] - blood_exp2$time[1] )
+  exp2_coef <-  as.numeric(coef(exp2_mod))
 
-  B = blood_exp2$activity[2] * exp( gamma * ( blood_exp2$time[2] ) )
+  B <- exp(exp2_coef[1])
+  beta <- exp(log(abs(exp2_coef[2])))
 
   if(fit_exp3) {
     startpars$B     <- B
-    startpars$beta  <- ifelse(beta < 0, 0, beta)
+    startpars$beta  <- beta
 
     blood_decay$activity_1ex <- blood_decay$activity_2ex -
       B*exp( -beta * (blood_decay$time) )
@@ -299,20 +331,24 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE) {
 
   ## First Exponential
 
-  blood_exp1 <- blood_decay[c(1,3) , ]
+  blood_decay$activity_1ex <- blood_decay$activity_2ex -
+    B*exp( -beta * (blood_decay$time) )
 
-  # #### If both are >0, then replace with data after removing other exps
-  # blood_exp1$activity <- ifelse( all(blood_exp1$activity_1ex>0),
-  #                                yes = blood_exp1$activity_1ex,
-  #                                no = blood_exp1$activity)
+  blood_exp_part1 <- dplyr::filter(blood_decay,
+                                   dplyr::between(time,
+                                                  min(time),
+                                                  (1/60)*max(time)))
 
-  alpha = ( log(blood_exp1$activity[1]) - log(blood_exp1$activity[2]) ) /
-    ( blood_exp1$time[2] - blood_exp1$time[1] )
+  exp1_mod <- lm(log(abs(activity_1ex)) ~ time,
+                 data=blood_exp_part1)
 
-  A = blood_exp1$activity[2] * exp( gamma * ( blood_exp1$time[2] ) )
+  exp1_coef <-  as.numeric(coef(exp1_mod))
 
-  startpars$A      <- A
-  startpars$alpha  <- ifelse(alpha < 0, 0, alpha)
+  A <- exp(exp1_coef[1])
+  alpha <- exp(log(abs(exp1_coef[2])))
+
+  startpars$A <- A
+  startpars$alpha <- alpha
 
   # return the list in correct order
   out <- list(
@@ -330,6 +366,7 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE) {
   return(out)
 
 }
+
 
 #' Fit an exponential model to AIF data with the ability to model the peak. In
 #' other words, this model fits a single NLS model which describes the rise and
@@ -400,10 +437,10 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE) {
 #' blooddata <- bd_blood_dispcor(blooddata,
 #'                  tau = blooddata$Data$Blood$Continuous$DispersionConstant)
 #' aif <- bd_getdata(blooddata, output = "AIF")
-#' blood_fit <- blmod_exp_fitpeak(aif$time,
+#' blood_fit <- blmod_exp(aif$time,
 #'                            aif$aif,
 #'                            Method = aif$Method, multstart_iter = 1)
-blmod_exp_fitpeak <- function(time, activity, Method = NULL,
+blmod_exp <- function(time, activity, Method = NULL,
                          weights = NULL,
                          fit_t0=TRUE, fit_exp3=TRUE,
                          fit_peaktime=FALSE, fit_peakval=FALSE,
@@ -604,7 +641,7 @@ blmod_exp_fitpeak <- function(time, activity, Method = NULL,
     blood = blood
   )
 
-  class(out) <- c("blood_exp_fitpeak", class(out))
+  class(out) <- c("blood_exp", class(out))
 
   return(out)
 
@@ -614,7 +651,7 @@ blmod_exp_fitpeak <- function(time, activity, Method = NULL,
 #' Fit an exponential model to AIF data using the measured peak
 #'
 #' This model fits a bi- or tri-exponential model to AIF data. This model, in
-#' contrast to the \code{blmod_exp_peakfit()} model, uses the measured peak as
+#' contrast to the \code{blmod_expsep()} model, uses the measured peak as
 #' the peak, and describes the rise by interpolating between t0 and the peak,
 #' and fits an exponential model only to the fall of the curve. This model is
 #' more robust, but less flexible than the fitpeak model.
@@ -668,10 +705,10 @@ blmod_exp_fitpeak <- function(time, activity, Method = NULL,
 #' blooddata <- bd_blood_dispcor(blooddata,
 #'                  tau = blooddata$Data$Blood$Continuous$DispersionConstant)
 #' aif <- bd_getdata(blooddata, output = "AIF")
-#' blood_fit <- blmod_exp_setpeak(aif$time,
+#' blood_fit <- blmod_exp_sep(aif$time,
 #'                            aif$aif,
 #'                            Method = aif$Method, multstart_iter = 1)
-blmod_exp_setpeak <- function(time, activity, Method = NULL,
+blmod_exp_sep <- function(time, activity, Method = NULL,
                              weights = NULL,
                              fit_exp3=TRUE,
                              peaktime_val = NULL, peakval = NULL, t0 = NULL,
@@ -738,7 +775,7 @@ blmod_exp_setpeak <- function(time, activity, Method = NULL,
     start$gamma <- NULL
   }
 
-  ## Fix starting parameters for setpeak
+  ## Fix starting parameters for sep
 
   ### Peaktime
   peaktime_val <- startvals$peaktime
@@ -850,12 +887,35 @@ blmod_exp_setpeak <- function(time, activity, Method = NULL,
     blood = blood
   )
 
-  class(out) <- c("blood_exp_setpeak", class(out))
+  class(out) <- c("blood_exp_sep", class(out))
 
   return(out)
 
 }
 
+
+
+#' Tri-exponential model for fitting of arterial input functions
+#'
+#' This is the model itself for the tri-exponential model of AIF decay, in which
+#' both the rise and fall are modelled together in the same nonlinear model.
+#'
+#' @param time Time of each sample.
+#' @param t0 The delay time. This is the point at which the linear rise begins.
+#' @param peaktime The time of the peak.
+#' @param peakval The radioactivity value of the peak.
+#' @param A The multiplier of the first exponential.
+#' @param alpha The rate of the first exponential.
+#' @param B The multiplier of the second exponential.
+#' @param beta The rate of the second exponential.
+#' @param C The multiplier of the third exponential.
+#' @param gamma The rate of the third exponential.
+#'
+#' @return Model predictions
+#' @export
+#'
+#' @examples
+#' blmod_triexp_model(1:100, 2, 5, 100, 80, 0.5, 15, 0.1, 5, 0.01)
 blmod_triexp_model <- function(time, t0, peaktime, peakval, A, alpha,
                                B, beta, C, gamma) {
 
@@ -887,13 +947,13 @@ blmod_triexp_model <- function(time, t0, peaktime, peakval, A, alpha,
 
 }
 
-predict.blood_exp_fitpeak <- function(object, newdata = NULL) {
+predict.blood_exp <- function(object, newdata = NULL) {
 
   predict(object$fit, newdata = newdata)
 
 }
 
-predict.blood_exp_setpeak <- function(object, newdata = NULL) {
+predict.blood_exp_sep <- function(object, newdata = NULL) {
 
   if(is.null(newdata)) {
     newdata <- list(

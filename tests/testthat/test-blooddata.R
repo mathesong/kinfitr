@@ -2,7 +2,7 @@ context("test-blooddata")
 
 data(pbr28)
 
-blooddata <- create_blooddata_bids(pbr28$jsondata[[3]])
+blooddata <- create_blooddata_bids(pbr28$jsondata[[5]])
 
 blooddata <- bd_blood_dispcor(blooddata,
                 tau = blooddata$Data$Blood$Continuous$DispersionConstant)
@@ -138,11 +138,11 @@ test_that("bloodsplines works", {
   expect_true(any(class(bdplot) == "ggplot"))
 })
 
-test_that("exp_fitpeak works", {
+test_that("exponential works", {
 
   aif <- bd_getdata(blooddata, output = "AIF")
 
-  blood_fit <- blmod_exp_fitpeak(aif$time,
+  blood_fit <- blmod_exp(aif$time,
                              aif$aif,
                              Method = aif$Method,
                              multstart_iter = 1)
@@ -157,11 +157,11 @@ test_that("exp_fitpeak works", {
   expect_true(any(class(bdplot) == "ggplot"))
 })
 
-test_that("exp_fitpeak 2exp works", {
+test_that("exponential 2exp works", {
 
   aif <- bd_getdata(blooddata, output = "AIF")
 
-  blood_fit <- blmod_exp_fitpeak(aif$time,
+  blood_fit <- blmod_exp(aif$time,
                                  aif$aif,
                                  Method = aif$Method,
                                  multstart_iter = 1, fit_exp3 = F)
@@ -177,11 +177,11 @@ test_that("exp_fitpeak 2exp works", {
 })
 
 
-test_that("exp_fitpeak peakfitting works", {
+test_that("exponential peakfitting works", {
 
   aif <- bd_getdata(blooddata, output = "AIF")
 
-  blood_fit <- blmod_exp_fitpeak(aif$time,
+  blood_fit <- blmod_exp(aif$time,
                                  aif$aif,
                                  Method = aif$Method,
                                  multstart_iter = 1,
@@ -197,11 +197,11 @@ test_that("exp_fitpeak peakfitting works", {
   expect_true(any(class(bdplot) == "ggplot"))
 })
 
-test_that("exp_fitpeak without method works", {
+test_that("exponential without method works", {
 
   aif <- bd_getdata(blooddata, output = "AIF")
 
-  blood_fit <- blmod_exp_fitpeak(aif$time,
+  blood_fit <- blmod_exp(aif$time,
                                  aif$aif,
                                  multstart_iter = 1)
 
@@ -215,11 +215,11 @@ test_that("exp_fitpeak without method works", {
   expect_true(any(class(bdplot) == "ggplot"))
 })
 
-test_that("exp_setpeak works", {
+test_that("exp_sep works", {
 
   aif <- bd_getdata(blooddata, output = "AIF")
 
-  blood_fit <- blmod_exp_setpeak(aif$time,
+  blood_fit <- blmod_exp_sep(aif$time,
                                  aif$aif,
                                  Method = aif$Method,
                                  multstart_iter = 1)
@@ -235,11 +235,11 @@ test_that("exp_setpeak works", {
 })
 
 
-test_that("exp_setpeak without method works", {
+test_that("exp_sep without method works", {
 
   aif <- bd_getdata(blooddata, output = "AIF")
 
-  blood_fit <- blmod_exp_setpeak(aif$time,
+  blood_fit <- blmod_exp_sep(aif$time,
                                  aif$aif,
                                  multstart_iter = 1)
 
@@ -252,3 +252,4 @@ test_that("exp_setpeak without method works", {
 
   expect_true(any(class(bdplot) == "ggplot"))
 })
+

@@ -67,3 +67,4 @@ plot.interpblood <- function(x, ...) {
 plot.blooddata <- function(x, ...) {
   plot_blooddata(x, ...)
 }
+

@@ -2,6 +2,7 @@ context("test-refreg")
 
 data("pbr28")
 
+set.seed(12345)
 meas <- 2
 
 reftac <- pbr28$tacs[[meas]]$CBL
