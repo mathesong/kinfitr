@@ -236,7 +236,12 @@ predict.blood_splines <- function(object, newdata = NULL) {
 #'
 #' @param time The time of each measurement.
 #' @param activity The radioactivity of each measurement.
-#' @param fit_exp3 Should a third exponential be fitted, or is a bi-exponential fit desired? Default is TRUE.
+#' @param fit_exp3 Should a third exponential be fitted, or is a bi-exponential
+#'   fit desired? Default is TRUE.
+#' @param expdecay_props What proportions of the decay should be used for
+#'   choosing starting parameters for the exponential decay. Defaults to 1/60
+#'   and 1/10, i.e. start to 1/60, 1/60 to 1/10 and 1/10 to end. If fitting only
+#'   two exponentials, the second value will be used.
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -250,9 +255,14 @@ predict.blood_splines <- function(object, newdata = NULL) {
 #' aif <- bd_getdata(blooddata, output = "AIF")
 #' start <- blmod_exp_startpars(aif$time,
 #'                            aif$aif)
-blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE) {
+blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
+                                expdecay_props = c(1/60, 0.1)) {
 
   startpars <- list()
+
+  if(!fit_exp3) {
+    expdecay_props[1] <- expdecay_props[2]
+  }
 
   blood <- blmod_tidyinput(time, activity, Method=NULL, weights = NULL)
 
@@ -279,7 +289,7 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE) {
 
   blood_exp_part3 <- dplyr::filter(blood_decay,
                                    dplyr::between(time,
-                                                  (1/10)*max(time),
+                                                  expdecay_props[2]*max(time),
                                                   max(time)))
 
   exp3_mod <- lm(log(abs(activity)) ~ time,
@@ -301,24 +311,25 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE) {
     startpars$beta  <-  gamma
   }
 
-  ## Second Exponential
   blood_decay$activity_2ex <- blood_decay$activity -
     C*exp( -gamma * (blood_decay$time) )
 
+  ## Second Exponential
   blood_exp_part2 <- dplyr::filter(blood_decay,
                                    dplyr::between(time,
-                                                  (1/60)*max(time),
-                                                  (1/10)*max(time)))
-
-  exp2_mod <- lm(log(abs(activity_2ex)) ~ time,
-                 data=blood_exp_part2)
-
-  exp2_coef <-  as.numeric(coef(exp2_mod))
-
-  B <- exp(exp2_coef[1])
-  beta <- exp(log(abs(exp2_coef[2])))
+                                                  expdecay_props[1]*max(time),
+                                                  expdecay_props[2]*max(time)))
 
   if(fit_exp3) {
+
+    exp2_mod <- lm(log(abs(activity_2ex)) ~ time,
+                   data=blood_exp_part2)
+
+    exp2_coef <-  as.numeric(coef(exp2_mod))
+
+    B <- exp(exp2_coef[1])
+    beta <- exp(log(abs(exp2_coef[2])))
+
     startpars$B     <- B
     startpars$beta  <- beta
 
@@ -330,14 +341,10 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE) {
   }
 
   ## First Exponential
-
-  blood_decay$activity_1ex <- blood_decay$activity_2ex -
-    B*exp( -beta * (blood_decay$time) )
-
   blood_exp_part1 <- dplyr::filter(blood_decay,
                                    dplyr::between(time,
                                                   min(time),
-                                                  (1/60)*max(time)))
+                                                  expdecay_props[1]*max(time)))
 
   exp1_mod <- lm(log(abs(activity_1ex)) ~ time,
                  data=blood_exp_part1)
@@ -427,6 +434,10 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE) {
 #'   between the continuous and discrete samples after the peak?
 #' @param check_startpars Optional. Return only the starting parameters. Useful
 #'   for debugging fits which do not work.
+#' @param expdecay_props What proportions of the decay should be used for
+#'   choosing starting parameters for the exponential decay. Defaults to 1/60
+#'   and 1/10, i.e. start to 1/60, 1/60 to 1/10 and 1/10 to end. If fitting only
+#'   two exponentials, the second value will be used.
 #'
 #' @return A model fit including all of the individual parameters, fit details,
 #'   and model fit object of class blood_exp.
@@ -452,7 +463,8 @@ blmod_exp <- function(time, activity, Method = NULL,
                          multstart_upper = NULL,
                          multstart_iter = 100,
                          taper_weights = TRUE,
-                         check_startpars = FALSE) {
+                         check_startpars = FALSE,
+                         expdecay_props = c(1/60, 0.1)) {
 
 
   # Tidy up
@@ -461,7 +473,7 @@ blmod_exp <- function(time, activity, Method = NULL,
 
   # Create starting parameters
   if(is.null(start)) {
-    startvals <- blmod_exp_startpars(time, activity, fit_exp3)
+    startvals <- blmod_exp_startpars(time, activity, fit_exp3, expdecay_props)
     start <- startvals
   }
 
@@ -695,6 +707,10 @@ blmod_exp <- function(time, activity, Method = NULL,
 #'   between the continuous and discrete samples after the peak?
 #' @param check_startpars Optional. Return only the starting parameters. Useful
 #'   for debugging fits which do not work.
+#' @param expdecay_props What proportions of the decay should be used for
+#'   choosing starting parameters for the exponential decay. Defaults to 1/60
+#'   and 1/10, i.e. start to 1/60, 1/60 to 1/10 and 1/10 to end. If fitting only
+#'   two exponentials, the second value will be used.
 #'
 #' @return A model fit including all of the individual parameters, fit details,
 #'   and model fit object of class blood_exp.
@@ -719,7 +735,8 @@ blmod_exp_sep <- function(time, activity, Method = NULL,
                              multstart_upper = NULL,
                              multstart_iter = 100,
                              taper_weights = TRUE,
-                             check_startpars = FALSE) {
+                             check_startpars = FALSE,
+                             expdecay_props = c(1/60, 0.1)) {
 
 
   # Tidy up
@@ -728,7 +745,7 @@ blmod_exp_sep <- function(time, activity, Method = NULL,
 
   # Create starting parameters
   if(is.null(start)) {
-    startvals <- blmod_exp_startpars(time, activity, fit_exp3)
+    startvals <- blmod_exp_startpars(time, activity, fit_exp3, expdecay_props)
     start <- startvals
   }
 

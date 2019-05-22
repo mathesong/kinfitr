@@ -12,7 +12,7 @@ blmod_exp(time, activity, Method = NULL, weights = NULL,
   fit_peakval = FALSE, peaktime_val = NULL, peakval_set = TRUE,
   lower = NULL, upper = NULL, start = NULL, multstart_lower = NULL,
   multstart_upper = NULL, multstart_iter = 100, taper_weights = TRUE,
-  check_startpars = FALSE)
+  check_startpars = FALSE, expdecay_props = c(1/60, 0.1))
 }
 \arguments{
 \item{time}{The time of each measurement in seconds}
@@ -70,6 +70,11 @@ between the continuous and discrete samples after the peak?}
 
 \item{check_startpars}{Optional. Return only the starting parameters. Useful
 for debugging fits which do not work.}
+
+\item{expdecay_props}{What proportions of the decay should be used for
+choosing starting parameters for the exponential decay. Defaults to 1/60
+and 1/10, i.e. start to 1/60, 1/60 to 1/10 and 1/10 to end. If fitting only
+two exponentials, the second value will be used.}
 }
 \value{
 A model fit including all of the individual parameters, fit details,

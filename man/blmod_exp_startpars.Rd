@@ -4,14 +4,21 @@
 \alias{blmod_exp_startpars}
 \title{Create starting parameters for an exponential blood model}
 \usage{
-blmod_exp_startpars(time, activity, fit_exp3 = TRUE)
+blmod_exp_startpars(time, activity, fit_exp3 = TRUE,
+  expdecay_props = c(1/60, 0.1))
 }
 \arguments{
 \item{time}{The time of each measurement.}
 
 \item{activity}{The radioactivity of each measurement.}
 
-\item{fit_exp3}{Should a third exponential be fitted, or is a bi-exponential fit desired? Default is TRUE.}
+\item{fit_exp3}{Should a third exponential be fitted, or is a bi-exponential
+fit desired? Default is TRUE.}
+
+\item{expdecay_props}{What proportions of the decay should be used for
+choosing starting parameters for the exponential decay. Defaults to 1/60
+and 1/10, i.e. start to 1/60, 1/60 to 1/10 and 1/10 to end. If fitting only
+two exponentials, the second value will be used.}
 }
 \value{
 A list of the starting parameters
