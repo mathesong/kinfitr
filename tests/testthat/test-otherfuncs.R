@@ -40,3 +40,13 @@ test_that("SUV works with durations and frameStartEnd", {
   expect_gt(SUVout$par$intSUV, 150)
   expect_lt(SUVout$par$intSUV, 500)
 })
+
+test_that("kBq to nCi works", {
+  kBq_nCi <- round(unit_convert(1, "kBq", "nCi"))
+  expect_equal(kBq_nCi, 27)
+})
+
+test_that("nCi to Bq works", {
+  nCi_Bq <- unit_convert(1, "nCi", "Bq")
+  expect_equal(nCi_Bq, 37)
+})

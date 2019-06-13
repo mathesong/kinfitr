@@ -480,3 +480,94 @@ get_se <- function(fit, expression) {
   possibly_se(fit, expression)
 
 }
+
+#' Convert between different units of radioactivity
+#'
+#' @param values Radioactivity values which should be converted. This can be a single value or a vector of values.
+#' @param from_units The units from which the radioactivity should be converted.
+#' @param to_units The units to which the radioactivity should be converted.
+#'
+#' @return The converted radioactivity values in the new units
+#' @export
+#'
+#' @examples
+#' unit_convert(1, "nCi", "Bq")
+#' unit_convert(1:5, "nCi", "Bq")
+unit_convert <- function(values,
+                         from_units = c("GBq", "MBq", "kBq","Bq",
+                                       "mBq", "uBq", "nBq","pBq",
+                                       "GCi", "MCi", "kCi","Ci",
+                                       "mCi", "uCi", "nCi", "pCi"),
+                         to_units = c("GBq", "MBq", "kBq","Bq",
+                                     "mBq", "uBq", "nBq","pBq",
+                                     "GCi", "MCi", "kCi","Ci",
+                                     "mCi", "uCi", "nCi", "pCi")) {
+
+  if(length(from_units) > 1 | length(to_units) > 1) {
+    stop("Units must be selected to convert between")
+  }
+
+  # Match the units
+
+  from <- match.arg(from_units, c("GBq", "MBq", "kBq", "Bq",
+                                    "mBq", "uBq", "nBq", "pBq",
+                                    "GCi", "MCi", "kCi", "Ci",
+                                    "mCi", "uCi", "nCi", "pCi"))
+
+  to <- match.arg(to_units, c("GBq", "MBq", "kBq","Bq",
+                                  "mBq", "uBq", "nBq","pBq",
+                                  "GCi", "MCi", "kCi","Ci",
+                                  "mCi", "uCi", "nCi", "pCi"))
+
+  # Extract the meaning from the units
+
+  from_bqci <- ifelse( grepl("Bq", from), "Bq", "Ci")
+  from_mult <- strsplit(x = from, split = from_bqci)[[1]]
+
+  to_bqci <- ifelse( grepl("Bq", to), "Bq", "Ci")
+  to_mult <- strsplit(x = to, split = to_bqci)[[1]]
+
+  from_multno <- dplyr::case_when(
+    from_mult == "G" ~ 1e9,
+    from_mult == "M" ~ 1e6,
+    from_mult == "k" ~ 1e3,
+    from_mult == ""  ~ 1,
+    from_mult == "m" ~ 1e-3,
+    from_mult == "u" ~ 1e-6,
+    from_mult == "n" ~ 1e-9,
+    from_mult == "n" ~ 1e-12,
+    TRUE ~ 1
+  )
+
+  to_multno <- dplyr::case_when(
+    to_mult == "G" ~ 1e9,
+    to_mult == "M" ~ 1e6,
+    to_mult == "k" ~ 1e3,
+    to_mult == ""  ~ 1,
+    to_mult == "m" ~ 1e-3,
+    to_mult == "u" ~ 1e-6,
+    to_mult == "n" ~ 1e-9,
+    to_mult == "p" ~ 1e-12,
+  )
+
+  # Removing the from multiplier
+
+  values <- values * from_multno
+
+  # Converting between Bq and Ci
+
+  values <- dplyr::case_when(
+    from_bqci == to_bqci ~ values,
+    from_bqci == "Ci" & to_bqci == "Bq" ~ values * 37000000000,
+    from_bqci == "Bq" & to_bqci == "Ci" ~ values / 37000000000,
+  )
+
+  # Adding the to multiplier
+
+  values <- values / to_multno
+
+  # Return
+
+  return(values)
+
+}
