@@ -39,3 +39,6 @@ multstart_upper <- NULL
 
 fix_multstartpars(start, lower, upper, multstart_iter, multstart_lower, multstart_upper)
 }
+\author{
+Granville J Matheson, \email{mathesong@gmail.com}
+}

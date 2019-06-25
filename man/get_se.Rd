@@ -28,3 +28,6 @@ get_se(a, "cyl")
 get_se(a, "cyl/disp")
 
 }
+\author{
+Granville J Matheson, \email{mathesong@gmail.com}
+}

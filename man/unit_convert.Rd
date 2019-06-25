@@ -25,4 +25,8 @@ Convert between different units of radioactivity
 \examples{
 unit_convert(1, "nCi", "Bq")
 unit_convert(1:5, "nCi", "Bq")
+
+}
+\author{
+Granville J Matheson, \email{mathesong@gmail.com}
 }

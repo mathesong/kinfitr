@@ -387,6 +387,7 @@ plot_kinfit <- function(modelout, ...) {
 #' multstart_upper <- NULL
 #'
 #' fix_multstartpars(start, lower, upper, multstart_iter, multstart_lower, multstart_upper)
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
 fix_multstartpars <- function(start, lower, upper, multstart_iter, multstart_lower, multstart_upper) {
   if (length(multstart_iter) == length(start) || length(multstart_iter) == 1) {
     multstart_l <- as.list(lower)
@@ -468,6 +469,7 @@ fix_multstartpars <- function(start, lower, upper, multstart_iter, multstart_low
 #' get_se(a, "cyl")
 #' get_se(a, "cyl/disp")
 #'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
 get_se <- function(fit, expression) {
 
   secov <- function(fit, expression) {
@@ -493,6 +495,8 @@ get_se <- function(fit, expression) {
 #' @examples
 #' unit_convert(1, "nCi", "Bq")
 #' unit_convert(1:5, "nCi", "Bq")
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
 unit_convert <- function(values,
                          from_units = c("GBq", "MBq", "kBq","Bq",
                                        "mBq", "uBq", "nBq","pBq",
@@ -569,5 +573,98 @@ unit_convert <- function(values,
   # Return
 
   return(values)
+
+}
+
+#' Reverse Decay Correction of TAC values
+#'
+#' This function uses the equation described here to perform the calculations: http://www.turkupetcentre.net/petanalysis/decay.html
+#'
+#' @param t_start The starting times of the frames in minutes.
+#' @param t_end The end times of the frames in minutes.
+#' @param tac The uncorrected radioactivity values.
+#' @param radioisotope The radioisotope.
+#'
+#' @return The tac before decay correction
+#' @export
+#'
+#' @examples
+#' data(pbr28)
+#' s1 <- pbr28$tacs[[1]]
+#'
+#' # Assuming the data were not decay-corrected (they are)
+#' decay_uncorrect(
+#'   s1$StartTime/60,
+#'  (s1$StartTime + s1$Duration)/60,
+#'  tac = s1$FC)
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+decay_uncorrect <- function(t_start, t_end, tac, radioisotope = c("C11", "O15", "F18")) {
+
+  radioisotope <- match.arg(radioisotope, c("C11", "O15", "F18"))
+
+  hl <- dplyr::case_when(
+    radioisotope == "C11" ~ 20.4,
+    radioisotope == "O15" ~ 2.05,
+    radioisotope == "F18" ~ 109.8
+  )
+
+  lambda <- log(2) / hl
+
+  term1 <- exp(lambda*t_start) * lambda * (t_end - t_start)
+  term2 <- 1 - exp( -1 * lambda * (t_end - t_start) )
+
+  tac_uncor <- tac * ( term2 / term1 )
+
+  tac_uncor[is.nan(tac_uncor)] <- 0
+
+  return(tac_uncor)
+
+}
+
+#' Perform Decay Correction of TAC values
+#'
+#' This function uses the equation described here to perform the calculations: http://www.turkupetcentre.net/petanalysis/decay.html
+#'
+#' @param t_start The starting times of the frames in minutes.
+#' @param t_end The end times of the frames in minutes.
+#' @param tac_uncor The uncorrected radioactivity values.
+#' @param radioisotope The radioisotope.
+#'
+#' @return The tac after decay correction
+#' @export
+#'
+#' @examples
+#' data(pbr28)
+#' s1 <- pbr28$tacs[[1]]
+#'
+#' # Assuming the data were not decay-corrected (they are)
+#' decay_correct(
+#'   s1$StartTime/60,
+#'  (s1$StartTime + s1$Duration)/60,
+#'  tac_uncor = s1$FC)
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+decay_correct <- function(t_start, t_end, tac_uncor,
+                          radioisotope = c("C11", "O15", "F18")) {
+
+  radioisotope <- match.arg(radioisotope, c("C11", "O15", "F18"))
+
+  hl <- dplyr::case_when(
+    radioisotope == "C11" ~ 20.4,
+    radioisotope == "O15" ~ 2.05,
+    radioisotope == "F18" ~ 109.8
+  )
+
+  lambda <- log(2) / hl
+
+  term1 <- exp(lambda*t_start) * lambda * (t_end - t_start)
+  term2 <- 1 - exp( -1 * lambda * (t_end - t_start) )
+
+  tac <- tac_uncor * ( term1 / term2 )
+
+  tac[is.nan(tac)] <- 0
+
+  return(tac)
 
 }
