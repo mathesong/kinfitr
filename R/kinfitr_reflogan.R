@@ -25,18 +25,15 @@
 #' tstarIncludedFrames value \code{out$tstarIncludedFrames}
 #'
 #' @examples
-#' 
-#' # Note: Reference region models, and irreversible binding models, should not
-#' # be used for PBR28 - this is just to demonstrate function
-#' 
-#' data(pbr28)
-#' 
-#' t_tac <- pbr28$tacs[[2]]$Times / 60
-#' reftac <- pbr28$tacs[[2]]$CBL
-#' roitac <- pbr28$tacs[[2]]$STR
-#' weights <- pbr28$tacs[[2]]$Weights
-#' 
-#' fit <- refLogan(t_tac, reftac, roitac, k2prime = 0.1, tstarIncludedFrames = 10, weights = weights)
+#'
+#' data(simref)
+#'
+#' t_tac <- simref$tacs[[2]]$Times
+#' reftac <- simref$tacs[[2]]$Reference
+#' roitac <- simref$tacs[[2]]$ROI1
+#' weights <- simref$tacs[[2]]$Weights
+#'
+#' fit <- refLogan(t_tac, reftac, roitac, k2prime = 0.1, tstarIncludedFrames = 15, weights = weights)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Logan J, Fowler JS, Volkow ND, Wang GJ, Ding YS, Alexoff DL. Distribution volume ratios without blood sampling from graphical analysis of PET data. Journal of Cerebral Blood Flow & Metabolism. 1996 Sep 1;16(5):834-40.
@@ -100,18 +97,15 @@ refLogan <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames, weight
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' # Note: Reference region models, and irreversible binding models, should not
-#' # be used for PBR28 - this is just to demonstrate function
-#' 
-#' data(pbr28)
-#' 
-#' t_tac <- pbr28$tacs[[2]]$Times / 60
-#' reftac <- pbr28$tacs[[2]]$CBL
-#' roitac <- pbr28$tacs[[2]]$STR
-#' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#' data(simref)
+#'
+#' t_tac <- simref$tacs[[2]]$Times
+#' reftac <- simref$tacs[[2]]$Reference
+#' roitac <- simref$tacs[[2]]$ROI1
+#' weights <- simref$tacs[[2]]$Weights
+#'
 #' fit <- refLogan(t_tac, reftac, roitac, k2prime = 0.1, tstarIncludedFrames = 10, weights = weights)
-#' 
+#'
 #' plot_refLoganfit(fit)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -173,7 +167,7 @@ plot_refLoganfit <- function(refloganout, roiname = NULL) {
 #' \dontrun{
 #' refLogan_tstar(t_tac, reftac, taclow, tacmed, tachigh, k2prime, "demonstration")
 #' }
-#' 
+#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2
@@ -258,7 +252,12 @@ refLogan_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, file
   bpplotdf <- tidyr::gather(bp_df, key = Region, value = BP, -Frames, -Time)
   bpplotdf$Region <- forcats::fct_rev(forcats::fct_inorder(factor(bpplotdf$Region)))
 
-  bpplot <- ggplot(bpplotdf, aes(x = Frames, y = BP, colour = Region)) + geom_point() + geom_line() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + ylab(expression(BP[ND])) + colScale
+  bpplot <- ggplot(bpplotdf, aes(x = Frames, y = BP, colour = Region)) +
+    geom_point() + geom_line() +
+    scale_x_continuous(breaks = seq(min(tstarInclFrames),
+                                    max(tstarInclFrames), by = gridbreaks)) +
+    ylab(expression(BP[ND])) +
+    colScale
 
 
   # Output

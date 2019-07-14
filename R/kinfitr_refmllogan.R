@@ -24,16 +24,13 @@
 #' tstarIncludedFrames value \code{out$tstarIncludedFrames}
 #'
 #' @examples
-#' # Note: Reference region models, and irreversible binding models, should not
-#' # be used for PBR28 - this is just to demonstrate function
-#' 
-#' data(pbr28)
-#' 
-#' t_tac <- pbr28$tacs[[2]]$Times / 60
-#' reftac <- pbr28$tacs[[2]]$CBL
-#' roitac <- pbr28$tacs[[2]]$STR
-#' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#' data(simref)
+#'
+#' t_tac <- simref$tacs[[2]]$Times
+#' reftac <- simref$tacs[[2]]$Reference
+#' roitac <- simref$tacs[[2]]$ROI1
+#' weights <- simref$tacs[[2]]$Weights
+#'
 #' fit <- refmlLogan(t_tac, reftac, roitac, k2prime = 0.1, tstarIncludedFrames = 10, weights = weights)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -113,18 +110,15 @@ refmlLogan <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames, weig
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
-#' # Note: Reference region models, and irreversible binding models, should not
-#' # be used for PBR28 - this is just to demonstrate function
-#' 
-#' data(pbr28)
-#' 
-#' t_tac <- pbr28$tacs[[2]]$Times / 60
-#' reftac <- pbr28$tacs[[2]]$CBL
-#' roitac <- pbr28$tacs[[2]]$STR
-#' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#' data(simref)
+#'
+#' t_tac <- simref$tacs[[2]]$Times
+#' reftac <- simref$tacs[[2]]$Reference
+#' roitac <- simref$tacs[[2]]$ROI1
+#' weights <- simref$tacs[[2]]$Weights
+#'
 #' fit <- refmlLogan(t_tac, reftac, roitac, k2prime = 0.1, tstarIncludedFrames = 10, weights = weights)
-#' 
+#'
 #' plot_refmlLoganfit(fit)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -187,7 +181,7 @@ plot_refmlLoganfit <- function(refmlloganout, roiname = NULL) {
 #'   k2prime = k2prime, "demonstration"
 #' )
 #' }
-#' 
+#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2

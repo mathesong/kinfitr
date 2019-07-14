@@ -49,15 +49,12 @@
 #'
 #' @examples
 #'
-#' # Note: Reference region models, and irreversible binding models, should not
-#' # be used for PBR28 - this is just to demonstrate function
+#' data(simref)
 #'
-#' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times / 60
-#' reftac <- pbr28$tacs[[2]]$CBL
-#' roitac <- pbr28$tacs[[2]]$STR
-#' weights <- pbr28$tacs[[2]]$Weights
+#' t_tac <- simref$tacs[[2]]$Times
+#' reftac <- simref$tacs[[2]]$Reference
+#' roitac <- simref$tacs[[2]]$ROI1
+#' weights <- simref$tacs[[2]]$Weights
 #'
 #' fit1 <- srtm(t_tac, reftac, roitac)
 #' fit2 <- srtm(t_tac, reftac, roitac, weights, frameStartEnd = c(1, 33))
@@ -201,18 +198,14 @@ srtm_model <- function(t_tac, reftac, R1, k2, bp) {
 #' @return A ggplot2 object of the plot.
 #'
 #' @examples
+#' data(simref)
 #'
-#' #' # Note: Reference region models, and irreversible binding models, should not
-#' # be used for PBR28 - this is just to demonstrate function
+#' t_tac <- simref$tacs[[2]]$Times
+#' reftac <- simref$tacs[[2]]$Reference
+#' roitac <- simref$tacs[[2]]$ROI1
+#' weights <- simref$tacs[[2]]$Weights
 #'
-#' data(pbr28)
-#'
-#' t_tac <- pbr28$tacs[[2]]$Times / 60
-#' reftac <- pbr28$tacs[[2]]$CBL
-#' roitac <- pbr28$tacs[[2]]$STR
-#' weights <- pbr28$tacs[[2]]$Weights
-#'
-#' fit <- srtm(t_tac, reftac, roitac)
+#' fit <- srtm(t_tac, reftac, roitac, weights, frameStartEnd = c(1, 33))
 #'
 #' plot_srtmfit(fit)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
@@ -273,7 +266,7 @@ plot_srtmfit <- function(srtmout, roiname = NULL, refname = NULL) {
     geom_line(data = tidyfitted) +
     guides(shape = FALSE, color = guide_legend(order = 1)) + colScale +
     scale_size(range = c(1, 3)) +
-    coord_cartesian(ylim = c(0, max(tidymeasured$Radioactivity) * 1.5))
+    coord_cartesian(ylim = c(0, max(tidymeasured$Radioactivity)))
 
   return(outplot)
 }

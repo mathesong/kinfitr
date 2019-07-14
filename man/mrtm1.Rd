@@ -39,15 +39,12 @@ Function to fit MRTM1 of Ichise et al. (2003) to data.  This model is often used
 high-binding region to obtain an estimate of k2prime, and this k2prime value is used for MRTM2.
 }
 \examples{
-# Note: Reference region models, and irreversible binding models, should not
-# be used for PBR28 - this is just to demonstrate function
+data(simref)
 
-data(pbr28)
-
-t_tac <- pbr28$tacs[[2]]$Times / 60
-reftac <- pbr28$tacs[[2]]$CBL
-roitac <- pbr28$tacs[[2]]$STR
-weights <- pbr28$tacs[[2]]$Weights
+t_tac <- simref$tacs[[2]]$Times
+reftac <- simref$tacs[[2]]$Reference
+roitac <- simref$tacs[[2]]$ROI1
+weights <- simref$tacs[[2]]$Weights
 
 fit <- mrtm1(t_tac, reftac, roitac, weights = weights)
 }

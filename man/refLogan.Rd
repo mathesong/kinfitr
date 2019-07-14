@@ -41,17 +41,14 @@ Function to fit the non-invasive Logan plot model of Logan et al. (1996) to data
 }
 \examples{
 
-# Note: Reference region models, and irreversible binding models, should not
-# be used for PBR28 - this is just to demonstrate function
+data(simref)
 
-data(pbr28)
+t_tac <- simref$tacs[[2]]$Times
+reftac <- simref$tacs[[2]]$Reference
+roitac <- simref$tacs[[2]]$ROI1
+weights <- simref$tacs[[2]]$Weights
 
-t_tac <- pbr28$tacs[[2]]$Times / 60
-reftac <- pbr28$tacs[[2]]$CBL
-roitac <- pbr28$tacs[[2]]$STR
-weights <- pbr28$tacs[[2]]$Weights
-
-fit <- refLogan(t_tac, reftac, roitac, k2prime = 0.1, tstarIncludedFrames = 10, weights = weights)
+fit <- refLogan(t_tac, reftac, roitac, k2prime = 0.1, tstarIncludedFrames = 15, weights = weights)
 }
 \references{
 Logan J, Fowler JS, Volkow ND, Wang GJ, Ding YS, Alexoff DL. Distribution volume ratios without blood sampling from graphical analysis of PET data. Journal of Cerebral Blood Flow & Metabolism. 1996 Sep 1;16(5):834-40.

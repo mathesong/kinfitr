@@ -79,15 +79,12 @@ Function to fit the SRTM model of Lammertsma and Hume (1996) to data.
 }
 \examples{
 
-# Note: Reference region models, and irreversible binding models, should not
-# be used for PBR28 - this is just to demonstrate function
+data(simref)
 
-data(pbr28)
-
-t_tac <- pbr28$tacs[[2]]$Times / 60
-reftac <- pbr28$tacs[[2]]$CBL
-roitac <- pbr28$tacs[[2]]$STR
-weights <- pbr28$tacs[[2]]$Weights
+t_tac <- simref$tacs[[2]]$Times
+reftac <- simref$tacs[[2]]$Reference
+roitac <- simref$tacs[[2]]$ROI1
+weights <- simref$tacs[[2]]$Weights
 
 fit1 <- srtm(t_tac, reftac, roitac)
 fit2 <- srtm(t_tac, reftac, roitac, weights, frameStartEnd = c(1, 33))
