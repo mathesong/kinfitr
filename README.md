@@ -1,136 +1,107 @@
 
-[![Travis build status](https://travis-ci.org/mathesong/kinfitr.svg?branch=master)](https://travis-ci.org/mathesong/kinfitr)
-[![Coverage Status](https://img.shields.io/codecov/c/github/mathesong/kinfitr/master.svg)](https://codecov.io/github/mathesong/kinfitr?branch=master)
+[![Travis build
+status](https://travis-ci.org/mathesong/kinfitr.svg?branch=master)](https://travis-ci.org/mathesong/kinfitr)
+[![Coverage
+Status](https://img.shields.io/codecov/c/github/mathesong/kinfitr/master.svg)](https://codecov.io/github/mathesong/kinfitr?branch=master)
 
-kinfitr : PET Kinetic Modelling using R
-=======================================
+# kinfitr : PET Kinetic Modelling using R
 
-Overview
---------
+## Overview
 
-kinfitr is a a new package for PET Kinetic Modelling Using R. Aside from allowing me to use R more in my day-to-day work, the main goal of this package is to make it easier to perform more reproducible research in PET research. Furthermore, both kinfitr and the language it is written in, [R](https://cran.r-project.org), are free to download. Furthermore, the primary IDE for R, [RStudio](https://www.rstudio.com/), now comes with [R Notebooks](http://rmarkdown.rstudio.com/r_notebooks.html), which makes it particularly easy to generate reproducible reports.
+kinfitr is a package for PET Kinetic Modelling Using R. The main goal of
+this package is to make it easier to perform more reproducible research
+in PET research. Furthermore, both kinfitr and the language it is
+written in, [R](https://cran.r-project.org), are free to download.
+Furthermore, the primary IDE for R, [RStudio](https://www.rstudio.com/),
+now comes with [R
+Notebooks](http://rmarkdown.rstudio.com/r_notebooks.html), which makes
+it particularly easy to generate reproducible reports.
 
-Status
-------
+## Installation
 
-Please note that this package is currently under development. Many of the models have not been comprehensively tested to make sure that they produce the correct output in all situations. I plan to validate the performance of the kinfitr package against other kinetic modelling software at some point in the future. Please refer to the 'To Do' section below to check on what has not yet been done and is planned to be completed as soon as I have time.
-
-Installation
-------------
-
-This package is currently only available on GitHub. It can be downloaded as follows:
+This package is currently only available on GitHub. It can be downloaded
+as follows:
 
 ``` r
 # install.packages("devtools")  # If you do not already have devtools
 devtools::install_github("mathesong/kinfitr")
 ```
 
-Usage
------
+There is also a docker container if you would prefer not to have to
+download everything. If you download Docker, you can pull the container
+and start it with the following commands:
+
+    docker pull mathesong/kinfitr_docker
+    docker run -e PASSWORD=XYZ --name rstudio -p 8787:8787 mathesong/kinfitr_docker
+
+And the the rstudio session can be opened in a browser pointing to
+`http://localhost:8787`.
+
+## Usage
 
 ### Data Structure
 
-Typically, in our Karolinska workflow, the way that we currently work is to extract all TACs for all ROIs into a wide format (i.e. each ROI is a column). For importing this into R, I make a large nested list object with the following layers of nesting:
-
--   Named list of PET measurements
-    -   Data frame of all TACs of all ROIs + times + weights
+The optimal data structure for *kinfitr* is that of a nested tibble,
+with rows representing the desired level of chunking, e.g. whether
+modelling be across individuals, or across ROIs within individuals). The
+package contains two datasets: `pbr28` containing \[\(^{11}\)C\]PBR28
+TACs for testing models involving arterial input function, and `simref`
+containing simulated TACs of a tracer with a reference region, for
+testing reference tissue models.
 
 ``` r
 library(tidyverse)
 library(kinfitr)
-library(stringr)
-library(pander)
+library(knitr)
 
-tacdat <- readRDS('../sch_tacdata/sch_tacdata.rds')
+data(simref)
 ```
-
-*(This data is unfortunately not available online at present. There will soon hopefully be a sample data included in the package)*
 
 Thus the data looks as follows:
 
 ``` r
-head( names(tacdat) )
+head(simref)
 ```
 
-    ## [1] "diky_1" "diky_2" "tper_1" "tper_2" "fnsm_1" "fnsm_2"
+    ## # A tibble: 6 x 4
+    ##   Subjname PETNo PET    tacs             
+    ##   <chr>    <dbl> <chr>  <list>           
+    ## 1 hukw         1 hukw_1 <tibble [38 x 8]>
+    ## 2 ybnx         1 ybnx_1 <tibble [38 x 8]>
+    ## 3 olyl         1 olyl_1 <tibble [38 x 8]>
+    ## 4 rocx         1 rocx_1 <tibble [38 x 8]>
+    ## 5 gbiy         1 gbiy_1 <tibble [38 x 8]>
+    ## 6 xsqz         1 xsqz_1 <tibble [38 x 8]>
+
+…and inside each nested tibble is the following:
 
 ``` r
-names(tacdat$tper_1)
+head(simref$tacs[[1]])
 ```
 
-    ## [1] "roisizes" "tacdata"
-
-``` r
-tacdat$tper_1$tacdata %>%
-  select(times, weights, RefCBL, gmfslSTR) %>%
-  head() %>%
-  pander::pandoc.table()
-```
-
-<table style="width:53%;">
-<colgroup>
-<col width="12%" />
-<col width="13%" />
-<col width="12%" />
-<col width="13%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th align="center">times</th>
-<th align="center">weights</th>
-<th align="center">RefCBL</th>
-<th align="center">gmfslSTR</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="center">0</td>
-<td align="center">0</td>
-<td align="center">0</td>
-<td align="center">0</td>
-</tr>
-<tr class="even">
-<td align="center">0.5003</td>
-<td align="center">0.7147</td>
-<td align="center">139.8</td>
-<td align="center">133.5</td>
-</tr>
-<tr class="odd">
-<td align="center">1.5</td>
-<td align="center">0.6874</td>
-<td align="center">448.7</td>
-<td align="center">420.4</td>
-</tr>
-<tr class="even">
-<td align="center">2.5</td>
-<td align="center">0.686</td>
-<td align="center">490.2</td>
-<td align="center">487</td>
-</tr>
-<tr class="odd">
-<td align="center">4.5</td>
-<td align="center">0.7734</td>
-<td align="center">478.6</td>
-<td align="center">552</td>
-</tr>
-<tr class="even">
-<td align="center">7.5</td>
-<td align="center">0.7658</td>
-<td align="center">412.9</td>
-<td align="center">590.5</td>
-</tr>
-</tbody>
-</table>
+    ## # A tibble: 6 x 8
+    ##   Times Reference   ROI1    ROI2   ROI3 Weights StartTime Duration
+    ##   <dbl>     <dbl>  <dbl>   <dbl>  <dbl>   <dbl>     <dbl>    <dbl>
+    ## 1 0         0      0      0       0       0         0        0    
+    ## 2 0.567     0.137  0.203  0.0518  0.412   0.712     0.483    0.167
+    ## 3 0.733     0.787  1.41   2.31    3.02    0.734     0.65     0.167
+    ## 4 0.9      14.0   17.2   15.3    14.1     0.825     0.817    0.167
+    ## 5 1.07     34.0   41.5   35.5    35.0     0.901     0.983    0.167
+    ## 6 1.23     46.3   57.5   50.7    48.2     0.941     1.15     0.167
 
 ### Fitting a Model for a single TAC
 
-I have aimed to make the package as intuitive as possible to use. Almost all input arguments of times or radioactivity concentrations are as numeric vectors.
+As a conscious decision, almost all input arguments of times or
+radioactivity concentrations are as numeric vectors. This allows the
+functions to be used at any stage of an analysis, and does not require
+complicated data structures created in earlier steps. So let’s create
+vectors and run a model.
 
 ``` r
-times <- tacdat$tper_1$tacdata$times
-tac <- tacdat$tper_1$tacdata$gmfslSTR
-reference <- tacdat$tper_1$tacdata$RefCBL
-weights <- tacdat$tper_1$tacdata$weights
+times <- simref$tacs[[1]]$Times
+tac <- simref$tacs[[1]]$ROI1
+reference <- simref$tacs[[1]]$Reference
+weights <- simref$tacs[[1]]$Weights
 
 srtmfit <- srtm(t_tac = times, reftac = reference,
       roitac = tac,weights = weights)
@@ -138,288 +109,215 @@ srtmfit <- srtm(t_tac = times, reftac = reference,
 plot_kinfit(srtmfit)
 ```
 
-![](README_files/figure-markdown_github/srtmfit-1.png)
-
-Blood data is interpolated into an `input` data frame using the `blood_interp` command to make it easier to work with.
-
-``` r
-input <- blood_interp(t_blood = blooddata$Time.sec./60, 
-                      blood = blooddata$Cbl.nCi.cc.,
-                      t_plasma = plasmadata$Time.sec./60, 
-                      plasma = plasmadata$Cpl.nCi.cc.,
-                      t_parentfrac = parentdata$Times/60,
-                      parentfrac = parentdata$Fraction)
-
-onetcmout <- onetcm(times, tac, input, weights=weights)
-plot_kinfit(onetcmout)
-```
+![](README_files/figure-gfm/srtmfit-1.png)<!-- -->
 
 ### Fitting a Model to Many TACs
 
-#### Tidy and Arrange the Data
+For many TACs, we can use the fabulous `purrr` package to iterate
+through our nested tibble. Let’s also examine how we might decide to
+chunk the data, using MRTM1 and MRTM2.
 
-I have found, through some trial and error, that the best way for iterating through TACs using these methods are using nested data frames. I was inspired to do this following a [really excellent talk](https://www.youtube.com/watch?v=4MfUCX_KpdE) by Jenny Bryan from Plotcon 2016 - highly recommended if you are not familiar with (or skeptical of) such a data structure. For this purpose, we aim to chunk the data into a tidy format for which the size of each chunk which we want to work with at each stage: whether that is one TAC per person, or all TACs.
+What we want to do from here is to model the data using MRTM1 and MRTM2.
+Our plan is as follows:
 
-So, first we arrange and nest the data:
+  - MRTM1 fits BP<sub>ND</sub> and k2’
 
-``` r
-datdf <- map(tacdat, 'tacdata') %>%     # Extract tacdata from each element of the list
-  
-  bind_rows(.id = "PET") %>%     # Add the id of each PET measurement
-  
-  select(PET, Times = times, Weights=weights, FC = FSLSFC, PUT=FSLSPUT, 
-         CAU=FSLSCAU, STR=FSLSSTR, RefCBL=RefCBL) %>%     # Choose and rename the relevant columns
-  
-  group_by(PET) %>%     # Chunk at the appropriate level
-  
-  nest(.key = tacs) %>%     # Nest
-  
-  mutate(Subjname = stringr::str_extract(PET, "(^[a-z]*)"),      # Extract the subject name
-         PETNo = as.numeric(stringr::str_extract(PET, "\\d$")) )     # Extract the PET number
+  - MRTM2 fits BP<sub>ND</sub> (using k2’ from MRTM1 from a high-binding
+    region)
 
-head(datdf)
-```
+So what we’ll do:
 
-    ## # A tibble: 6 × 4
-    ##      PET              tacs Subjname PETNo
-    ##    <chr>            <list>    <chr> <dbl>
-    ## 1 diky_1 <tibble [14 × 7]>     diky     1
-    ## 2 diky_2 <tibble [14 × 7]>     diky     2
-    ## 3 tper_1 <tibble [14 × 7]>     tper     1
-    ## 4 tper_2 <tibble [14 × 7]>     tper     2
-    ## 5 fnsm_1 <tibble [14 × 7]>     fnsm     1
-    ## 6 fnsm_2 <tibble [14 × 7]>     fnsm     2
+  - Fit MRTM1 to one region of each PET Measurement
 
-What we want to do from here is to model the data using MRTM1 and MRTM2. Our plan is as follows:
-
--   MRTM1 fits BP<sub>ND</sub> and k2'
-
--   MRTM2 fits BP<sub>ND</sub> (using k2' from MRTM1 from a high-binding region)
-
-So what we'll do:
-
--   Fit MRTM1 to one region of each PET Measurement
-
--   Fit MRTM2 to all regions of each PET Measurement
+  - Fit MRTM2 to all regions of each PET Measurement
 
 #### Fitting k2prime using MRTM1 using purrr::map
 
 ``` r
-datdf <- datdf %>%
+simref <- simref %>%
   
   group_by(PET) %>%     # Group by each PET measurement
   
-  mutate(mrtm1_fit = map(tacs, ~mrtm1(t_tac = .x$Times, reftac = .x$RefCBL,      # Add MRTM1 fit column
-                                      roitac = .x$STR, weights = .x$Weights))) %>%
+  mutate(mrtm1_fit = map(tacs, ~mrtm1(t_tac = .x$Times, reftac = .x$Reference,      # Add MRTM1 fit column
+                                      roitac = .x$ROI1, weights = .x$Weights))) %>%
   
   mutate(k2prime = map_dbl(mrtm1_fit, c('par', 'k2prime')))     # Extract k2prime from the fit output
 
-plot_kinfit(datdf$mrtm1_fit[[1]])     # Plot the first TAC
+plot_kinfit(simref$mrtm1_fit[[1]])     # Plot the first TAC
 ```
 
-![](README_files/figure-markdown_github/mrtm2fit-1.png)
+![](README_files/figure-gfm/mrtm2fit-1.png)<!-- -->
+
+Now we have a k2’ value for each individual from a single region (ROI1).
+
+``` r
+head(simref)
+```
+
+    ## # A tibble: 6 x 6
+    ## # Groups:   PET [6]
+    ##   Subjname PETNo PET    tacs              mrtm1_fit k2prime
+    ##   <chr>    <dbl> <chr>  <list>            <list>      <dbl>
+    ## 1 hukw         1 hukw_1 <tibble [38 x 8]> <mrtm1>    0.0825
+    ## 2 ybnx         1 ybnx_1 <tibble [38 x 8]> <mrtm1>    0.119 
+    ## 3 olyl         1 olyl_1 <tibble [38 x 8]> <mrtm1>    0.0972
+    ## 4 rocx         1 rocx_1 <tibble [38 x 8]> <mrtm1>    0.0934
+    ## 5 gbiy         1 gbiy_1 <tibble [38 x 8]> <mrtm1>    0.101 
+    ## 6 xsqz         1 xsqz_1 <tibble [38 x 8]> <mrtm1>    0.0923
 
 #### Tidy Data: Gathering into Long format
 
-Now we want to use the k2prime from fitting MRTM1 to the striatum for each PET measurement. Now, we want to chunk the data a little bit differently: we want to make the arrangement a little bit longer: each TAC which we wish to model should be a row.
+Now we want to use the k2prime from fitting MRTM1 to one region from
+each PET measurement. Now, we want to chunk the data a little bit
+differently: we want to make the arrangement a little bit longer: each
+TAC which we wish to model should be a row.
 
 ``` r
-longdat <- datdf %>%
+long_simref <- simref %>%
   
-  select(PET, tacs, Subjname, PETNo, k2prime) %>%  # Choose the columns we want
+  select(-mrtm1_fit) %>% # Remove the fit object
   
   unnest() %>%    # Unnest
   
+  select(-StartTime, -Duration) %>% 
+  
   gather(Region, TAC, -PET, -Subjname, -PETNo, -Weights, 
-         -Times, -k2prime, -RefCBL) %>%    # Gather the data into long-er format
+         -Times, -k2prime, -Reference) %>%    # Gather the data into long-er format
   
   group_by(PET, Subjname, PETNo, Region, k2prime) %>%    # Group by more than just PET
   
-  nest(.key=tacs)      # Nest the data again
+  nest(.key=tacs) %>%       # Nest the data again %>% 
+
+  arrange(Subjname, Region)
 ```
 
 This produces data which looks like this:
 
 ``` r
-head(longdat)
+head(long_simref)
 ```
 
-    ## # A tibble: 6 × 6
-    ##      PET Subjname PETNo Region   k2prime              tacs
-    ##    <chr>    <chr> <dbl>  <chr>     <dbl>            <list>
-    ## 1 diky_1     diky     1     FC 0.1298935 <tibble [14 × 4]>
-    ## 2 diky_2     diky     2     FC 0.1366051 <tibble [14 × 4]>
-    ## 3 tper_1     tper     1     FC 0.1202574 <tibble [14 × 4]>
-    ## 4 tper_2     tper     2     FC 0.1137329 <tibble [14 × 4]>
-    ## 5 fnsm_1     fnsm     1     FC 0.1741568 <tibble [14 × 4]>
-    ## 6 fnsm_2     fnsm     2     FC 0.1769399 <tibble [14 × 4]>
+    ## # A tibble: 6 x 6
+    ##   PET    Subjname PETNo Region k2prime tacs             
+    ##   <chr>  <chr>    <dbl> <chr>    <dbl> <list>           
+    ## 1 ddgm_1 ddgm         1 ROI1    0.0851 <tibble [38 x 4]>
+    ## 2 ddgm_1 ddgm         1 ROI2    0.0851 <tibble [38 x 4]>
+    ## 3 ddgm_1 ddgm         1 ROI3    0.0851 <tibble [38 x 4]>
+    ## 4 dkkj_1 dkkj         1 ROI1    0.0911 <tibble [38 x 4]>
+    ## 5 dkkj_1 dkkj         1 ROI2    0.0911 <tibble [38 x 4]>
+    ## 6 dkkj_1 dkkj         1 ROI3    0.0911 <tibble [38 x 4]>
 
 For which the TACs nested object looks like this:
 
 ``` r
-head( longdat$tacs[[1]] )
+head( long_simref$tacs[[1]] )
 ```
 
-    ## # A tibble: 6 × 4
-    ##       Times  Weights   RefCBL      TAC
-    ##       <dbl>    <dbl>    <dbl>    <dbl>
-    ## 1 0.0000000 0.000000   0.0000   0.0000
-    ## 2 0.5002667 0.695104 249.0621 203.4480
-    ## 3 1.5002667 0.687934 417.1702 339.1461
-    ## 4 2.5002667 0.687535 410.7063 344.8662
-    ## 5 4.5002667 0.767929 364.4055 331.6183
-    ## 6 7.5002667 0.765012 302.5098 301.6385
+    ## # A tibble: 6 x 4
+    ##   Times Reference Weights    TAC
+    ##   <dbl>     <dbl>   <dbl>  <dbl>
+    ## 1 0         0       0      0    
+    ## 2 0.617     0.325   0.733  1.52 
+    ## 3 0.783     1.29    0.718  0.411
+    ## 4 0.95     10.3     0.821 16.4  
+    ## 5 1.12     36.2     0.899 42.2  
+    ## 6 1.28     49.0     0.933 55.9
 
 #### Fitting MRTM2 using purrr::pmap
 
-This function evaded me for a little while, but it's really incredible. While purrr::map iterates over elements within lists, purrr::pmap iterates over elements within infinitely many lists. In theory, we don't really need it here, but it becomes really useful when using stuff in several different nestings (i.e. a column of nested blood input data frames, a column of TACs and a column containing a fit object containing the fitted delay).
+Now we can iterate through this list, using the fitted k2prime. We can’t
+use `map()` any longer, as we’ll be iterating through 2 lists. For this,
+we could either use `map2()`, or we can use `pmap()`, which allows us to
+iterate through an unlimited numberof columns. Let’s go with the latter
+for now to show how we could do this.
 
 First we define a function for the iteration:
 
 ``` r
 dofit_mrtm2 <- function(tacs, k2prime) {
-  mrtm2(t_tac = tacs$Times, reftac = tacs$RefCBL, 
+  mrtm2(t_tac = tacs$Times, reftac = tacs$Reference, 
             roitac = tacs$TAC, weights = tacs$Weights,
             k2prime = k2prime)
 }
 ```
 
-... and then we apply it:
+… and then we apply it:
 
 ``` r
-longdat <- longdat %>%
+long_simref <- long_simref %>%
 
   mutate(fit_mrtm2 = pmap(list(tacs, k2prime), dofit_mrtm2)) %>%
 
   mutate(bp_mrtm2 = map_dbl(fit_mrtm2, c('par', 'bp')))
 
 
-plot_kinfit(longdat$fit_mrtm2[[6]])
+plot_kinfit(long_simref$fit_mrtm2[[6]])
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-11-1.png)
+![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
-In this way, we can run several different models on the data, keep the fits in their own separate columns, and plot them at will. And we can do all of this within the tidyverse paradigm.
+In this way, we can run several different models on the data, keep the
+fits in their own separate columns, and plot them at will. And we can do
+all of this within the tidyverse paradigm.
 
-#### Using purrr::pmap for models using arterial input
-
-To give an example for models with arterial input, a recent example first fitted 2TCM. These fits were saved in a column called delayFit. Then the fitted delay and vB from these fits were used for a new fitting.
-
-``` r
-# Function
-
-fit2tcm <- function(tacs, input, delayFit) {
-  twotcm(t_tac = tacs$Times/60, tac = tacs$TAC, input = input, inpshift = delayFit$par$inpshift,
-         vB=delayFit$par$vB, frameStartEnd=c(1,33), weights=tacs$Weights)
-}
-
-
-# Iteration
-
-longdat <- longdat %>%
-  
-  # 2TCM using fitted vB and delay
-  mutate(fit_2tcm= pmap(list(tacs, input, WB_delay), fit2tcm)) %>%
-  mutate(Vt_2tcm = purrr::map_dbl(fit_2tcm, c('par', 'Vt')))
-```
-
-Implemented Models
-------------------
+## Implemented Models
 
 **Reference Region Models**
 
--   Simplified Reference Tissue Model (SRTM) *(Lammertsma & Hume, 1996)*
+  - Simplified Reference Tissue Model (SRTM) *(Lammertsma & Hume, 1996)*
 
--   Non-Invasive Logan Plot *(Logan et al., 1996)*
+  - Non-Invasive Logan Plot *(Logan et al., 1996)*
 
--   Non-Invasive Multilinear Logan Plot *(Turkheimer et al., 2003)*
+  - Non-Invasive Multilinear Logan Plot *(Turkheimer et al., 2003)*
 
--   Ichise Multilinear Reference Tissue Model 1 (MRTM1) *(Ichise et al., 2003)*
+  - Ichise Multilinear Reference Tissue Model 1 (MRTM1) *(Ichise et al.,
+    2003)*
 
--   Ichise Multilinear Reference Tissue Model 2 (MRTM2) *(Ichise et al., 2003)*
+  - Ichise Multilinear Reference Tissue Model 2 (MRTM2) *(Ichise et al.,
+    2003)*
 
--   Patlak Reference Tissue Model *(Patlak & Blasberg, 1985)*
+  - Patlak Reference Tissue Model *(Patlak & Blasberg, 1985)*
 
 **Models Requiring Arterial Input**
 
--   One-Tissue Compartment Model
+  - One-Tissue Compartment Model
 
--   Two-Tissue Compartment Model
+  - Two-Tissue Compartment Model
 
--   Logan Plot *(Logan et al., 1990)*
+  - Logan Plot *(Logan et al., 1990)*
 
--   Multilinear Logan Plot *(Turkheimer et al., 2003)*
+  - Multilinear Logan Plot *(Turkheimer et al., 2003)*
 
--   Ichise Multilinear Analysis 1 (MA1) *(Ichise et al., 2002)*
+  - Ichise Multilinear Analysis 1 (MA1) *(Ichise et al., 2002)*
 
--   Ichise Multilinear Analysis 2 (MA2) *(Ichise et al., 2002)*
+  - Ichise Multilinear Analysis 2 (MA2) *(Ichise et al., 2002)*
 
--   Patlak Plot *(Patlak et al., 1983)*
+  - Patlak Plot *(Patlak et al., 1983)*
 
 **Other Models**
 
--   Simultaneous Estimation of Non-Displaceable Binding (SIME) *(Ogden et al., 2015)*
+  - Simultaneous Estimation of Non-Displaceable Binding (SIME) *(Ogden
+    et al., 2015)*
 
-To-Do
------
+## To-Do
 
 **General**
 
--   Validate model output against other software
-
-    -   Reference models output very similar to our group's in-house MATLAB tools
-
-    -   Arterial models produce reasonable values, but not yet fully validated
-
-    -   Irreversible methods completely unvalidated (no data to try these out on)
-
--   ~~Write up a tidyverse workflow for the README for models with arterial input~~
-
--   Add some sample data for testing and for the vignette
-
--   Define S3 objects for model outputs and methods for these classes.
-
-    -   Thus plot\_kinfit can eventually be replaced by plot.
-
-    -   Also planned: broom functions.
+  - Vignettes
 
 **Additions**
 
--   ~~Add vB correction into the remaining linearised arterial models~~
-
--   Add function for creating weights
-
--   Add functions for processing blood data
-
-    -   Combination of automatic and manual blood samples
-
-    -   Dispersion Correction
-
--   Add more models
-
-    -   More kinetic models
-
-    -   Models of arterial input function
-
-    -   Models of plasma parent fraction
-
--   Add code tests
-
 **Improvements**
 
--   ~~Steamline 1TCM, 2TCM and SIME models: currently quite slow~~
+  - Tidy up
+    
+      - Documentation still quite rough and several inconsistencies
+    
+      - T-star finders have lots of code duplication: should be more
+        generic
 
-    -   SIME should be parallelised
--   Tidy up
+  - Revise vignette
 
-    -   Functions a little messy
+  - Update plyr functions to dplyr functions
 
-    -   Documentation still quite rough and several inconsistencies
-
-    -   T-star finders have lots of code duplication: should be more generic
-
--   Revise vignette
-
--   Update plyr functions to dplyr functions
-
--   Get the package CRAN-ready
+  - Get the package CRAN-ready
