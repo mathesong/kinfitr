@@ -236,6 +236,22 @@ twotcm1k <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NU
     }
   }
 
+  # Check for parameters hitting limits
+
+  limcheck_u <- purrr::map2_lgl(round(upper,3), round(coef(output),3), identical)
+  limcheck_l <- purrr::map2_lgl(round(lower,3), round(coef(output),3), identical)
+  limcheck <- limcheck_u + limcheck_l
+  limcheck <- limcheck==1
+
+  if(
+    any(limcheck)
+  ) {
+    warning(
+      paste0(
+        "Fitted parameters are hitting upper or lower limit bounds. Consider \n",
+        "either modifying the upper and lower limit boundaries, or else using \n",
+        "multstart when fitting the model (see the function documentation).") )
+  }
 
   # Output
 

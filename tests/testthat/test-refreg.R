@@ -1,18 +1,18 @@
 context("test-refreg")
 
-data("pbr28")
+data("simref")
 
 set.seed(12345)
 meas <- 2
 
-reftac <- pbr28$tacs[[meas]]$CBL
-roitac <- pbr28$tacs[[meas]]$STR
-t_tac <- pbr28$tacs[[meas]]$Times / 60
-weights <- pbr28$tacs[[meas]]$Weights
+reftac <- simref$tacs[[meas]]$Reference
+roitac <- simref$tacs[[meas]]$ROI1
+t_tac <- simref$tacs[[meas]]$Times
+weights <- simref$tacs[[meas]]$Weights
 
-lowroi <- pbr28$tacs[[meas]]$FC
-medroi <- pbr28$tacs[[meas]]$THA
-highroi <- pbr28$tacs[[meas]]$STR
+lowroi <- simref$tacs[[meas]]$ROI1
+medroi <- simref$tacs[[meas]]$ROI2
+highroi <- simref$tacs[[meas]]$ROI3
 
 
 #### Reversible
@@ -21,8 +21,8 @@ highroi <- pbr28$tacs[[meas]]$STR
 
 test_that("srtm works", {
   srtmout <- srtm(t_tac, reftac, roitac, weights = weights)
-  expect_gt(srtmout$par$bp, -1)
-  expect_lt(srtmout$par$bp, 0.5)
+  expect_gt(srtmout$par$bp, 1.5)
+  expect_lt(srtmout$par$bp, 2.5)
   expect_true(any(class(plot(srtmout)) == "ggplot"))
 })
 
@@ -31,8 +31,8 @@ test_that("srtm works with frameStartEnd", {
     weights = weights,
     frameStartEnd = c(1, 33)
   )
-  expect_gt(srtmout$par$bp, -1)
-  expect_lt(srtmout$par$bp, 0.5)
+  expect_gt(srtmout$par$bp, 1.5)
+  expect_lt(srtmout$par$bp, 2.5)
   expect_true(any(class(plot(srtmout)) == "ggplot"))
 })
 
@@ -41,8 +41,8 @@ test_that("srtm works with multstart", {
     weights = weights,
     multstart_iter = 5
   )
-  expect_gt(srtmout$par$bp, -1)
-  expect_lt(srtmout$par$bp, 0.5)
+  expect_gt(srtmout$par$bp, 1.5)
+  expect_lt(srtmout$par$bp, 2.5)
   expect_true(any(class(plot(srtmout)) == "ggplot"))
 })
 
@@ -52,8 +52,8 @@ test_that("srtm works with frameStartEnd and multstart", {
     frameStartEnd = c(1, 33),
     multstart_iter = 5
   )
-  expect_gt(srtmout$par$bp, -1)
-  expect_lt(srtmout$par$bp, 0.5)
+  expect_gt(srtmout$par$bp, 1.5)
+  expect_lt(srtmout$par$bp, 2.5)
   expect_true(any(class(plot(srtmout)) == "ggplot"))
 })
 
@@ -61,19 +61,19 @@ test_that("srtm works with frameStartEnd and multstart", {
 # refLogan
 
 test_that("refLogan works", {
-  refLoganout <- refLogan(t_tac, reftac, roitac, 0.001, 10, weights = weights)
-  expect_gt(refLoganout$par$bp, -1)
-  expect_lt(refLoganout$par$bp, 0)
+  refLoganout <- refLogan(t_tac, reftac, roitac, 0.1, 10, weights = weights)
+  expect_gt(refLoganout$par$bp, 1.5)
+  expect_lt(refLoganout$par$bp, 2.5)
   expect_true(any(class(plot(refLoganout)) == "ggplot"))
 })
 
 test_that("refLogan works with frameStartEnd", {
-  refLoganout <- refLogan(t_tac, reftac, roitac, 0.001, 10,
+  refLoganout <- refLogan(t_tac, reftac, roitac, 0.1, 10,
     weights = weights,
     frameStartEnd = c(1, 33)
   )
-  expect_gt(refLoganout$par$bp, -1)
-  expect_lt(refLoganout$par$bp, 0)
+  expect_gt(refLoganout$par$bp, 1.5)
+  expect_lt(refLoganout$par$bp, 2.5)
   expect_true(any(class(plot(refLoganout)) == "ggplot"))
 })
 
@@ -90,19 +90,19 @@ test_that("refLogan tstarfinder works", {
 # refmlLogan
 
 test_that("refmlLogan works", {
-  refmlLoganout <- refmlLogan(t_tac, reftac, roitac, 0.001, 10, weights = weights)
-  expect_gt(refmlLoganout$par$bp, -1)
-  expect_lt(refmlLoganout$par$bp, 0)
+  refmlLoganout <- refmlLogan(t_tac, reftac, roitac, 0.1, 10, weights = weights)
+  expect_gt(refmlLoganout$par$bp, 1.5)
+  expect_lt(refmlLoganout$par$bp, 2.5)
   expect_true(any(class(plot(refmlLoganout)) == "ggplot"))
 })
 
 test_that("refmlLogan works with frameStartEnd", {
-  refmlLoganout <- refmlLogan(t_tac, reftac, roitac, 0.001, 10,
+  refmlLoganout <- refmlLogan(t_tac, reftac, roitac, 0.1, 10,
     weights = weights,
     frameStartEnd = c(1, 33)
   )
-  expect_gt(refmlLoganout$par$bp, -1)
-  expect_lt(refmlLoganout$par$bp, 0)
+  expect_gt(refmlLoganout$par$bp, 1.5)
+  expect_lt(refmlLoganout$par$bp, 2.5)
   expect_true(any(class(plot(refmlLoganout)) == "ggplot"))
 })
 
@@ -120,8 +120,8 @@ test_that("refmlLogan tstarfinder works", {
 
 test_that("mrtm1 works", {
   mrtm1out <- mrtm1(t_tac, reftac, roitac, weights = weights)
-  expect_gt(mrtm1out$par$bp, -0.2)
-  expect_lt(mrtm1out$par$bp, 0.2)
+  expect_gt(mrtm1out$par$bp, 1.5)
+  expect_lt(mrtm1out$par$bp, 2.5)
   expect_true(any(class(plot(mrtm1out)) == "ggplot"))
 })
 
@@ -130,8 +130,8 @@ test_that("mrtm1 works with frameStartEnd", {
     weights = weights,
     frameStartEnd = c(1, 33)
   )
-  expect_gt(mrtm1out$par$bp, -0.2)
-  expect_lt(mrtm1out$par$bp, 0.2)
+  expect_gt(mrtm1out$par$bp, 1.5)
+  expect_lt(mrtm1out$par$bp, 2.5)
   expect_true(any(class(plot(mrtm1out)) == "ggplot"))
 })
 
@@ -140,8 +140,8 @@ test_that("mrtm1 works with tstar", {
     weights = weights,
     tstarIncludedFrames = 30
   )
-  expect_gt(mrtm1out$par$bp, -0.2)
-  expect_lt(mrtm1out$par$bp, 0.2)
+  expect_gt(mrtm1out$par$bp, 1.5)
+  expect_lt(mrtm1out$par$bp, 2.5)
   expect_true(any(class(plot(mrtm1out)) == "ggplot"))
 })
 
@@ -151,8 +151,8 @@ test_that("mrtm1 works with tstar and frameStartEnd", {
     frameStartEnd = c(1, 33),
     tstarIncludedFrames = 30
   )
-  expect_gt(mrtm1out$par$bp, -0.2)
-  expect_lt(mrtm1out$par$bp, 0.2)
+  expect_gt(mrtm1out$par$bp, 1.5)
+  expect_lt(mrtm1out$par$bp, 2.5)
   expect_true(any(class(plot(mrtm1out)) == "ggplot"))
 })
 
@@ -167,40 +167,40 @@ test_that("mrtm1 tstarfinder works", {
 # MRTM2
 
 test_that("mrtm2 works", {
-  mrtm2out <- mrtm2(t_tac, reftac, roitac, 0.001, weights = weights)
-  expect_gt(mrtm2out$par$bp, -1)
-  expect_lt(mrtm2out$par$bp, 0)
+  mrtm2out <- mrtm2(t_tac, reftac, roitac, 0.1, weights = weights)
+  expect_gt(mrtm2out$par$bp, 1.5)
+  expect_lt(mrtm2out$par$bp, 2.5)
   expect_true(any(class(plot(mrtm2out)) == "ggplot"))
 })
 
 test_that("mrtm2 works with frameStartEnd", {
-  mrtm2out <- mrtm2(t_tac, reftac, roitac, 0.001,
+  mrtm2out <- mrtm2(t_tac, reftac, roitac, 0.1,
     weights = weights,
     frameStartEnd = c(1, 33)
   )
-  expect_gt(mrtm2out$par$bp, -1)
-  expect_lt(mrtm2out$par$bp, 0)
+  expect_gt(mrtm2out$par$bp, 1.5)
+  expect_lt(mrtm2out$par$bp, 2.5)
   expect_true(any(class(plot(mrtm2out)) == "ggplot"))
 })
 
 test_that("mrtm2 works with tstar", {
-  mrtm2out <- mrtm2(t_tac, reftac, roitac, 0.001,
+  mrtm2out <- mrtm2(t_tac, reftac, roitac, 0.1,
     weights = weights,
     tstarIncludedFrames = 10
   )
-  expect_gt(mrtm2out$par$bp, -1)
-  expect_lt(mrtm2out$par$bp, 0)
+  expect_gt(mrtm2out$par$bp, 1.5)
+  expect_lt(mrtm2out$par$bp, 2.5)
   expect_true(any(class(plot(mrtm2out)) == "ggplot"))
 })
 
 test_that("mrtm2 works with tstar and frameStartEnd", {
-  mrtm2out <- mrtm2(t_tac, reftac, roitac, 0.001,
+  mrtm2out <- mrtm2(t_tac, reftac, roitac, 0.1,
     weights = weights,
     frameStartEnd = c(1, 33),
     tstarIncludedFrames = 10
   )
-  expect_gt(mrtm2out$par$bp, -1)
-  expect_lt(mrtm2out$par$bp, 0)
+  expect_gt(mrtm2out$par$bp, 1.5)
+  expect_lt(mrtm2out$par$bp, 2.5)
   expect_true(any(class(plot(mrtm2out)) == "ggplot"))
 })
 
@@ -228,9 +228,11 @@ newvals <- shift_timings(
 bloodtac <- pracma::interp1(newvals$input$Time, newvals$input$Blood, t_tac)
 
 test_that("srtm_v works", {
-  srtm_vout <- srtm_v(t_tac, reftac, roitac, bloodtac, weights = weights)
-  expect_gt(srtm_vout$par$bp, -1)
-  expect_lt(srtm_vout$par$bp, 0.5)
+  srtm_vout <- srtm_v(t_tac, reftac, roitac, bloodtac, weights = weights,
+                      vBt.lower = -5, vBr.lower = -5)
+  # Note that using the crazy values of vBr and vBt avoids hitting limits
+  expect_gt(srtm_vout$par$bp, 1.5)
+  expect_lt(srtm_vout$par$bp, 2.5)
   expect_true(any(class(plot(srtm_vout)) == "ggplot"))
 })
 
@@ -238,18 +240,20 @@ test_that("srtm_v works with vBr fitted", {
   srtm_vout <- srtm_v(t_tac, reftac, roitac, bloodtac,
     weights = weights, vBr = 0.05
   )
-  expect_gt(srtm_vout$par$bp, -1)
-  expect_lt(srtm_vout$par$bp, 0.5)
+  expect_gt(srtm_vout$par$bp, 1.5)
+  expect_lt(srtm_vout$par$bp, 2.5)
   expect_true(any(class(plot(srtm_vout)) == "ggplot"))
 })
 
 test_that("srtm_v works with frameStartEnd", {
   srtm_vout <- srtm_v(t_tac, reftac, roitac, bloodtac,
     weights = weights,
-    frameStartEnd = c(1, 33)
-  )
-  expect_gt(srtm_vout$par$bp, -1)
-  expect_lt(srtm_vout$par$bp, 0.5)
+    frameStartEnd = c(1, 33),
+    vBt.lower = -5, vBr.lower = -5,
+    vBt.upper = 0.5, vBr.upper = 0.5)
+  # Note that using the crazy values of vBr and vBt avoids hitting limits
+  expect_gt(srtm_vout$par$bp, 1.5)
+  expect_lt(srtm_vout$par$bp, 2.5)
   expect_true(any(class(plot(srtm_vout)) == "ggplot"))
 })
 
@@ -257,12 +261,11 @@ test_that("srtm_v works with multstart", {
   srtm_vout <- srtm_v(t_tac, reftac, roitac, bloodtac,
     weights = weights,
     multstart_iter = 5,
-    multstart_upper = list(bp = 0.2),
-    multstart_lower = list(bp = -0.2),
+    bp.lower = 0.5, bp.upper = 3,
     vBr = 0.05
   )
-  expect_gt(srtm_vout$par$bp, -1)
-  expect_lt(srtm_vout$par$bp, 0.5)
+  expect_gt(srtm_vout$par$bp, 1.5)
+  expect_lt(srtm_vout$par$bp, 2.5)
   expect_true(any(class(plot(srtm_vout)) == "ggplot"))
 })
 
@@ -271,12 +274,11 @@ test_that("srtm_v works with frameStartEnd and multstart", {
     weights = weights,
     frameStartEnd = c(1, 33),
     multstart_iter = 5,
-    multstart_upper = list(bp = 0.2),
-    multstart_lower = list(bp = -0.2),
+    bp.lower = 0.5, bp.upper = 3,
     vBr = 0.05
   )
-  expect_gt(srtm_vout$par$bp, -1)
-  expect_lt(srtm_vout$par$bp, 0.5)
+  expect_gt(srtm_vout$par$bp, 1.5)
+  expect_lt(srtm_vout$par$bp, 2.5)
   expect_true(any(class(plot(srtm_vout)) == "ggplot"))
 })
 
