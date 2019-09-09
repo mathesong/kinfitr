@@ -17,12 +17,12 @@
 #'
 #' @examples
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' dur_tac <- pbr28$tacs[[2]]$Duration / 60
 #' tac <- pbr28$tacs[[2]]$FC
-#' 
-#' 
+#'
+#'
 #' fit1 <- SUV(tac, t_tac, injRad = 150, bodymass = 85)
 #' fit2 <- SUV(tac, dur_tac = dur_tac, injRad = 150, bodymass = 85)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
@@ -34,10 +34,12 @@ SUV <- function(tac, t_tac = NULL, dur_tac = NULL, injRad = 1, bodymass = 1, fra
   # Tidying
 
   if (is.null(dur_tac)) {
-    tidyinput <- tidyinput_art(t_tac, tac, tac, frameStartEnd) # Don't need weights, thus just set to same as tac
+    tidyinput <- tidyinput_art(t_tac, tac, tac,
+                               frameStartEnd) # Don't need weights, thus just set to same as tac
     t_tac <- tidyinput$t_tac
   } else {
-    tidyinput <- tidyinput_art(dur_tac, tac, tac, frameStartEnd) # Don't need weights, thus just set to same as tac
+    tidyinput <- tidyinput_art(dur_tac, tac, tac,
+                               frameStartEnd) # Don't need weights, thus just set to same as tac
     dur_tac <- tidyinput$t_tac
   }
 
@@ -66,9 +68,15 @@ SUV <- function(tac, t_tac = NULL, dur_tac = NULL, injRad = 1, bodymass = 1, fra
 
   if (is.null(dur_tac)) {
     tacs$Duration <- NA
+  } else {
+    tacs$Duration <- dur_tac
   }
+
+
   if (is.null(t_tac)) {
     tacs$Time <- NA
+  } else {
+    tacs$Time <- t_tac
   }
 
   out <- list(par = par, tacs = tacs)

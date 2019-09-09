@@ -4,8 +4,7 @@ data(pbr28)
 
 blooddata <- create_blooddata_bids(pbr28$jsondata[[5]])
 
-blooddata <- bd_blood_dispcor(blooddata,
-                tau = blooddata$Data$Blood$Continuous$DispersionConstant)
+blooddata <- bd_blood_dispcor(blooddata)
 
 blooddata_nocont <- blooddata
 blooddata_nocont$Data$Blood$Continuous <- NULL

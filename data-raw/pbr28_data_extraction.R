@@ -2,6 +2,7 @@
 
 library(tidyverse)
 library(readr)
+library(kinfitr)
 
 demog <- read_csv("data-raw/pbr28_demographics.csv") %>%
   select(

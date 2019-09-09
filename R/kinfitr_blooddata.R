@@ -998,7 +998,6 @@ interpends <- function(x, y, xi, method = "linear", yzero = NULL) {
 #'
 #' @param blooddata A blooddata object created using one of the
 #'   create_blooddata_* functions.
-#' @param tau Time constant denoting the time of dispersion (in seconds).
 #' @param timedelta The time difference between each measured sample. Defaults
 #'   to the most common time difference between the first 20 measurements.
 #' @param keep_interpolated Defaults to TRUE: should interpolated samples which
@@ -1013,10 +1012,10 @@ interpends <- function(x, y, xi, method = "linear", yzero = NULL) {
 #'
 #' @examples
 #' \dontrun{
-#' blooddata <- bd_blood_dispcor(blooddata, 2.5)
+#' blooddata <- bd_blood_dispcor(blooddata)
 #' }
 #'
-bd_blood_dispcor <- function(blooddata, tau, timedelta = NULL,
+bd_blood_dispcor <- function(blooddata, timedelta = NULL,
                                     keep_interpolated = T, smooth_iterations = 0) {
   if (is.null(blooddata$Data$Blood$Continuous)) {
     stop("There is no continuous blood data to
