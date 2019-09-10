@@ -83,8 +83,7 @@ the x and y values of the maximal point in the measured data.
 }
 \examples{
 blooddata <- create_blooddata_bids(pbr28$jsondata[[3]])
-blooddata <- bd_blood_dispcor(blooddata,
-                 tau = blooddata$Data$Blood$Continuous$DispersionConstant)
+blooddata <- bd_blood_dispcor(blooddata)
 aif <- bd_getdata(blooddata, output = "AIF")
 blood_fit <- blmod_exp_sep(aif$time,
                            aif$aif,

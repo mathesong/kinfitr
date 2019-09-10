@@ -90,8 +90,7 @@ blmod_tidyinput <- function(time, activity, Method = NULL, weights = NULL) {
 #'
 #' @examples
 #' blooddata <- create_blooddata_bids(pbr28$jsondata[[1]])
-#' blooddata <- bd_blood_dispcor(blooddata,
-#'                  tau = blooddata$Data$Blood$Continuous$DispersionConstant)
+#' blooddata <- bd_blood_dispcor(blooddata)
 #' blood <- bd_getdata(blooddata, output = "Blood")
 #' blood_fit <- blmod_splines(blood$time,
 #'                            blood$activity,
@@ -250,8 +249,7 @@ predict.blood_splines <- function(object, newdata = NULL) {
 #'
 #' @examples
 #' blooddata <- create_blooddata_bids(pbr28$jsondata[[1]])
-#' blooddata <- bd_blood_dispcor(blooddata,
-#'                  tau = blooddata$Data$Blood$Continuous$DispersionConstant)
+#' blooddata <- bd_blood_dispcor(blooddata)
 #' aif <- bd_getdata(blooddata, output = "AIF")
 #' start <- blmod_exp_startpars(aif$time,
 #'                            aif$aif)
@@ -445,8 +443,7 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
 #'
 #' @examples
 #' blooddata <- create_blooddata_bids(pbr28$jsondata[[1]])
-#' blooddata <- bd_blood_dispcor(blooddata,
-#'                  tau = blooddata$Data$Blood$Continuous$DispersionConstant)
+#' blooddata <- bd_blood_dispcor(blooddata)
 #' aif <- bd_getdata(blooddata, output = "AIF")
 #' blood_fit <- blmod_exp(aif$time,
 #'                            aif$aif,
@@ -718,8 +715,7 @@ blmod_exp <- function(time, activity, Method = NULL,
 #'
 #' @examples
 #' blooddata <- create_blooddata_bids(pbr28$jsondata[[3]])
-#' blooddata <- bd_blood_dispcor(blooddata,
-#'                  tau = blooddata$Data$Blood$Continuous$DispersionConstant)
+#' blooddata <- bd_blood_dispcor(blooddata)
 #' aif <- bd_getdata(blooddata, output = "AIF")
 #' blood_fit <- blmod_exp_sep(aif$time,
 #'                            aif$aif,

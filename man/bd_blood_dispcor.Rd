@@ -4,14 +4,12 @@
 \alias{bd_blood_dispcor}
 \title{Perform Dispersion Correction on a blooddata object}
 \usage{
-bd_blood_dispcor(blooddata, tau, timedelta = NULL,
-  keep_interpolated = T, smooth_iterations = 0)
+bd_blood_dispcor(blooddata, timedelta = NULL, keep_interpolated = T,
+  smooth_iterations = 0)
 }
 \arguments{
 \item{blooddata}{A blooddata object created using one of the
 create_blooddata_* functions.}
-
-\item{tau}{Time constant denoting the time of dispersion (in seconds).}
 
 \item{timedelta}{The time difference between each measured sample. Defaults
 to the most common time difference between the first 20 measurements.}
@@ -31,7 +29,7 @@ already been performed.
 }
 \examples{
 \dontrun{
-blooddata <- bd_blood_dispcor(blooddata, 2.5)
+blooddata <- bd_blood_dispcor(blooddata)
 }
 
 }

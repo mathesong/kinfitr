@@ -99,8 +99,7 @@ i.e. the initial part of the decay after the peak.
 }
 \examples{
 blooddata <- create_blooddata_bids(pbr28$jsondata[[1]])
-blooddata <- bd_blood_dispcor(blooddata,
-                 tau = blooddata$Data$Blood$Continuous$DispersionConstant)
+blooddata <- bd_blood_dispcor(blooddata)
 aif <- bd_getdata(blooddata, output = "AIF")
 blood_fit <- blmod_exp(aif$time,
                            aif$aif,
