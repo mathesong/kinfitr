@@ -137,6 +137,26 @@ test_that("bloodsplines works", {
   expect_true(any(class(bdplot) == "ggplot"))
 })
 
+test_that("starting parameters for expontial when AIF contains zeros works", {
+
+  aif <- bd_getdata(blooddata, output = "AIF")
+
+  aif$aif[100] <- 0
+  aif$aif[500] <- 0
+  aif$aif[length(aif$aif)] <- -1
+  aif$aif[length(aif$aif)-1] <- 0
+
+  start <- blmod_exp_startpars(aif$time,
+                               aif$aif,
+                               fit_exp3 = T,
+                               expdecay_props = c(1/60, 0.1))
+
+
+
+  expect_true(any(class(start) == "list"))
+
+})
+
 test_that("exponential works", {
 
   aif <- bd_getdata(blooddata, output = "AIF")

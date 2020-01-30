@@ -288,7 +288,8 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
   blood_exp_part3 <- dplyr::filter(blood_decay,
                                    dplyr::between(time,
                                                   expdecay_props[2]*max(time),
-                                                  max(time)))
+                                                  max(time)) &
+                                     activity>0)
 
   exp3_mod <- lm(log(abs(activity)) ~ time,
                  data=blood_exp_part3)
@@ -316,7 +317,8 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
   blood_exp_part2 <- dplyr::filter(blood_decay,
                                    dplyr::between(time,
                                                   expdecay_props[1]*max(time),
-                                                  expdecay_props[2]*max(time)))
+                                                  expdecay_props[2]*max(time)) &
+                                     activity_2ex>0)
 
   if(fit_exp3) {
 
@@ -342,7 +344,8 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
   blood_exp_part1 <- dplyr::filter(blood_decay,
                                    dplyr::between(time,
                                                   min(time),
-                                                  expdecay_props[1]*max(time)))
+                                                  expdecay_props[1]*max(time)) &
+                                     activity_1ex>0)
 
   exp1_mod <- lm(log(abs(activity_1ex)) ~ time,
                  data=blood_exp_part1)
