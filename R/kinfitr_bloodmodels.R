@@ -112,17 +112,33 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL) {
     after_peak_d <- dplyr::filter(after_peak, Method == "Discrete")
     after_peak_c <- dplyr::filter(after_peak, Method == "Continuous")
 
-    before <- pspline::sm.spline(before_peak$time, before_peak$activity, w = before_peak$weights)
-    after_d <- pspline::sm.spline(after_peak_d$time, after_peak_d$activity, w = after_peak_d$weights)
-    after_c <- pspline::sm.spline(after_peak_c$time, after_peak_c$activity, w = after_peak_c$weights)
+    before <- mgcv::gam(activity ~ s(time, bs = "cr"),
+                        weights = weights,
+                        data = before_peak)
+
+    after_d <- mgcv::gam(activity ~ s(time, bs = "cr"),
+                         weights = weights,
+                         data = after_peak_d)
+
+    after_c <- mgcv::gam(activity ~ s(time, bs = "ad"),
+                         weights = weights,
+                         data = after_peak_c)
 
     start_overlap <- min(after_peak_d$time)
     stop_overlap <- max(after_peak_c$time)
   } else { # i.e. no Continuous
 
-    before <- pspline::sm.spline(before_peak$time, before_peak$activity, w = before_peak$weights)
-    after_d <- pspline::sm.spline(after_peak$time, after_peak$activity, w = after_peak$weights)
-    after_c <- pspline::sm.spline(after_peak$time, after_peak$activity, w = after_peak$weights)
+    before <- mgcv::gam(activity ~ s(time, bs = "cr"),
+                        weights = weights,
+                        data = before_peak)
+
+    after_d <- mgcv::gam(activity ~ s(time, bs = "cr"),
+                         weights = weights,
+                         data = after_peak)
+
+    after_c <- mgcv::gam(activity ~ s(time, bs = "cr"),
+                         weights = weights,
+                         data = after_peak)
 
     start_overlap <- peaktime
     stop_overlap <- max(after_peak$time)
@@ -164,13 +180,13 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL) {
 predict.blood_splines <- function(object, newdata = NULL) {
   if (is.null(newdata)) {
     pred_before <- predict(object$before)
-    pred_x_before <- pred_before$x
+    pred_x_before <- object$before$model$time
 
     pred_after_d <- predict(object$after_d)
-    pred_x_after_d <- pred_after_d$x
+    pred_x_after_d <- object$after_d$model$time
 
     pred_after_c <- predict(object$after_c)
-    pred_x_after_c <- pred_after_c$x
+    pred_x_after_c <- object$after_c$model$time
 
     pred_x_after <- unique(c(pred_x_after_d, pred_x_after_c))
     pred_x_after <- pred_x_after[order(pred_x_after)]
@@ -178,11 +194,12 @@ predict.blood_splines <- function(object, newdata = NULL) {
     newdata <- list(time = c(pred_x_before, pred_x_after))
   }
 
-  pred_before <- predict(object$before, x = newdata$time)[, 1]
-  pred_after_d <- predict(object$after_d, x = newdata$time)[, 1]
-  pred_after_c <- predict(object$after_c, x = newdata$time)[, 1]
+  pred_before <- predict(object$before, newdata = newdata)
+  pred_after_d <- predict(object$after_d, newdata = newdata)
+  pred_after_c <- predict(object$after_c, newdata = newdata)
 
-  pred_before <- tibble::tibble(time = newdata$time, activity = pred_before)
+  pred_before <- tibble::tibble(time = newdata$time,
+                                activity = pred_before)
   pred_before <- dplyr::mutate_all(pred_before,
                                    ~replace(., is.nan(.), 0))
   pred_after <- tibble::tibble(
