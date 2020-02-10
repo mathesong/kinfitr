@@ -205,7 +205,8 @@ create_blooddata_bids <- function(bids_data, TimeShift = 0) {
   }
 
   tibblify_bidsjson <- function(list) {
-    list$Data$Values <- tibble::as_tibble(list$Data$Values)
+    list$Data$Values <- tibble::as_tibble(list$Data$Values,
+                                          .name_repair = NULL)
     colnames(list$Data$Values) <- list$Data$Labels
     return(list)
   }
@@ -241,8 +242,10 @@ create_blooddata_bids <- function(bids_data, TimeShift = 0) {
     TimeShift = 0
   )
 
-  blooddata <- rapply(blooddata, function(x) ifelse(x == "true", TRUE, x), how = "replace")
-  blooddata <- rapply(blooddata, function(x) ifelse(x == "false", FALSE, x), how = "replace")
+  blooddata <- rapply(blooddata, function(x) ifelse(x == "true", TRUE, x),
+                      how = "replace")
+  blooddata <- rapply(blooddata, function(x) ifelse(x == "false", FALSE, x),
+                      how = "replace")
 
   class(blooddata) <- "blooddata"
 

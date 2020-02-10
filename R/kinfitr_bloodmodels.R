@@ -183,7 +183,8 @@ predict.blood_splines <- function(object, newdata = NULL) {
   pred_after_c <- predict(object$after_c, x = newdata$time)[, 1]
 
   pred_before <- tibble::tibble(time = newdata$time, activity = pred_before)
-  pred_before <- dplyr::mutate_all(pred_before, dplyr::funs(replace(., is.nan(.), 0)))
+  pred_before <- dplyr::mutate_all(pred_before,
+                                   ~replace(., is.nan(.), 0))
   pred_after <- tibble::tibble(
     time = newdata$time,
     activity_c = pred_after_c,
@@ -195,7 +196,8 @@ predict.blood_splines <- function(object, newdata = NULL) {
           object$start_overlap)
   )
 
-  pred_after <- dplyr::mutate_all(pred_after, dplyr::funs(replace(., is.nan(.), 0)))
+  pred_after <- dplyr::mutate_all(pred_after,
+                                  ~replace(., is.nan(.), 0))
 
   pred_after$cweights <- dplyr::case_when(
     pred_after$overlapfrac < 0 ~ 1,
@@ -472,8 +474,12 @@ blmod_exp <- function(time, activity, Method = NULL,
 
 
   # Create starting parameters
+  ## Note: start contains actual starting parameters. Startvals useful for other
+  ## things even if starting parameters are defined.
+  startvals <- blmod_exp_startpars(time, activity,
+                                   fit_exp3,
+                                   expdecay_props)
   if(is.null(start)) {
-    startvals <- blmod_exp_startpars(time, activity, fit_exp3, expdecay_props)
     start <- startvals
   }
 
@@ -743,8 +749,12 @@ blmod_exp_sep <- function(time, activity, Method = NULL,
 
 
   # Create starting parameters
+  ## Note: start contains actual starting parameters. Startvals useful for other
+  ## things even if starting parameters are defined.
+  startvals <- blmod_exp_startpars(time, activity,
+                                   fit_exp3,
+                                   expdecay_props)
   if(is.null(start)) {
-    startvals <- blmod_exp_startpars(time, activity, fit_exp3, expdecay_props)
     start <- startvals
   }
 

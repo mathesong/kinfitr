@@ -234,6 +234,29 @@ test_that("exponential without method works", {
   expect_true(any(class(bdplot) == "ggplot"))
 })
 
+test_that("exponential with start parameters works", {
+
+  aif <- bd_getdata(blooddata, output = "AIF")
+
+  startpars <- blmod_exp_startpars(aif$time,
+                                   aif$aif)
+
+  blood_fit <- blmod_exp(aif$time,
+                         aif$aif,
+                         Method = aif$Method,
+                         multstart_iter = 1,
+                         start = startpars)
+
+  blooddata <- bd_addfit(blooddata,
+                         fit = blood_fit,
+                         modeltype = "AIF"
+  )
+
+  bdplot <- plot(blooddata)
+
+  expect_true(any(class(bdplot) == "ggplot"))
+})
+
 test_that("exp_sep works", {
 
   aif <- bd_getdata(blooddata, output = "AIF")
@@ -261,6 +284,29 @@ test_that("exp_sep without method works", {
   blood_fit <- blmod_exp_sep(aif$time,
                                  aif$aif,
                                  multstart_iter = 1)
+
+  blooddata <- bd_addfit(blooddata,
+                         fit = blood_fit,
+                         modeltype = "AIF"
+  )
+
+  bdplot <- plot(blooddata)
+
+  expect_true(any(class(bdplot) == "ggplot"))
+})
+
+test_that("exp_sep with start parameters works", {
+
+  aif <- bd_getdata(blooddata, output = "AIF")
+
+  startpars <- blmod_exp_startpars(aif$time,
+                                   aif$aif)
+
+  blood_fit <- blmod_exp_sep(aif$time,
+                         aif$aif,
+                         Method = aif$Method,
+                         multstart_iter = 1,
+                         start = startpars)
 
   blooddata <- bd_addfit(blooddata,
                          fit = blood_fit,
