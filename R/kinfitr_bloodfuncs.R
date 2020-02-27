@@ -582,7 +582,7 @@ blood_dispcor <- function(time, activity, tau, timedelta = NULL,
   ind <- 2:(length(i_time) - 1)
 
   time_out <- i_time[ind]
-  activity_out <- (i_integ_true[ind + 1] - i_integ_true[ind - 1]) / 2 * timedelta
+  activity_out <- (i_integ_true[ind + 1] - i_integ_true[ind - 1]) / (2 * timedelta)
 
   out <- tibble::tibble(time = time_out, activity = activity_out)
 
