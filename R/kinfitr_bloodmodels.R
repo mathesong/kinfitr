@@ -84,6 +84,12 @@ blmod_tidyinput <- function(time, activity, Method = NULL, weights = NULL) {
 #' @param activity The radioactivity of each measurement
 #' @param Method Optional. The method of collection, i.e. "Discrete" or "Continuous"
 #' @param weights Optional. Weights of each measurement.
+#' @param bs_before Optional. Defines the basis function for the points before the peak.
+#' @param bs_after_c Optional. Defines the basis function for the continuous points after the peak.
+#' @param bs_after_c Optional. Defines the basis function for the discrete points after the peak.
+#' @param k_before Optional. Defines the dimension of the basis for the points before the peak.
+#' @param k_after_c Optional. Defines the dimension of the basis for the continuous points after the peak.
+#' @param k_after_c Optional. Defines the dimension of the basis for the discrete points after the peak.
 #'
 #' @return A model fit including all of the individual models of class blood_splines.
 #' @export
@@ -95,7 +101,9 @@ blmod_tidyinput <- function(time, activity, Method = NULL, weights = NULL) {
 #' blood_fit <- blmod_splines(blood$time,
 #'                            blood$activity,
 #'                            Method = blood$Method)
-blmod_splines <- function(time, activity, Method = NULL, weights = NULL) {
+blmod_splines <- function(time, activity, Method = NULL, weights = NULL,
+                          bs_before="cr", bs_after_c="ad", bs_after_d="cr",
+                          k_before=-1, k_after_c=-1, k_after_d=-1) {
 
   blood <- blmod_tidyinput(time, activity, Method, weights)
 
@@ -112,15 +120,15 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL) {
     after_peak_d <- dplyr::filter(after_peak, Method == "Discrete")
     after_peak_c <- dplyr::filter(after_peak, Method == "Continuous")
 
-    before <- mgcv::gam(activity ~ s(time, bs = "cr"),
+    before <- mgcv::gam(activity ~ s(time, bs = bs_before, k=k_before),
                         weights = weights,
                         data = before_peak)
 
-    after_d <- mgcv::gam(activity ~ s(time, bs = "cr"),
+    after_d <- mgcv::gam(activity ~ s(time, bs = bs_after_d, k=k_after_d),
                          weights = weights,
                          data = after_peak_d)
 
-    after_c <- mgcv::gam(activity ~ s(time, bs = "ad"),
+    after_c <- mgcv::gam(activity ~ s(time, bs = bs_after_c, k=k_after_c),
                          weights = weights,
                          data = after_peak_c)
 
@@ -128,15 +136,15 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL) {
     stop_overlap <- max(after_peak_c$time)
   } else { # i.e. no Continuous
 
-    before <- mgcv::gam(activity ~ s(time, bs = "cr"),
+    before <- mgcv::gam(activity ~ s(time, bs = bs_before, k=k_before),
                         weights = weights,
                         data = before_peak)
 
-    after_d <- mgcv::gam(activity ~ s(time, bs = "cr"),
+    after_d <- mgcv::gam(activity ~ s(time, bs = bs_after_d, k=k_after_d),
                          weights = weights,
                          data = after_peak)
 
-    after_c <- mgcv::gam(activity ~ s(time, bs = "cr"),
+    after_c <- mgcv::gam(activity ~ s(time, bs = bs_after_d, k=k_after_d),
                          weights = weights,
                          data = after_peak)
 

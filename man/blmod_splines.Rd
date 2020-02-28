@@ -4,7 +4,9 @@
 \alias{blmod_splines}
 \title{Blood Model: Splines}
 \usage{
-blmod_splines(time, activity, Method = NULL, weights = NULL)
+blmod_splines(time, activity, Method = NULL, weights = NULL,
+  bs_before = "cr", bs_after_c = "ad", bs_after_d = "cr",
+  k_before = -1, k_after_c = -1, k_after_d = -1)
 }
 \arguments{
 \item{time}{The time of each measurement in seconds}
@@ -14,6 +16,18 @@ blmod_splines(time, activity, Method = NULL, weights = NULL)
 \item{Method}{Optional. The method of collection, i.e. "Discrete" or "Continuous"}
 
 \item{weights}{Optional. Weights of each measurement.}
+
+\item{bs_before}{Optional. Defines the basis function for the points before the peak.}
+
+\item{bs_after_c}{Optional. Defines the basis function for the continuous points after the peak.}
+
+\item{k_before}{Optional. Defines the dimension of the basis for the points before the peak.}
+
+\item{k_after_c}{Optional. Defines the dimension of the basis for the continuous points after the peak.}
+
+\item{bs_after_c}{Optional. Defines the basis function for the discrete points after the peak.}
+
+\item{k_after_c}{Optional. Defines the dimension of the basis for the discrete points after the peak.}
 }
 \value{
 A model fit including all of the individual models of class blood_splines.
