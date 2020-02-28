@@ -21,13 +21,13 @@ blmod_splines(time, activity, Method = NULL, weights = NULL,
 
 \item{bs_after_c}{Optional. Defines the basis function for the continuous points after the peak.}
 
+\item{bs_after_d}{Optional. Defines the basis function for the discrete points after the peak.}
+
 \item{k_before}{Optional. Defines the dimension of the basis for the points before the peak.}
 
 \item{k_after_c}{Optional. Defines the dimension of the basis for the continuous points after the peak.}
 
-\item{bs_after_c}{Optional. Defines the basis function for the discrete points after the peak.}
-
-\item{k_after_c}{Optional. Defines the dimension of the basis for the discrete points after the peak.}
+\item{k_after_d}{Optional. Defines the dimension of the basis for the discrete points after the peak.}
 }
 \value{
 A model fit including all of the individual models of class blood_splines.

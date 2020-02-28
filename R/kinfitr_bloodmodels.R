@@ -86,10 +86,10 @@ blmod_tidyinput <- function(time, activity, Method = NULL, weights = NULL) {
 #' @param weights Optional. Weights of each measurement.
 #' @param bs_before Optional. Defines the basis function for the points before the peak.
 #' @param bs_after_c Optional. Defines the basis function for the continuous points after the peak.
-#' @param bs_after_c Optional. Defines the basis function for the discrete points after the peak.
+#' @param bs_after_d Optional. Defines the basis function for the discrete points after the peak.
 #' @param k_before Optional. Defines the dimension of the basis for the points before the peak.
 #' @param k_after_c Optional. Defines the dimension of the basis for the continuous points after the peak.
-#' @param k_after_c Optional. Defines the dimension of the basis for the discrete points after the peak.
+#' @param k_after_d Optional. Defines the dimension of the basis for the discrete points after the peak.
 #'
 #' @return A model fit including all of the individual models of class blood_splines.
 #' @export
