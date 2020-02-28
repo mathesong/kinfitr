@@ -1019,8 +1019,11 @@ interpends <- function(x, y, xi, method = "linear", yzero = NULL) {
 #' }
 #'
 bd_blood_dispcor <- function(blooddata, timedelta = NULL,
-                                    keep_interpolated = T, smooth_iterations = 0) {
+                                    keep_interpolated = T,
+                             smooth_iterations = 0) {
+
   if (is.null(blooddata$Data$Blood$Continuous)) {
+
     stop("There is no continuous blood data to
          perform dispersion correction on.")
   }

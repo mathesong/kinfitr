@@ -318,3 +318,32 @@ test_that("exp_sep with start parameters works", {
   expect_true(any(class(bdplot) == "ggplot"))
 })
 
+
+test_that("dispcor with different intervals works", {
+
+  time <- 1:20
+  activity <- rnorm(20)
+  tau <- 2.5
+
+  time <- time[-c(15, 17, 19)]
+  activity <- activity[-c(15, 17, 19)]
+
+  out <- blood_dispcor(time, activity, tau)
+
+  expect_true(nrow(out)==20)
+})
+
+test_that("dispcor with different intervals works with orig times", {
+
+  time <- 1:20
+  activity <- rnorm(20)
+  tau <- 2.5
+
+  time <- time[-c(15, 17, 19)]
+  activity <- activity[-c(15, 17, 19)]
+
+  out <- blood_dispcor(time, activity, tau, keep_interpolated = F)
+
+  expect_true(nrow(out)==17)
+})
+

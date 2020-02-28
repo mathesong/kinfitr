@@ -582,16 +582,25 @@ blood_dispcor <- function(time, activity, tau, timedelta = NULL,
   ind <- 2:(length(i_time) - 1)
 
   time_out <- i_time[ind]
-  activity_out <- (i_integ_true[ind + 1] - i_integ_true[ind - 1]) / (2 * timedelta)
+  activity_out <- (i_integ_true[ind + 1] - i_integ_true[ind - 1]) /
+    (2 * timedelta)
 
-  out <- tibble::tibble(time = time_out, activity = activity_out)
 
-  if (!keep_interpolated) {
-    meastimes <- time
-    out <- dplyr::filter(out, time %in% meastimes)
+  if (keep_interpolated) {
+
+    out <- tibble::tibble(time = time_out,
+                          activity = activity_out)
+  } else {
+
+    activity_out <- pracma::interp1(x = time_out,
+                               y = activity_out,
+                               xi = time)
+
+    out <- tibble::tibble(time = time,
+                          activity = activity_out)
   }
 
-  out <- blood_smooth(time_out, activity_out, smooth_iterations)
+  out <- blood_smooth(out$time, out$activity, smooth_iterations)
 
   return(out)
 }
