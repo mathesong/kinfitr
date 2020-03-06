@@ -4,8 +4,11 @@
 \alias{bd_addfit}
 \title{Add a model fit to a blooddata object}
 \usage{
-bd_addfit(blooddata, fit, modeltype = c("Blood", "BPR", "parentFraction",
-  "AIF"))
+bd_addfit(
+  blooddata,
+  fit,
+  modeltype = c("Blood", "BPR", "parentFraction", "AIF")
+)
 }
 \arguments{
 \item{blooddata}{A blooddata object created using one of the

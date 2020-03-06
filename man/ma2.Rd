@@ -4,8 +4,15 @@
 \alias{ma2}
 \title{Ichise Multilinear Analysis 2}
 \usage{
-ma2(t_tac, tac, input, weights = NULL, inpshift = 0, vB = 0,
-  frameStartEnd = NULL)
+ma2(
+  t_tac,
+  tac,
+  input,
+  weights = NULL,
+  inpshift = 0,
+  vB = 0,
+  frameStartEnd = NULL
+)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a

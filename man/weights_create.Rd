@@ -4,8 +4,15 @@
 \alias{weights_create}
 \title{Create weights using durations and counts}
 \usage{
-weights_create(t_start, t_end, tac, radioisotope = c("C11", "O15",
-  "F18"), method = 2, minweight = 0.7, weight_checkn = 5)
+weights_create(
+  t_start,
+  t_end,
+  tac,
+  radioisotope = c("C11", "O15", "F18"),
+  method = 2,
+  minweight = 0.7,
+  weight_checkn = 5
+)
 }
 \arguments{
 \item{t_start}{The starting times of the frames in minutes.}

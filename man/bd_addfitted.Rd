@@ -4,8 +4,12 @@
 \alias{bd_addfitted}
 \title{Add fitted values from another fit to a blooddata object}
 \usage{
-bd_addfitted(blooddata, time, predicted, modeltype = c("Blood", "BPR",
-  "parentFraction", "AIF"))
+bd_addfitted(
+  blooddata,
+  time,
+  predicted,
+  modeltype = c("Blood", "BPR", "parentFraction", "AIF")
+)
 }
 \arguments{
 \item{blooddata}{A blooddata object created using one of the create_blooddata_* functions.}

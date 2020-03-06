@@ -4,8 +4,14 @@
 \alias{fix_multstartpars}
 \title{Check and fix multstart parameters}
 \usage{
-fix_multstartpars(start, lower, upper, multstart_iter, multstart_lower,
-  multstart_upper)
+fix_multstartpars(
+  start,
+  lower,
+  upper,
+  multstart_iter,
+  multstart_lower,
+  multstart_upper
+)
 }
 \arguments{
 \item{start}{Original starting values for without multstart}

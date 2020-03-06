@@ -4,11 +4,17 @@
 \alias{metab_exponential}
 \title{Fit an Exponential Function for Modelling Parent Fraction.}
 \usage{
-metab_exponential(time, parentFraction, fit_ppf0 = FALSE,
-  fit_delay = FALSE, lower = list(a = 0, b = 0, c = 0, ppf0 = 0.8,
-  delay = -30), upper = list(a = 1, b = 1, c = 1, ppf0 = 1.1, delay =
-  30), multstart_lower = NULL, multstart_upper = NULL,
-  multstart_iter = 100)
+metab_exponential(
+  time,
+  parentFraction,
+  fit_ppf0 = FALSE,
+  fit_delay = FALSE,
+  lower = list(a = 0, b = 0, c = 0, ppf0 = 0.8, delay = -30),
+  upper = list(a = 1, b = 1, c = 1, ppf0 = 1.1, delay = 30),
+  multstart_lower = NULL,
+  multstart_upper = NULL,
+  multstart_iter = 100
+)
 }
 \arguments{
 \item{time}{Time in seconds.}

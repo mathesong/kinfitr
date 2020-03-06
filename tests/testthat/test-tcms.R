@@ -10,6 +10,8 @@ input <- pbr28$input[[meas]]
 weights <- pbr28$tacs[[meas]]$Weights
 inpshift <- 0.1438066
 
+set.seed(42)
+
 # 1TCM
 
 test_that("1TCM fitting delay works", {

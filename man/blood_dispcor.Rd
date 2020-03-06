@@ -4,8 +4,14 @@
 \alias{blood_dispcor}
 \title{Perform dispersion correction on blood data collected using ABSS}
 \usage{
-blood_dispcor(time, activity, tau, timedelta = NULL,
-  keep_interpolated = T, smooth_iterations = 0)
+blood_dispcor(
+  time,
+  activity,
+  tau,
+  timedelta = NULL,
+  keep_interpolated = T,
+  smooth_iterations = 0
+)
 }
 \arguments{
 \item{time}{Vector of time (in seconds) of each sample.}

@@ -7,12 +7,27 @@ other words, this model fits a single NLS model which describes the rise and
 the fall of the AIF. This approach is more flexible, but also more sensitive
 to fitting failures.}
 \usage{
-blmod_exp(time, activity, Method = NULL, weights = NULL,
-  fit_t0 = TRUE, fit_exp3 = TRUE, fit_peaktime = FALSE,
-  fit_peakval = FALSE, peaktime_val = NULL, peakval_set = TRUE,
-  lower = NULL, upper = NULL, start = NULL, multstart_lower = NULL,
-  multstart_upper = NULL, multstart_iter = 100, taper_weights = TRUE,
-  check_startpars = FALSE, expdecay_props = c(1/60, 0.1))
+blmod_exp(
+  time,
+  activity,
+  Method = NULL,
+  weights = NULL,
+  fit_t0 = TRUE,
+  fit_exp3 = TRUE,
+  fit_peaktime = FALSE,
+  fit_peakval = FALSE,
+  peaktime_val = NULL,
+  peakval_set = TRUE,
+  lower = NULL,
+  upper = NULL,
+  start = NULL,
+  multstart_lower = NULL,
+  multstart_upper = NULL,
+  multstart_iter = 100,
+  taper_weights = TRUE,
+  check_startpars = FALSE,
+  expdecay_props = c(1/60, 0.1)
+)
 }
 \arguments{
 \item{time}{The time of each measurement in seconds}

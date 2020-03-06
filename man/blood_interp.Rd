@@ -4,8 +4,15 @@
 \alias{blood_interp}
 \title{Interpolate Blood Curves}
 \usage{
-blood_interp(t_blood, blood, t_plasma, plasma, t_parentfrac, parentfrac,
-  interpPoints = 6000)
+blood_interp(
+  t_blood,
+  blood,
+  t_plasma,
+  plasma,
+  t_parentfrac,
+  parentfrac,
+  interpPoints = 6000
+)
 }
 \arguments{
 \item{t_blood}{Numeric vector of times for each blood measurement in minutes.}

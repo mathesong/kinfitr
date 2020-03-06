@@ -181,7 +181,7 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights = NULL, roiweights = NULL
   tidytacs <- tidytacs[rep(1:nrow(tidytacs), times = length(Vndgrid)), ]
   tidytacs$Vnd <- rep(Vndgrid, each = frames)
 
-  tidytacs_nested <- tidyr::nest(tidytacs, -Vnd, -Region, .key = "tacs")
+  tidytacs_nested <- tidyr::nest(tidytacs, tacs = c(-Region, -Vnd))
 
   fit_SIMEroi <- function(tacs, input, Vnd, vB, start, upper, lower) {
     tac <- tacs$Radioactivity
@@ -232,7 +232,7 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights = NULL, roiweights = NULL
 
   tidypars <- dplyr::filter(tidypars, success == T)
   tidypars <- dplyr::select(tidypars, -tacs, -success)
-  tidypars <- tidyr::unnest(tidypars)
+  tidypars <- tidyr::unnest(tidypars, cols = c(fit))
   tidypars <- dplyr::left_join(Regions, tidypars, by = "Region")
   tidypars <- dplyr::mutate(tidypars, RSSw = RSS * roiweights)
   tidypars <- dplyr::left_join(tidypars, fit_success, by = "Vnd")

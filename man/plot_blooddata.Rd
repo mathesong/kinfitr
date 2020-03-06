@@ -4,9 +4,13 @@
 \alias{plot_blooddata}
 \title{Plot a blooddata object}
 \usage{
-plot_blooddata(blooddata, startTime = 0, stopTime = NULL,
-  interpPoints = 6000, colours = c("#ff321b", "#1bff7e", "#501bff",
-  "#ffa81b"))
+plot_blooddata(
+  blooddata,
+  startTime = 0,
+  stopTime = NULL,
+  interpPoints = 6000,
+  colours = c("#ff321b", "#1bff7e", "#501bff", "#ffa81b")
+)
 }
 \arguments{
 \item{blooddata}{A blooddata object, to which all the desired fits have been applied and added.}

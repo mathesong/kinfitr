@@ -4,9 +4,18 @@
 \alias{blmod_splines}
 \title{Blood Model: Splines}
 \usage{
-blmod_splines(time, activity, Method = NULL, weights = NULL,
-  bs_before = "cr", bs_after_c = "ad", bs_after_d = "cr",
-  k_before = -1, k_after_c = -1, k_after_d = -1)
+blmod_splines(
+  time,
+  activity,
+  Method = NULL,
+  weights = NULL,
+  bs_before = "cr",
+  bs_after_c = "ad",
+  bs_after_d = "cr",
+  k_before = -1,
+  k_after_c = -1,
+  k_after_d = -1
+)
 }
 \arguments{
 \item{time}{The time of each measurement in seconds}

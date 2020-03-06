@@ -4,10 +4,13 @@
 \alias{unit_convert}
 \title{Convert between different units of radioactivity}
 \usage{
-unit_convert(values, from_units = c("GBq", "MBq", "kBq", "Bq", "mBq",
-  "uBq", "nBq", "pBq", "GCi", "MCi", "kCi", "Ci", "mCi", "uCi", "nCi",
-  "pCi"), to_units = c("GBq", "MBq", "kBq", "Bq", "mBq", "uBq", "nBq",
-  "pBq", "GCi", "MCi", "kCi", "Ci", "mCi", "uCi", "nCi", "pCi"))
+unit_convert(
+  values,
+  from_units = c("GBq", "MBq", "kBq", "Bq", "mBq", "uBq", "nBq", "pBq", "GCi", "MCi",
+    "kCi", "Ci", "mCi", "uCi", "nCi", "pCi"),
+  to_units = c("GBq", "MBq", "kBq", "Bq", "mBq", "uBq", "nBq", "pBq", "GCi", "MCi",
+    "kCi", "Ci", "mCi", "uCi", "nCi", "pCi")
+)
 }
 \arguments{
 \item{values}{Radioactivity values which should be converted. This can be a single value or a vector of values.}

@@ -4,8 +4,17 @@
 \alias{refLogan_tstar}
 \title{Tstar Finder: Non-Invasive Logan Plot}
 \usage{
-refLogan_tstar(t_tac, reftac, lowroi, medroi, highroi, k2prime,
-  filename = NULL, frameStartEnd = NULL, gridbreaks = 2)
+refLogan_tstar(
+  t_tac,
+  reftac,
+  lowroi,
+  medroi,
+  highroi,
+  k2prime,
+  filename = NULL,
+  frameStartEnd = NULL,
+  gridbreaks = 2
+)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
