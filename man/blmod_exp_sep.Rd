@@ -4,11 +4,25 @@
 \alias{blmod_exp_sep}
 \title{Fit an exponential model to AIF data using the measured peak}
 \usage{
-blmod_exp_sep(time, activity, Method = NULL, weights = NULL,
-  fit_exp3 = TRUE, peaktime_val = NULL, peakval = NULL, t0 = NULL,
-  lower = NULL, upper = NULL, start = NULL, multstart_lower = NULL,
-  multstart_upper = NULL, multstart_iter = 100, taper_weights = TRUE,
-  check_startpars = FALSE, expdecay_props = c(1/60, 0.1))
+blmod_exp_sep(
+  time,
+  activity,
+  Method = NULL,
+  weights = NULL,
+  fit_exp3 = TRUE,
+  peaktime_val = NULL,
+  peakval = NULL,
+  t0 = NULL,
+  lower = NULL,
+  upper = NULL,
+  start = NULL,
+  multstart_lower = NULL,
+  multstart_upper = NULL,
+  multstart_iter = 100,
+  taper_weights = TRUE,
+  check_startpars = FALSE,
+  expdecay_props = c(1/60, 0.1)
+)
 }
 \arguments{
 \item{time}{The time of each measurement in seconds}

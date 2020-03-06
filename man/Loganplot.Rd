@@ -4,8 +4,16 @@
 \alias{Loganplot}
 \title{Logan Plot}
 \usage{
-Loganplot(t_tac, tac, input, tstarIncludedFrames, weights = NULL,
-  inpshift = 0, vB = 0, frameStartEnd = NULL)
+Loganplot(
+  t_tac,
+  tac,
+  input,
+  tstarIncludedFrames,
+  weights = NULL,
+  inpshift = 0,
+  vB = 0,
+  frameStartEnd = NULL
+)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the

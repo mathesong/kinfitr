@@ -4,8 +4,16 @@
 \alias{mrtm1_tstar}
 \title{Tstar Finder: MRTM1}
 \usage{
-mrtm1_tstar(t_tac, reftac, lowroi, medroi, highroi, filename = NULL,
-  frameStartEnd = NULL, gridbreaks = 2)
+mrtm1_tstar(
+  t_tac,
+  reftac,
+  lowroi,
+  medroi,
+  highroi,
+  filename = NULL,
+  frameStartEnd = NULL,
+  gridbreaks = 2
+)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a

@@ -4,8 +4,7 @@
 \alias{decay_correct}
 \title{Perform Decay Correction of TAC values}
 \usage{
-decay_correct(t_start, t_end, tac_uncor, radioisotope = c("C11", "O15",
-  "F18"))
+decay_correct(t_start, t_end, tac_uncor, radioisotope = c("C11", "O15", "F18"))
 }
 \arguments{
 \item{t_start}{The starting times of the frames in minutes.}

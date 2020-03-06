@@ -266,7 +266,7 @@ twotcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL
 
   par$Vt <- (par$K1 / par$k2) * (1 + par$k3 / par$k4)
 
-  par.se$Vt.se <- par.se$Vt.se <- get_se(output, "(K1/k2) * (1+(k3/k4))")
+  par.se$Vt.se <- get_se(output, "(K1/k2) * (1+(k3/k4))")
 
 
 

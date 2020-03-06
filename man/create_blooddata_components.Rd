@@ -4,10 +4,13 @@
 \alias{create_blooddata_components}
 \title{Create a blooddata object from data vectors}
 \usage{
-create_blooddata_components(Blood.Discrete.Data.Values.sampleStartTime,
+create_blooddata_components(
+  Blood.Discrete.Data.Values.sampleStartTime,
   Blood.Discrete.Data.Values.sampleDuration = 0,
-  Blood.Discrete.Data.Values.activity, Plasma.Data.Values.sampleStartTime,
-  Plasma.Data.Values.sampleDuration = 0, Plasma.Data.Values.activity,
+  Blood.Discrete.Data.Values.activity,
+  Plasma.Data.Values.sampleStartTime,
+  Plasma.Data.Values.sampleDuration = 0,
+  Plasma.Data.Values.activity,
   Metabolite.Data.Values.sampleStartTime,
   Metabolite.Data.Values.sampleDuration = 0,
   Metabolite.Data.Values.parentFraction,
@@ -16,7 +19,9 @@ create_blooddata_components(Blood.Discrete.Data.Values.sampleStartTime,
   Blood.Continuous.WithdrawalRate = NULL,
   Blood.Continuous.DispersionConstant = NULL,
   Blood.Continuous.DispersionConstantUnits = NULL,
-  Blood.Continuous.DispersionCorrected = TRUE, TimeShift = 0)
+  Blood.Continuous.DispersionCorrected = TRUE,
+  TimeShift = 0
+)
 }
 \arguments{
 \item{Blood.Discrete.Data.Values.sampleStartTime}{In seconds. Sample start

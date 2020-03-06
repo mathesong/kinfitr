@@ -4,11 +4,17 @@
 \alias{metab_invgamma}
 \title{Fit the Inverted Gamma Function for Modelling Parent Fraction.}
 \usage{
-metab_invgamma(time, parentFraction, fit_ppf0 = FALSE,
-  fit_delay = FALSE, lower = list(shape = 0, rate = 0, ppf0 = 0.8,
-  delay = -30), upper = list(shape = 1000, rate = 1000, ppf0 = 1.1, delay
-  = 30), multstart_lower = NULL, multstart_upper = NULL,
-  multstart_iter = 100)
+metab_invgamma(
+  time,
+  parentFraction,
+  fit_ppf0 = FALSE,
+  fit_delay = FALSE,
+  lower = list(shape = 0, rate = 0, ppf0 = 0.8, delay = -30),
+  upper = list(shape = 1000, rate = 1000, ppf0 = 1.1, delay = 30),
+  multstart_lower = NULL,
+  multstart_upper = NULL,
+  multstart_iter = 100
+)
 }
 \arguments{
 \item{time}{Time in seconds.}

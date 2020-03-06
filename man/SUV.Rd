@@ -4,8 +4,14 @@
 \alias{SUV}
 \title{Standardised Uptake Value}
 \usage{
-SUV(tac, t_tac = NULL, dur_tac = NULL, injRad = 1, bodymass = 1,
-  frameStartEnd = NULL)
+SUV(
+  tac,
+  t_tac = NULL,
+  dur_tac = NULL,
+  injRad = 1,
+  bodymass = 1,
+  frameStartEnd = NULL
+)
 }
 \arguments{
 \item{tac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time

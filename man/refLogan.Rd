@@ -4,8 +4,15 @@
 \alias{refLogan}
 \title{Non-Invasive Logan Plot}
 \usage{
-refLogan(t_tac, reftac, roitac, k2prime, tstarIncludedFrames,
-  weights = NULL, frameStartEnd = NULL)
+refLogan(
+  t_tac,
+  reftac,
+  roitac,
+  k2prime,
+  tstarIncludedFrames,
+  weights = NULL,
+  frameStartEnd = NULL
+)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a

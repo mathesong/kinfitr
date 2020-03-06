@@ -4,11 +4,17 @@
 \alias{metab_power}
 \title{Fit a Power Function for Modelling Parent Fraction.}
 \usage{
-metab_power(time, parentFraction, fit_ppf0 = FALSE, fit_delay = FALSE,
+metab_power(
+  time,
+  parentFraction,
+  fit_ppf0 = FALSE,
+  fit_delay = FALSE,
   lower = list(a = 0, b = 1, c = 0, ppf0 = 0.8, delay = -30),
   upper = list(a = 1, b = 10, c = 5, ppf0 = 1.1, delay = 30),
-  multstart_lower = NULL, multstart_upper = NULL,
-  multstart_iter = 100)
+  multstart_lower = NULL,
+  multstart_upper = NULL,
+  multstart_iter = 100
+)
 }
 \arguments{
 \item{time}{Time in seconds.}

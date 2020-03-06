@@ -4,8 +4,12 @@
 \alias{blmod_exp_startpars}
 \title{Create starting parameters for an exponential blood model}
 \usage{
-blmod_exp_startpars(time, activity, fit_exp3 = TRUE,
-  expdecay_props = c(1/60, 0.1))
+blmod_exp_startpars(
+  time,
+  activity,
+  fit_exp3 = TRUE,
+  expdecay_props = c(1/60, 0.1)
+)
 }
 \arguments{
 \item{time}{The time of each measurement.}

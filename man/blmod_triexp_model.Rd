@@ -4,8 +4,7 @@
 \alias{blmod_triexp_model}
 \title{Tri-exponential model for fitting of arterial input functions}
 \usage{
-blmod_triexp_model(time, t0, peaktime, peakval, A, alpha, B, beta, C,
-  gamma)
+blmod_triexp_model(time, t0, peaktime, peakval, A, alpha, B, beta, C, gamma)
 }
 \arguments{
 \item{time}{Time of each sample.}

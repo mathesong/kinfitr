@@ -4,8 +4,12 @@
 \alias{bd_addfitpars}
 \title{Add model fit parameters to a blooddata object}
 \usage{
-bd_addfitpars(blooddata, modelname, fitpars, modeltype = c("Blood",
-  "BPR", "parentFraction", "AIF"))
+bd_addfitpars(
+  blooddata,
+  modelname,
+  fitpars,
+  modeltype = c("Blood", "BPR", "parentFraction", "AIF")
+)
 }
 \arguments{
 \item{blooddata}{A blooddata object created using one of the create_blooddata_* functions.}

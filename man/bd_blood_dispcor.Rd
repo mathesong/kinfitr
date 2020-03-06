@@ -4,8 +4,12 @@
 \alias{bd_blood_dispcor}
 \title{Perform Dispersion Correction on a blooddata object}
 \usage{
-bd_blood_dispcor(blooddata, timedelta = NULL, keep_interpolated = T,
-  smooth_iterations = 0)
+bd_blood_dispcor(
+  blooddata,
+  timedelta = NULL,
+  keep_interpolated = T,
+  smooth_iterations = 0
+)
 }
 \arguments{
 \item{blooddata}{A blooddata object created using one of the

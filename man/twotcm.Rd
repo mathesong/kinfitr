@@ -4,14 +4,37 @@
 \alias{twotcm}
 \title{Two Tissue Compartment Model}
 \usage{
-twotcm(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL,
-  frameStartEnd = NULL, K1.start = 0.1, K1.lower = 1e-04,
-  K1.upper = 0.5, k2.start = 0.1, k2.lower = 1e-04, k2.upper = 0.5,
-  k3.start = 0.1, k3.lower = 1e-04, k3.upper = 0.5, k4.start = 0.1,
-  k4.lower = 1e-04, k4.upper = 0.5, inpshift.start = 0,
-  inpshift.lower = -0.5, inpshift.upper = 0.5, vB.start = 0.05,
-  vB.lower = 0.01, vB.upper = 0.1, multstart_iter = 1,
-  multstart_lower = NULL, multstart_upper = NULL, printvals = F)
+twotcm(
+  t_tac,
+  tac,
+  input,
+  weights = NULL,
+  inpshift = NULL,
+  vB = NULL,
+  frameStartEnd = NULL,
+  K1.start = 0.1,
+  K1.lower = 1e-04,
+  K1.upper = 0.5,
+  k2.start = 0.1,
+  k2.lower = 1e-04,
+  k2.upper = 0.5,
+  k3.start = 0.1,
+  k3.lower = 1e-04,
+  k3.upper = 0.5,
+  k4.start = 0.1,
+  k4.lower = 1e-04,
+  k4.upper = 0.5,
+  inpshift.start = 0,
+  inpshift.lower = -0.5,
+  inpshift.upper = 0.5,
+  vB.start = 0.05,
+  vB.lower = 0.01,
+  vB.upper = 0.1,
+  multstart_iter = 1,
+  multstart_lower = NULL,
+  multstart_upper = NULL,
+  printvals = F
+)
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the

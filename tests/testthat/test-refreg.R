@@ -57,6 +57,84 @@ test_that("srtm works with frameStartEnd and multstart", {
   expect_true(any(class(plot(srtmout)) == "ggplot"))
 })
 
+# SRTM2
+
+test_that("srtm2 works", {
+  srtm2out <- srtm2(t_tac, reftac, roitac, weights = weights)
+  expect_gt(srtm2out$par$bp, 1.5)
+  expect_lt(srtm2out$par$bp, 2.5)
+  expect_true(any(class(plot(srtm2out)) == "ggplot"))
+})
+
+test_that("srtm2 works with frameStartEnd", {
+  srtm2out <- srtm2(t_tac, reftac, roitac,
+                  weights = weights,
+                  frameStartEnd = c(1, 33)
+  )
+  expect_gt(srtm2out$par$bp, 1.5)
+  expect_lt(srtm2out$par$bp, 2.5)
+  expect_true(any(class(plot(srtm2out)) == "ggplot"))
+})
+
+test_that("srtm2 works with multstart", {
+  srtm2out <- srtm2(t_tac, reftac, roitac,
+                  weights = weights,
+                  multstart_iter = 5
+  )
+  expect_gt(srtm2out$par$bp, 1.5)
+  expect_lt(srtm2out$par$bp, 2.5)
+  expect_true(any(class(plot(srtm2out)) == "ggplot"))
+})
+
+test_that("srtm2 works with frameStartEnd and multstart", {
+  srtm2out <- srtm2(t_tac, reftac, roitac,
+                  weights = weights,
+                  frameStartEnd = c(1, 33),
+                  multstart_iter = 5
+  )
+  expect_gt(srtm2out$par$bp, 1.5)
+  expect_lt(srtm2out$par$bp, 2.5)
+  expect_true(any(class(plot(srtm2out)) == "ggplot"))
+})
+
+test_that("srtm2 works with set k2prime", {
+  srtm2out <- srtm2(t_tac, reftac, roitac, k2prime = 0.1,  weights = weights)
+  expect_gt(srtm2out$par$bp, 1.5)
+  expect_lt(srtm2out$par$bp, 2.5)
+  expect_true(any(class(plot(srtm2out)) == "ggplot"))
+})
+
+test_that("srtm2 works with frameStartEnd and set k2prime", {
+  srtm2out <- srtm2(t_tac, reftac, roitac, k2prime = 0.1,
+                    weights = weights,
+                    frameStartEnd = c(1, 33)
+  )
+  expect_gt(srtm2out$par$bp, 1.5)
+  expect_lt(srtm2out$par$bp, 2.5)
+  expect_true(any(class(plot(srtm2out)) == "ggplot"))
+})
+
+test_that("srtm2 works with multstart and set k2prime", {
+  srtm2out <- srtm2(t_tac, reftac, roitac, k2prime = 0.1,
+                    weights = weights,
+                    multstart_iter = 5
+  )
+  expect_gt(srtm2out$par$bp, 1.5)
+  expect_lt(srtm2out$par$bp, 2.5)
+  expect_true(any(class(plot(srtm2out)) == "ggplot"))
+})
+
+test_that("srtm2 works with frameStartEnd and multstart and set k2prime", {
+  srtm2out <- srtm2(t_tac, reftac, roitac, k2prime = 0.1,
+                    weights = weights,
+                    frameStartEnd = c(1, 33),
+                    multstart_iter = 5
+  )
+  expect_gt(srtm2out$par$bp, 1.5)
+  expect_lt(srtm2out$par$bp, 2.5)
+  expect_true(any(class(plot(srtm2out)) == "ggplot"))
+})
+
 
 # refLogan
 

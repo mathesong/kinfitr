@@ -4,9 +4,13 @@
 \alias{bd_getdata}
 \title{Create an input object from a blooddata object.}
 \usage{
-bd_getdata(blooddata, startTime = 0, stopTime = NULL,
-  interpPoints = 6000, output = c("input", "Blood", "BPR",
-  "parentFraction", "AIF"))
+bd_getdata(
+  blooddata,
+  startTime = 0,
+  stopTime = NULL,
+  interpPoints = 6000,
+  output = c("input", "Blood", "BPR", "parentFraction", "AIF")
+)
 }
 \arguments{
 \item{blooddata}{A blooddata object, to which all the desired fits have been applied and added.}

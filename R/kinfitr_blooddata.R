@@ -206,7 +206,7 @@ create_blooddata_bids <- function(bids_data, TimeShift = 0) {
 
   tibblify_bidsjson <- function(list) {
     list$Data$Values <- tibble::as_tibble(list$Data$Values,
-                                          .name_repair = NULL)
+                                          .name_repair = "unique")
     colnames(list$Data$Values) <- list$Data$Labels
     return(list)
   }
