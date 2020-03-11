@@ -190,6 +190,10 @@ predict.blood_splines <- function(object, newdata = NULL) {
     pred_before <- predict(object$before)
     pred_x_before <- object$before$model$time
 
+    # Remove our extra point before the peak
+    pred_before <- pred_before[-length(pred_before)]
+    pred_x_before <- pred_x_before[-length(pred_x_before)]
+
     pred_after_d <- predict(object$after_d)
     pred_x_after_d <- object$after_d$model$time
 
