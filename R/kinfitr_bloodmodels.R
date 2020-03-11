@@ -303,6 +303,17 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
   rise_coef <- coef(rise_lm)
   startpars$t0 <- as.numeric(-1*(rise_coef[1]/rise_coef[2]))
 
+  if(startpars$t0 < 0) { # This can happen if the peak is very dispersed
+    bloodrise <- bloodrise[blood$activity >= 0.1*startpars$peakval, ]
+    rise_lm <- lm(activity ~ time, data=bloodrise)
+    rise_coef <- coef(rise_lm)
+    startpars$t0 <- as.numeric(-1*(rise_coef[1]/rise_coef[2]))
+  }
+
+  if(startpars$t0 < 0) { # If still less than 0
+    startpars$t0 <- 0
+  }
+
   # Decay
   blood_decay <- blood[blood$time > startpars$peaktime,]
   blood_decay$time <- blood_decay$time - startpars$peaktime
