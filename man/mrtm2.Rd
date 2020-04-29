@@ -11,6 +11,7 @@ mrtm2(
   k2prime,
   tstarIncludedFrames = NULL,
   weights = NULL,
+  dur = NULL,
   frameStartEnd = NULL
 )
 }
@@ -36,6 +37,9 @@ tissue compartment model (like SRTM).  If this is not the case, a t* is required
 \item{weights}{Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
 if not included, it is added. If not specified, uniform weights will be used.}
 
+\item{dur}{Optional. Numeric vector of the time durations of the frames. If
+not included, the integrals will be calculated using trapezoidal integration.}
+
 \item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 This is to assess time stability.}
 }
@@ -56,8 +60,10 @@ t_tac <- simref$tacs[[2]]$Times
 reftac <- simref$tacs[[2]]$Reference
 roitac <- simref$tacs[[2]]$ROI1
 weights <- simref$tacs[[2]]$Weights
+dur <- simref$tacs[[2]]$Duration
 
-fit <- mrtm2(t_tac, reftac, roitac, 0.001, weights = weights)
+fit <- mrtm2(t_tac, reftac, roitac, 0.1, weights = weights)
+fit_dur <- mrtm2(t_tac, reftac, roitac, 0.1, weights = weights, dur = dur)
 }
 \references{
 @references Ichise M, Liow JS, Lu JQ, Takano A, Model K, Toyama H, Suhara T, Suzuki K, Innis RB, Carson RE. Linearized Reference Tissue Parametric Imaging Methods: Application to [11C]DASB Positron Emission Tomography Studies of the Serotonin Transporter in Human Brain. Journal of Cerebral Blood Flow & Metabolism. 2003 Sep 1;23(9):1096-112.

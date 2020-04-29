@@ -18,6 +18,8 @@
 #' @param vB Optional. The blood volume fraction.  If not specified, this will be ignored and assumed to be 0%. If specified, it
 #' will be corrected for prior to parameter estimation using the following equation:
 #' \deqn{C_{T}(t) = \frac{C_{Measured}(t) - vB\times C_{B}(t)}{1-vB}}
+#' @param dur Optional. Numeric vector of the time durations of the frames. If
+#' not included, the integrals will be calculated using trapezoidal integration.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 #' This is to assess time stability.
 #'
@@ -33,6 +35,7 @@
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
+#' dur <- pbr28$tacs[[2]]$Duration/60
 #'
 #' input <- blood_interp(
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
@@ -42,13 +45,15 @@
 #'
 #' fit1 <- ma1(t_tac, tac, input, 10, weights)
 #' fit2 <- ma1(t_tac, tac, input, 10, weights, inpshift = 0.1, vB = 0.05)
+#' fit3 <- ma1(t_tac, tac, input, 10, weights, inpshift = 0.1, vB = 0.05, dur = dur)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Ichise M, Toyama H, Innis RB, Carson RE. Strategies to improve neuroreceptor parameter estimation by linear regression analysis. Journal of Cerebral Blood Flow & Metabolism. 2002 Oct 1;22(10):1271-81.
 #'
 #' @export
 
-ma1 <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL, inpshift = 0, vB = 0, frameStartEnd = NULL) {
+ma1 <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL,
+                inpshift = 0, vB = 0, dur = NULL, frameStartEnd = NULL) {
 
 
   # Tidying
@@ -58,6 +63,11 @@ ma1 <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL, inpshift
   t_tac <- tidyinput$t_tac
   tac <- tidyinput$tac
   weights <- tidyinput$weights
+
+  if (!is.null(dur)) {
+    tidyinput_dur <- tidyinput_art(dur, tac, weights, frameStartEnd)
+    dur <- tidyinput_dur$t_tac
+  }
 
   newvals <- shift_timings(
     t_tac = t_tac,
@@ -81,12 +91,25 @@ ma1 <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL, inpshift
 
   # Blood Volume Correction (nothing happens if vB = 0)
   i_tac <- (i_tac - vB * blood) / (1 - vB)
+  tac_uncor <- tac
+  tac <- pracma::interp1(interptime, i_tac, t_tac, method = "linear")
 
-  term1 <- as.numeric(pracma::cumtrapz(interptime, aif))
-  term2 <- as.numeric(pracma::cumtrapz(interptime, i_tac))
+  if (!is.null(dur)) {
 
-  term1 <- pracma::interp1(interptime, term1, t_tac, method = "linear")
-  term2 <- pracma::interp1(interptime, term2, t_tac, method = "linear")
+    term1 <- as.numeric(pracma::cumtrapz(interptime, aif))
+    term1 <- pracma::interp1(interptime, term1, t_tac, method = "linear")
+
+    term2 <- frame_cumsum(dur, tac)
+
+  } else {
+
+    term1 <- as.numeric(pracma::cumtrapz(interptime, aif))
+    term2 <- as.numeric(pracma::cumtrapz(interptime, i_tac))
+
+    term1 <- pracma::interp1(interptime, term1, t_tac, method = "linear")
+    term2 <- pracma::interp1(interptime, term2, t_tac, method = "linear")
+
+  }
 
   tac_equil <- tail(tac, tstarIncludedFrames)
   t_tac_equil <- tail(t_tac, tstarIncludedFrames)
@@ -106,7 +129,9 @@ ma1 <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL, inpshift
   par <- as.data.frame(list(Vt = Vt))
   fit <- ma1_model
 
-  tacs <- data.frame(Time = t_tac, Target = tac)
+  tacs <- data.frame(Time = t_tac, Target = tac, Target_uncor = tac_uncor) # uncorrected for blood volume
+
+  if(!is.null(dur)) { tacs$Duration = dur }
 
   fitvals <- data.frame(
     Time = t_tac_equil, Target = tac_equil, Term1 = term1_equil, Term2 = term2_equil,

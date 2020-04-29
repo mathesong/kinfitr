@@ -12,6 +12,7 @@ mlLoganplot(
   weights = NULL,
   inpshift = 0,
   vB = 0,
+  dur = NULL,
   frameStartEnd = NULL
 )
 }
@@ -39,6 +40,9 @@ If not specified, this will be set to 0. This can be fitted using 1TCM or 2TCM.}
 will be corrected for prior to parameter estimation using the following equation:
 \deqn{C_{T}(t) = \frac{C_{Measured}(t) - vB\times C_{B}(t)}{1-vB}}}
 
+\item{dur}{Optional. Numeric vector of the time durations of the frames. If
+not included, the integrals will be calculated using trapezoidal integration.}
+
 \item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 This is to assess time stability.}
 }
@@ -58,6 +62,7 @@ data(pbr28)
 t_tac <- pbr28$tacs[[2]]$Times / 60
 tac <- pbr28$tacs[[2]]$FC
 weights <- pbr28$tacs[[2]]$Weights
+dur <- pbr28$tacs[[2]]$Duration/60
 
 input <- blood_interp(
   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
@@ -67,6 +72,7 @@ input <- blood_interp(
 
 fit1 <- mlLoganplot(t_tac, tac, input, 10, weights)
 fit2 <- mlLoganplot(t_tac, tac, input, 10, weights, inpshift = 0.1, vB = 0.05)
+fit3 <- mlLoganplot(t_tac, tac, input, 10, weights, inpshift = 0.1, vB = 0.05, dur=dur)
 }
 \references{
 Turkheimer FE, Aston JA, Banati RB, Riddell C, Cunningham VJ. A linear wavelet filter for parametric imaging with dynamic PET. IEEE transactions on medical imaging. 2003 Mar;22(3):289-301.

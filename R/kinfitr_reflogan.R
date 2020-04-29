@@ -15,6 +15,8 @@
 #' 10 means that last 10 frames will be used. This value can be estimated using \code{refLogan_tstar}.
 #' @param weights Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
 #' if not included, it is added. If not specified, uniform weights will be used.
+#' @param dur Optional. Numeric vector of the time durations of the frames. If
+#' not included, the integrals will be calculated using trapezoidal integration.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 #' This is to assess time stability.
 
@@ -40,7 +42,8 @@
 #'
 #' @export
 
-refLogan <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames, weights = NULL, frameStartEnd = NULL) {
+refLogan <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames,
+                     weights = NULL, dur = NULL, frameStartEnd = NULL) {
 
 
   # Tidying
@@ -52,11 +55,24 @@ refLogan <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames, weight
   roitac <- tidyinput$roitac
   weights <- tidyinput$weights
 
+  if (!is.null(dur)) {
+    tidyinput_dur <- tidyinput_ref(dur, reftac, roitac, weights, frameStartEnd)
+    dur <- tidyinput_dur$t_tac
+  }
 
   # Parameters
 
-  logan_roi <- pracma::cumtrapz(t_tac, roitac) / roitac
-  logan_ref <- (pracma::cumtrapz(t_tac, reftac) + reftac / k2prime) / roitac
+  if (!is.null(dur)) {
+
+    logan_roi <- frame_cumsum(dur, roitac) / roitac
+    logan_ref <- (frame_cumsum(dur, reftac) + reftac / k2prime) / roitac
+
+  } else {
+
+    logan_roi <- pracma::cumtrapz(t_tac, roitac) / roitac
+    logan_ref <- (pracma::cumtrapz(t_tac, reftac) + reftac / k2prime) / roitac
+
+  }
 
   logan_equil_roi <- tail(logan_roi, tstarIncludedFrames)
   logan_equil_ref <- tail(logan_ref, tstarIncludedFrames)
@@ -73,6 +89,8 @@ refLogan <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames, weight
   fit <- logan_model
 
   tacs <- data.frame(Time = t_tac, Reference = reftac, Target = roitac)
+
+  if (!is.null(dur)) { tacs$Duration <- dur }
 
   fitvals <- data.frame(Logan_ROI = logan_roi, Logan_Ref = logan_ref)
 

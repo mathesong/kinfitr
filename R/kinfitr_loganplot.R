@@ -26,6 +26,8 @@
 #'   be ignored and assumed to be 0%. If specified, it will be corrected for
 #'   prior to parameter estimation using the following equation: \deqn{C_{T}(t)
 #'   = \frac{C_{Measured}(t) - vB\times C_{B}(t)}{1-vB}}
+#' @param dur Optional. Numeric vector of the time durations of the frames. If
+#' not included, the integrals will be calculated using trapezoidal integration.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and
 #'   final frame to use for modelling, e.g. c(1,20). This is to assess time
 #'   stability.
@@ -47,6 +49,7 @@
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
+#' dur <- pbr28$tacs[[2]]$Duration/60
 #'
 #' input <- blood_interp(
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
@@ -56,6 +59,7 @@
 #'
 #' fit1 <- Loganplot(t_tac, tac, input, 10, weights)
 #' fit2 <- Loganplot(t_tac, tac, input, 10, weights, inpshift = 0.1, vB = 0.05)
+#' fit3 <- Loganplot(t_tac, tac, input, 10, weights, inpshift = 0.1, vB = 0.05, dur = dur)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Logan J, Fowler JS, Volkow ND, Wolf AP, Dewey SL, Schlyer DJ,
@@ -67,7 +71,7 @@
 #' @export
 
 Loganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL,
-                      inpshift = 0, vB = 0, frameStartEnd = NULL) {
+                      inpshift = 0, vB = 0, dur = NULL, frameStartEnd = NULL) {
 
   # Tidying
 
@@ -77,6 +81,10 @@ Loganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL,
   tac <- tidyinput$tac
   weights <- tidyinput$weights
 
+  if (!is.null(dur)) {
+    tidyinput_dur <- tidyinput_art(dur, tac, weights, frameStartEnd)
+    dur <- tidyinput_dur$t_tac
+  }
 
   newvals <- shift_timings(
     t_tac = t_tac,
@@ -99,12 +107,25 @@ Loganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL,
 
   # Blood Volume Correction (nothing happens if vB = 0)
   i_tac <- (i_tac - vB * blood) / (1 - vB)
+  tac_uncor <- tac
+  tac <- pracma::interp1(interptime, i_tac, t_tac, method = "linear")
 
-  logan_roi <- as.numeric(pracma::cumtrapz(interptime, i_tac) / i_tac)
-  logan_plasma <- as.numeric((pracma::cumtrapz(interptime, aif)) / i_tac)
+  if (!is.null(dur)) {
 
-  logan_roi <- pracma::interp1(interptime, logan_roi, t_tac, method = "linear")
-  logan_plasma <- pracma::interp1(interptime, logan_plasma, t_tac, method = "linear")
+    logan_roi <- frame_cumsum(dur, tac) / tac
+    logan_plasma <- as.numeric(pracma::cumtrapz(interptime, aif)) / i_tac
+
+    logan_plasma <- pracma::interp1(interptime, logan_plasma, t_tac, method = "linear")
+
+  } else {
+
+    logan_roi <- as.numeric(pracma::cumtrapz(interptime, i_tac) / i_tac)
+    logan_plasma <- as.numeric((pracma::cumtrapz(interptime, aif)) / i_tac)
+
+    logan_roi <- pracma::interp1(interptime, logan_roi, t_tac, method = "linear")
+    logan_plasma <- pracma::interp1(interptime, logan_plasma, t_tac, method = "linear")
+
+  }
 
   logan_equil_roi <- tail(logan_roi, tstarIncludedFrames)
   logan_equil_plasma <- tail(logan_plasma, tstarIncludedFrames)
@@ -120,7 +141,11 @@ Loganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL,
   par <- as.data.frame(list(Vt = as.numeric(logan_model$coefficients[2])))
   fit <- logan_model
 
-  tacs <- data.frame(Time = t_tac, Target = tac)
+  tacs <- data.frame(Time = t_tac, Target = tac, Target_uncor = tac_uncor) # uncorrected for blood volume
+
+  if (!is.null(dur)) {
+    tacs$Duration = dur
+  }
 
   fitvals <- data.frame(Logan_Plasma = logan_plasma, Logan_ROI = logan_roi)
 

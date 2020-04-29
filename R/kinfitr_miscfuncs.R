@@ -668,3 +668,44 @@ decay_correct <- function(t_start, t_end, tac_uncor,
   return(tac)
 
 }
+
+#' Cumulative integral over frames
+#'
+#' This function uses the frame radioactivity values and durations to create a
+#' cumulative integral. It sums the multiple of radioactivity and duration
+#' for all frames preceding the current frame, and halves that of the current
+#' frame. This is an alternative to using the trapezoidal method.
+#'
+#' @param dur Frame durations in minutes.
+#' @param tac Radioactivity concentrations for each frame.
+#'
+#' @return The cumulative integral of radioactivity.
+#' @export
+#'
+#' @examples
+#' data(pbr28)
+#'
+#' tac <- pbr28$tacs[[2]]$WB
+#' dur <- pbr28$tacs[[2]]$Duration / 60
+#'
+#' frame_integ <- frame_cumsum(dur, tac)
+#'
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+frame_cumsum <- function(dur, tac) {
+
+  if( max(dur) > 60 ) {
+    warning("The frame durations are very long. Make sure they are in minutes and not seconds")
+  }
+
+  durtac <- dur*tac
+  cumdurtac <- cumsum(durtac)
+
+  before_cumdurtac <- c(0, cumdurtac[-(length(cumdurtac))])
+  halfway_durtac <- 0.5 * durtac
+
+  out <- before_cumdurtac + halfway_durtac
+
+  return(out)
+
+}

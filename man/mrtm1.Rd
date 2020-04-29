@@ -8,8 +8,9 @@ mrtm1(
   t_tac,
   reftac,
   roitac,
-  weights = NULL,
   tstarIncludedFrames = NULL,
+  weights = NULL,
+  dur = NULL,
   frameStartEnd = NULL
 )
 }
@@ -23,14 +24,17 @@ time zero: if not included, it is added.}
 \item{roitac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
 zero: if not included, it is added.}
 
-\item{weights}{Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
-if not included, it is added. If not specified, uniform weights will be used.}
-
 \item{tstarIncludedFrames}{Optional. The number of frames to be used in the multiple regression. This is a count from the end of the
 measurement, so a value of 10 means that last 10 frames will be used. This value can be estimated using \code{mrtm1_tstar}. Note
 that this tstar differs from that of the non-invasive Logan plot (which is the point at which pseudo-equilibrium is reached).
 Rather, with MRTM1 and MRTM2, all frames can be used provided that the kinetics in the target tissue can be described by a one
 tissue compartment model (like SRTM).  If this is not the case, a t* is required.}
+
+\item{weights}{Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
+if not included, it is added. If not specified, uniform weights will be used.}
+
+\item{dur}{Optional. Numeric vector of the time durations of the frames. If
+not included, the integrals will be calculated using trapezoidal integration.}
 
 \item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 This is to assess time stability.}

@@ -10,6 +10,7 @@ t_tac <- pbr28$tacs[[meas]]$Times / 60
 input <- pbr28$input[[meas]]
 weights <- pbr28$tacs[[meas]]$Weights
 inpshift <- 0.1438066
+dur <- pbr28$tacs[[meas]]$Duration/60
 
 lowroi <- pbr28$tacs[[meas]]$FC
 medroi <- pbr28$tacs[[meas]]$CBL
@@ -39,6 +40,16 @@ test_that("Loganplot with frameStartEnd works", {
   expect_lt(Loganout$par$Vt, 3)
   expect_gt(Loganout$par$Vt, 2)
   expect_lt(max(Loganout$tacs$Time), max(t_tac))
+  expect_true(any(class(plot(Loganout)) == "ggplot"))
+})
+
+test_that("Loganplot works with durations", {
+  Loganout <- Loganplot(
+    t_tac, tac, input, 10, weights,
+    inpshift = inpshift, dur=dur
+  )
+  expect_lt(Loganout$par$Vt, 3)
+  expect_gt(Loganout$par$Vt, 2)
   expect_true(any(class(plot(Loganout)) == "ggplot"))
 })
 
@@ -76,6 +87,16 @@ test_that("mlLoganplot with frameStartEnd works", {
   expect_true(any(class(plot(mlLoganout)) == "ggplot"))
 })
 
+test_that("mlLoganplot works with durations", {
+  mlLoganout <- mlLoganplot(
+    t_tac, tac, input, 10, weights,
+    inpshift = inpshift, dur=dur
+  )
+  expect_lt(mlLoganout$par$Vt, 3)
+  expect_gt(mlLoganout$par$Vt, 2)
+  expect_true(any(class(plot(mlLoganout)) == "ggplot"))
+})
+
 test_that("mlLoganplot tstarfinder works", {
   suppressWarnings(
     tstar <- mlLogan_tstar(t_tac, lowroi, medroi, highroi,
@@ -108,6 +129,16 @@ test_that("MA1 with frameStartEnd works", {
   expect_lt(ma1out$par$Vt, 3)
   expect_gt(ma1out$par$Vt, 2)
   expect_lt(max(ma1out$tacs$Time), max(t_tac))
+  expect_true(any(class(plot(ma1out)) == "ggplot"))
+})
+
+test_that("MA1 works with durations", {
+  ma1out <- ma1(
+    t_tac, tac, input, 10, weights,
+    inpshift = inpshift, dur=dur
+  )
+  expect_lt(ma1out$par$Vt, 3)
+  expect_gt(ma1out$par$Vt, 2)
   expect_true(any(class(plot(ma1out)) == "ggplot"))
 })
 
