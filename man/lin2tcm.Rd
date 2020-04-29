@@ -11,6 +11,7 @@ lin2tcm(
   weights = NULL,
   inpshift = 0,
   vB = NULL,
+  dur = NULL,
   frameStartEnd = NULL
 )
 }
@@ -34,6 +35,9 @@ If not specified, this will be set to 0. This can be fitted using 1TCM or 2TCM.}
 be fitted. If specified as a numer (e.g. 0.05 for 5%), then that value will
 be used.}
 
+\item{dur}{Optional. Numeric vector of the time durations of the frames. If
+not included, the integrals will be calculated using trapezoidal integration.}
+
 \item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 This is to assess time stability.}
 }
@@ -52,6 +56,7 @@ data(pbr28)
 t_tac <- pbr28$tacs[[2]]$Times / 60
 tac <- pbr28$tacs[[2]]$FC
 weights <- pbr28$tacs[[2]]$Weights
+dur <- pbr28$tacs[[2]]$Duration/60
 
 input <- blood_interp(
   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
@@ -61,6 +66,8 @@ input <- blood_interp(
 
 fit1 <- lin2tcm(t_tac, tac, input, weights, inpshift=0.1)
 fit2 <- lin2tcm(t_tac, tac, input, weights, inpshift = 0.1, vB=0.05)
+fit3 <- lin2tcm(t_tac, tac, input, weights, inpshift = 0.1, vB=0.05, dur = dur)
+fit4 <- lin2tcm(t_tac, tac, input, weights, inpshift = 0.1, dur = dur)
 }
 \references{
 Oikonen, V (2003). Multilinear solution for 4-compartment model:

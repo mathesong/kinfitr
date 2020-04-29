@@ -11,6 +11,7 @@ ma2(
   weights = NULL,
   inpshift = 0,
   vB = 0,
+  dur = NULL,
   frameStartEnd = NULL
 )
 }
@@ -34,6 +35,9 @@ If not specified, this will be set to 0. This can be fitted using 1TCM or 2TCM.}
 will be corrected for prior to parameter estimation using the following equation:
 \deqn{C_{T}(t) = \frac{C_{Measured}(t) - vB\times C_{B}(t)}{1-vB}}}
 
+\item{dur}{Optional. Numeric vector of the time durations of the frames. If
+not included, the integrals will be calculated using trapezoidal integration.}
+
 \item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 This is to assess time stability.}
 }
@@ -52,6 +56,7 @@ data(pbr28)
 t_tac <- pbr28$tacs[[2]]$Times / 60
 tac <- pbr28$tacs[[2]]$FC
 weights <- pbr28$tacs[[2]]$Weights
+dur <- pbr28$tacs[[2]]$Duration/60
 
 input <- blood_interp(
   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
@@ -61,6 +66,7 @@ input <- blood_interp(
 
 fit1 <- ma2(t_tac, tac, input, weights)
 fit2 <- ma2(t_tac, tac, input, weights, inpshift = 0.1, vB = 0.05)
+fit3 <- ma2(t_tac, tac, input, weights, inpshift = 0.1, vB = 0.05, dur = dur)
 }
 \references{
 Ichise M, Toyama H, Innis RB, Carson RE. Strategies to improve neuroreceptor parameter estimation by linear regression analysis. Journal of Cerebral Blood Flow & Metabolism. 2002 Oct 1;22(10):1271-81.

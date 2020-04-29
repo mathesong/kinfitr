@@ -15,6 +15,8 @@
 #' @param vB Optional. The blood volume fraction.  If not specified, this will
 #'   be fitted. If specified as a numer (e.g. 0.05 for 5%), then that value will
 #'   be used.
+#' @param dur Optional. Numeric vector of the time durations of the frames. If
+#' not included, the integrals will be calculated using trapezoidal integration.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 #' This is to assess time stability.
 #'
@@ -29,6 +31,7 @@
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
+#' dur <- pbr28$tacs[[2]]$Duration/60
 #'
 #' input <- blood_interp(
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
@@ -38,6 +41,8 @@
 #'
 #' fit1 <- lin2tcm(t_tac, tac, input, weights, inpshift=0.1)
 #' fit2 <- lin2tcm(t_tac, tac, input, weights, inpshift = 0.1, vB=0.05)
+#' fit3 <- lin2tcm(t_tac, tac, input, weights, inpshift = 0.1, vB=0.05, dur = dur)
+#' fit4 <- lin2tcm(t_tac, tac, input, weights, inpshift = 0.1, dur = dur)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references
@@ -52,7 +57,7 @@
 
 
 lin2tcm <- function(t_tac, tac, input, weights = NULL, inpshift = 0,
-                    vB = NULL, frameStartEnd = NULL) {
+                    vB = NULL, dur = NULL, frameStartEnd = NULL) {
 
 
   # Tidying
@@ -63,6 +68,10 @@ lin2tcm <- function(t_tac, tac, input, weights = NULL, inpshift = 0,
   tac <- tidyinput$tac
   weights <- tidyinput$weights
 
+  if (!is.null(dur)) {
+    tidyinput_dur <- tidyinput_art(dur, tac, weights, frameStartEnd)
+    dur <- tidyinput_dur$t_tac
+  }
 
   newvals <- shift_timings(
     t_tac = t_tac,
@@ -101,17 +110,36 @@ lin2tcm <- function(t_tac, tac, input, weights = NULL, inpshift = 0,
 
   if(vB_fitted) {
 
-    term1 <- as.numeric(pracma::cumtrapz(pracma::cumtrapz(interptime, aif)))
-    term2 <- as.numeric(pracma::cumtrapz(interptime, aif))
-    term3 <- aif
-    term4 <- -1*as.numeric(pracma::cumtrapz(pracma::cumtrapz(interptime, i_tac)))
-    term5 <- -1*as.numeric(pracma::cumtrapz(interptime, i_tac))
+    if (!is.null(dur)) {
 
-    term1 <- pracma::interp1(interptime, term1, t_tac, method = "linear")
-    term2 <- pracma::interp1(interptime, term2, t_tac, method = "linear")
-    term3 <- pracma::interp1(interptime, term3, t_tac, method = "linear")
-    term4 <- pracma::interp1(interptime, term4, t_tac, method = "linear")
-    term5 <- pracma::interp1(interptime, term5, t_tac, method = "linear")
+      term1 <- as.numeric(pracma::cumtrapz(interptime,
+                                           pracma::cumtrapz(interptime, aif)))
+      term2 <- as.numeric(pracma::cumtrapz(interptime, aif))
+      term3 <- aif
+      term4 <- -1*frame_cumsum(dur, frame_cumsum(dur, tac))
+      term5 <- -1*frame_cumsum(dur, tac)
+
+      term1 <- pracma::interp1(interptime, term1, t_tac, method = "linear")
+      term2 <- pracma::interp1(interptime, term2, t_tac, method = "linear")
+      term3 <- pracma::interp1(interptime, term3, t_tac, method = "linear")
+
+    } else {
+
+      term1 <- as.numeric(pracma::cumtrapz(interptime,
+                                           pracma::cumtrapz(interptime, aif)))
+      term2 <- as.numeric(pracma::cumtrapz(interptime, aif))
+      term3 <- aif
+      term4 <- -1*as.numeric(pracma::cumtrapz(interptime,
+                                              pracma::cumtrapz(interptime, i_tac)))
+      term5 <- -1*as.numeric(pracma::cumtrapz(interptime, i_tac))
+
+      term1 <- pracma::interp1(interptime, term1, t_tac, method = "linear")
+      term2 <- pracma::interp1(interptime, term2, t_tac, method = "linear")
+      term3 <- pracma::interp1(interptime, term3, t_tac, method = "linear")
+      term4 <- pracma::interp1(interptime, term4, t_tac, method = "linear")
+      term5 <- pracma::interp1(interptime, term5, t_tac, method = "linear")
+
+    }
 
     terms <- data.frame(Term1 = term1, Term2 = term2, Term3 = term3,
                         Term4 = term4, Term5 = term5)
@@ -133,15 +161,32 @@ lin2tcm <- function(t_tac, tac, input, weights = NULL, inpshift = 0,
 
   } else {
 
-    term1 <- as.numeric(pracma::cumtrapz(pracma::cumtrapz(interptime, aif)))
-    term2 <- as.numeric(pracma::cumtrapz(interptime, aif))
-    term3 <- -1*as.numeric(pracma::cumtrapz(pracma::cumtrapz(interptime, i_tac)))
-    term4 <- -1*as.numeric(pracma::cumtrapz(interptime, i_tac))
+    if (!is.null(dur)) {
 
-    term1 <- pracma::interp1(interptime, term1, t_tac, method = "linear")
-    term2 <- pracma::interp1(interptime, term2, t_tac, method = "linear")
-    term3 <- pracma::interp1(interptime, term3, t_tac, method = "linear")
-    term4 <- pracma::interp1(interptime, term4, t_tac, method = "linear")
+      term1 <- as.numeric(pracma::cumtrapz(interptime,
+                                           pracma::cumtrapz(interptime, aif)))
+      term2 <- as.numeric(pracma::cumtrapz(interptime, aif))
+      term3 <- -1*frame_cumsum(dur, frame_cumsum(dur, tac))
+      term4 <- -1*frame_cumsum(dur, tac)
+
+      term1 <- pracma::interp1(interptime, term1, t_tac, method = "linear")
+      term2 <- pracma::interp1(interptime, term2, t_tac, method = "linear")
+
+    } else {
+
+      term1 <- as.numeric(pracma::cumtrapz(interptime,
+                                           pracma::cumtrapz(interptime, aif)))
+      term2 <- as.numeric(pracma::cumtrapz(interptime, aif))
+      term3 <- -1*as.numeric(pracma::cumtrapz(interptime,
+                                              pracma::cumtrapz(interptime, i_tac)))
+      term4 <- -1*as.numeric(pracma::cumtrapz(interptime, i_tac))
+
+      term1 <- pracma::interp1(interptime, term1, t_tac, method = "linear")
+      term2 <- pracma::interp1(interptime, term2, t_tac, method = "linear")
+      term3 <- pracma::interp1(interptime, term3, t_tac, method = "linear")
+      term4 <- pracma::interp1(interptime, term4, t_tac, method = "linear")
+
+    }
 
     terms <- data.frame(Term1 = term1, Term2 = term2, Term3 = term3,
                         Term4 = term4)
@@ -176,6 +221,10 @@ lin2tcm <- function(t_tac, tac, input, weights = NULL, inpshift = 0,
     Time = t_tac, Target = tac,
     Target_fitted = as.numeric(predict(lin2tcm_model)), Weights = weights
   )
+
+  if(!is.null(dur)) {
+    fitvals$Duration = dur
+  }
 
   fitvals <- dplyr::bind_cols(fitvals, terms)
 

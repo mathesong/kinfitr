@@ -15,6 +15,8 @@
 #' @param vB Optional. The blood volume fraction.  If not specified, this will be ignored and assumed to be 0%. If specified, it
 #' will be corrected for prior to parameter estimation using the following equation:
 #' \deqn{C_{T}(t) = \frac{C_{Measured}(t) - vB\times C_{B}(t)}{1-vB}}
+#' @param dur Optional. Numeric vector of the time durations of the frames. If
+#' not included, the integrals will be calculated using trapezoidal integration.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 #' This is to assess time stability.
 #'
@@ -25,19 +27,21 @@
 #'
 #' @examples
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#' dur <- pbr28$tacs[[2]]$Duration/60
+#'
 #' input <- blood_interp(
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1
 #' )
-#' 
+#'
 #' fit1 <- ma2(t_tac, tac, input, weights)
 #' fit2 <- ma2(t_tac, tac, input, weights, inpshift = 0.1, vB = 0.05)
+#' fit3 <- ma2(t_tac, tac, input, weights, inpshift = 0.1, vB = 0.05, dur = dur)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Ichise M, Toyama H, Innis RB, Carson RE. Strategies to improve neuroreceptor parameter estimation by linear regression analysis. Journal of Cerebral Blood Flow & Metabolism. 2002 Oct 1;22(10):1271-81.
@@ -45,7 +49,8 @@
 #' @export
 
 
-ma2 <- function(t_tac, tac, input, weights = NULL, inpshift = 0, vB = 0, frameStartEnd = NULL) {
+ma2 <- function(t_tac, tac, input, weights = NULL, inpshift = 0, vB = 0,
+                dur = NULL, frameStartEnd = NULL) {
 
 
   # Tidying
@@ -55,6 +60,11 @@ ma2 <- function(t_tac, tac, input, weights = NULL, inpshift = 0, vB = 0, frameSt
   t_tac <- tidyinput$t_tac
   tac <- tidyinput$tac
   weights <- tidyinput$weights
+
+  if (!is.null(dur)) {
+    tidyinput_dur <- tidyinput_art(dur, tac, weights, frameStartEnd)
+    dur <- tidyinput_dur$t_tac
+  }
 
 
   newvals <- shift_timings(
@@ -80,16 +90,35 @@ ma2 <- function(t_tac, tac, input, weights = NULL, inpshift = 0, vB = 0, frameSt
 
   # Blood Volume Correction (nothing happens if vB = 0)
   i_tac <- (i_tac - vB * blood) / (1 - vB)
+  tac_uncor <- tac
+  tac <- pracma::interp1(interptime, i_tac, t_tac, method = "linear")
 
-  term1 <- as.numeric(pracma::cumtrapz(pracma::cumtrapz(interptime, aif)))
-  term2 <- as.numeric(pracma::cumtrapz(pracma::cumtrapz(interptime, i_tac)))
-  term3 <- as.numeric(pracma::cumtrapz(interptime, i_tac))
-  term4 <- as.numeric(pracma::cumtrapz(interptime, aif))
+  if (!is.null(dur)) {
 
-  term1 <- pracma::interp1(interptime, term1, t_tac, method = "linear")
-  term2 <- pracma::interp1(interptime, term2, t_tac, method = "linear")
-  term3 <- pracma::interp1(interptime, term3, t_tac, method = "linear")
-  term4 <- pracma::interp1(interptime, term4, t_tac, method = "linear")
+    term1 <- as.numeric(pracma::cumtrapz(interptime,
+                                         pracma::cumtrapz(interptime, aif)))
+    term2 <- frame_cumsum(dur, frame_cumsum(dur, tac))
+    term3 <- frame_cumsum(dur, tac)
+    term4 <- as.numeric(pracma::cumtrapz(interptime, aif))
+
+    term1 <- pracma::interp1(interptime, term1, t_tac, method = "linear")
+    term4 <- pracma::interp1(interptime, term4, t_tac, method = "linear")
+
+  } else {
+
+    term1 <- as.numeric(pracma::cumtrapz(interptime,
+                                         pracma::cumtrapz(interptime, aif)))
+    term2 <- as.numeric(pracma::cumtrapz(interptime,
+                                         pracma::cumtrapz(interptime, i_tac)))
+    term3 <- as.numeric(pracma::cumtrapz(interptime, i_tac))
+    term4 <- as.numeric(pracma::cumtrapz(interptime, aif))
+
+    term1 <- pracma::interp1(interptime, term1, t_tac, method = "linear")
+    term2 <- pracma::interp1(interptime, term2, t_tac, method = "linear")
+    term3 <- pracma::interp1(interptime, term3, t_tac, method = "linear")
+    term4 <- pracma::interp1(interptime, term4, t_tac, method = "linear")
+
+  }
 
 
   # Solution
@@ -120,7 +149,11 @@ ma2 <- function(t_tac, tac, input, weights = NULL, inpshift = 0, vB = 0, frameSt
   par <- as.data.frame(list(Vt = Vt, Vs = Vs, Vnd = Vnd, K1 = K1, k2 = k2, k3 = k3, k4 = k4))
   fit <- ma2_model
 
-  tacs <- data.frame(Time = t_tac, Target = tac)
+  tacs <- data.frame(Time = t_tac, Target = tac, Target_uncor = tac_uncor) # uncorrected for blood volume
+
+  if (!is.null(dur)) {
+    tacs$Duration <- dur
+  }
 
   fitvals <- data.frame(
     Time = t_tac, Target = tac, Term1 = term1, Term2 = term2,
@@ -153,17 +186,17 @@ ma2 <- function(t_tac, tac, input, weights = NULL, inpshift = 0, vB = 0, frameSt
 #'
 #' @examples
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#'
 #' input <- blood_interp(
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1
 #' )
-#' 
+#'
 #' fit <- ma2(t_tac, tac, input, weights)
 #' plot_ma2fit(fit)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
