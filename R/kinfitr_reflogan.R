@@ -50,15 +50,15 @@ refLogan <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames,
 
   tidyinput <- tidyinput_ref(t_tac, reftac, roitac, weights, frameStartEnd)
 
-  t_tac <- tidyinput$t_tac
-  reftac <- tidyinput$reftac
-  roitac <- tidyinput$roitac
-  weights <- tidyinput$weights
-
   if (!is.null(dur)) {
     tidyinput_dur <- tidyinput_ref(dur, reftac, roitac, weights, frameStartEnd)
     dur <- tidyinput_dur$t_tac
   }
+
+  t_tac <- tidyinput$t_tac
+  reftac <- tidyinput$reftac
+  roitac <- tidyinput$roitac
+  weights <- tidyinput$weights
 
   # Parameters
 

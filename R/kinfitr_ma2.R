@@ -57,14 +57,14 @@ ma2 <- function(t_tac, tac, input, weights = NULL, inpshift = 0, vB = 0,
 
   tidyinput <- tidyinput_art(t_tac, tac, weights, frameStartEnd)
 
-  t_tac <- tidyinput$t_tac
-  tac <- tidyinput$tac
-  weights <- tidyinput$weights
-
   if (!is.null(dur)) {
     tidyinput_dur <- tidyinput_art(dur, tac, weights, frameStartEnd)
     dur <- tidyinput_dur$t_tac
   }
+
+  t_tac <- tidyinput$t_tac
+  tac <- tidyinput$tac
+  weights <- tidyinput$weights
 
 
   newvals <- shift_timings(
@@ -73,7 +73,6 @@ ma2 <- function(t_tac, tac, input, weights = NULL, inpshift = 0, vB = 0,
     input = input,
     inpshift = inpshift
   )
-
 
   t_tac <- newvals$t_tac
   tac <- newvals$tac
