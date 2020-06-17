@@ -709,3 +709,22 @@ frame_cumsum <- function(dur, tac) {
   return(out)
 
 }
+
+camel <- function(x){ #function for camel case
+  capit <- function(x) paste0(toupper(substring(x, 1, 1)), substring(x, 2, nchar(x)))
+  first <- strsplit(x, "\\_")[[1]][1]
+  rest <- sapply(strsplit(x, "\\_")[[1]][-1],
+                 function(x) paste(capit(x), sep=""))
+
+  paste(first, rest, collapse="")
+}
+
+get_units_radioactivity <- function(x) {
+
+  rad <- gsub("[\\.\\/].*", "", x)
+  vol <- gsub("\\w*[\\.\\/]", "", x)
+  vol <- gsub("\\-1$", "", vol)
+
+  list(rad=rad, vol=vol)
+
+}

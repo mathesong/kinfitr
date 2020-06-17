@@ -146,7 +146,7 @@ ma1 <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL,
     tstarIncludedFrames = tstarIncludedFrames, model = "ma1"
   )
 
-  class(out) <- c("Logan", "kinfit")
+  class(out) <- c("ma1", "kinfit")
 
   return(out)
 }

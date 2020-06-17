@@ -115,7 +115,7 @@ i.e. the initial part of the decay after the peak.
 \examples{
 blooddata <- create_blooddata_bids(pbr28$jsondata[[1]])
 blooddata <- bd_blood_dispcor(blooddata)
-aif <- bd_getdata(blooddata, output = "AIF")
+aif <- bd_extract(blooddata, output = "AIF")
 blood_fit <- blmod_exp(aif$time,
                            aif$aif,
                            Method = aif$Method, multstart_iter = 1)

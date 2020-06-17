@@ -27,7 +27,16 @@ bd_getdata(
 A tibble containing the output specified.
 }
 \description{
-Predicts and interpolates all of the functions to create an input object, or to a set of values for modelling of blood-related functions.
+DEPRECATION WARNING: this function will be slowly phased out of future
+releases as it is based on the old PET BIDS standard. in favour of
+bd_extract() and bd_create_input(). blooddata objects can be updated to the
+new format using update_blooddata(), or (better) by creating it afresh from
+the source.
+}
+\details{
+This function extracts data from blooddata objects to create either an
+input object for kinetic modelling, or sets of values for modelling of
+blood-related curves.
 }
 \examples{
 \dontrun{

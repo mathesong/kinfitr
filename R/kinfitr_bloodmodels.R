@@ -489,7 +489,7 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
 #' @examples
 #' blooddata <- create_blooddata_bids(pbr28$jsondata[[1]])
 #' blooddata <- bd_blood_dispcor(blooddata)
-#' aif <- bd_getdata(blooddata, output = "AIF")
+#' aif <- bd_extract(blooddata, output = "AIF")
 #' blood_fit <- blmod_exp(aif$time,
 #'                            aif$aif,
 #'                            Method = aif$Method, multstart_iter = 1)
@@ -706,258 +706,258 @@ blmod_exp <- function(time, activity, Method = NULL,
 }
 
 
-#' Fit an exponential model to AIF data using the measured peak
-#'
-#' This model fits a bi- or tri-exponential model to AIF data. This model, in
-#' contrast to the \code{blmod_expsep()} model, uses the measured peak as
-#' the peak, and describes the rise by interpolating between t0 and the peak,
-#' and fits an exponential model only to the fall of the curve. This model is
-#' more robust, but less flexible than the fitpeak model.
-#'
-#' The model can fit two or three exponentials to the curve
-#' after the peak (\code{fit_exp0}). For \code{t0}, \code{peaktime} and
-#' \code{peakval}, the values can be specified by the user, otherwise they are
-#' determined from the data. \code{t0} is determined by fitting a regression
-#' line through the rise, while \code{peaktime} and \code{peakval} are just
-#' the x and y values of the maximal point in the measured data.
-#'
-#'
-#'
-#' @param time The time of each measurement in seconds
-#' @param activity The radioactivity of each measurement
-#' @param Method Optional. The method of collection, i.e. "Discrete" or
-#'   "Continuous"
-#' @param weights Optional. Weights of each measurement.
-#' @param fit_exp3 Should the third exponential be fitted, or should a
-#'   bi-exponential model be used? Default is TRUE for a tri-exponential model.
-#' @param peaktime_val Optional. This allows the user to specify the peaktime
-#'   value which will be used. Otherwise it will be specified from the data.
-#' @param peakval Optional. This allows the user to specify the peak value
-#'   which will be used. Otherwise it will be specified from the data.
-#' @param t0 Optional. This allows the user to specify the t0 value
-#'   which will be used. Otherwise it will be estimated from the data using a
-#'   linear regression.
-#' @param lower Optional. The lower limits of the fit. If left as NULL, they
-#'   will be given reasonable defaults (mostly 50\% of the starting parameters).
-#' @param upper Optional. The upper limits of the fit. If left as NULL, they
-#'   will be given reasonable defaults (mostly 150\% of the starting
-#'   parameters).
-#' @param start Optional. The starting parameters for the fit. If left as NULL,
-#'   they will be selected using \code{blmod_exp_startpars}.
-#' @param multstart_lower Optional. The lower limits of the starting parameters.
-#' @param multstart_upper Optional. The upper limits of the starting parameters.
-#' @param multstart_iter The number of fits to perform with different starting
-#'   parameters. If set to 1, then the starting parameters will be used for a
-#'   single fit.
-#' @param taper_weights Should the weights be tapered to gradually trade off
-#'   between the continuous and discrete samples after the peak?
-#' @param check_startpars Optional. Return only the starting parameters. Useful
-#'   for debugging fits which do not work.
-#' @param expdecay_props What proportions of the decay should be used for
-#'   choosing starting parameters for the exponential decay. Defaults to 1/60
-#'   and 1/10, i.e. start to 1/60, 1/60 to 1/10 and 1/10 to end. If fitting only
-#'   two exponentials, the second value will be used.
-#'
-#' @return A model fit including all of the individual parameters, fit details,
-#'   and model fit object of class blood_exp.
-#' @export
-#'
-#' @examples
-#' blooddata <- create_blooddata_bids(pbr28$jsondata[[3]])
-#' blooddata <- bd_blood_dispcor(blooddata)
-#' aif <- bd_getdata(blooddata, output = "AIF")
-#' blood_fit <- blmod_exp_sep(aif$time,
-#'                            aif$aif,
-#'                            Method = aif$Method, multstart_iter = 1)
-blmod_exp_sep <- function(time, activity, Method = NULL,
-                             weights = NULL,
-                             fit_exp3=TRUE,
-                             peaktime_val = NULL, peakval = NULL, t0 = NULL,
-                             lower = NULL,
-                             upper = NULL,
-                             start = NULL,
-                             multstart_lower = NULL,
-                             multstart_upper = NULL,
-                             multstart_iter = 100,
-                             taper_weights = TRUE,
-                             check_startpars = FALSE,
-                             expdecay_props = c(1/60, 0.1)) {
-
-
-  # Tidy up
-  blood <- blmod_tidyinput(time, activity, Method, weights)
-
-
-  # Create starting parameters
-  ## Note: start contains actual starting parameters. Startvals useful for other
-  ## things even if starting parameters are defined.
-  startvals <- blmod_exp_startpars(time, activity,
-                                   fit_exp3,
-                                   expdecay_props)
-  if(is.null(start)) {
-    start <- startvals
-  }
-
-  # Fix weights
-  if( length(unique(blood$Method)) == 2 ) { # i.e. both cont and discrete
-    discrete_before_peak <- which(blood$Method=="Discrete" &
-                                    blood$time < startvals$peaktime)
-
-    blood$weights[discrete_before_peak] <- 0
-  }
-
-  if(taper_weights) {
-    blood$weights <- ifelse(blood$Method=="Continuous",
-                            yes = blood$weights * (1-blood$peakfrac),
-                            no = blood$weights * blood$peakfrac)
-  }
-
-
-
-  # Set up parameter bounds
-
-  ## lower
-  if(is.null(lower)) {
-    lower <- purrr::map(startvals, ~(.x - abs(.x*0.5)))
-
-    lower$A <- 0.5*startvals$peakval
-    lower$B <- 0
-    lower$C <- 0
-  }
-
-  ## upper
-  if(is.null(upper)) {
-    upper <- purrr::map(startvals, ~(.x + abs(.x*0.5)))
-  }
-
-  ## Fitting exp3
-  if (!fit_exp3) {
-    lower$C <- NULL
-    upper$C <- NULL
-    start$C <- NULL
-
-    lower$gamma <- NULL
-    upper$gamma <- NULL
-    start$gamma <- NULL
-  }
-
-  ## Fix starting parameters for sep
-
-  ### Peaktime
-  peaktime_val <- startvals$peaktime
-  lower$peaktime <- NULL
-  upper$peaktime <- NULL
-  start$peaktime <- NULL
-
-  ### t0
-  if(is.null(t0)) {
-    t0 <- startvals$t0
-  }
-  lower$t0 <- NULL
-  upper$t0 <- NULL
-  start$t0 <- NULL
-
-  ### Peakval
-  if(is.null(peakval)) {
-    peakval <- startvals$peakval
-  }
-  lower$peakval <- NULL
-  upper$peakval <- NULL
-  start$peakval <- NULL
-
-  ## multstart
-  if(is.null(multstart_lower)) {
-    multstart_lower <- lower
-  }
-
-  if(is.null(multstart_upper)) {
-    multstart_upper <- upper
-  }
-
-  ## Defining them
-  lower <- as.numeric(as.data.frame(lower))
-  upper <- as.numeric(as.data.frame(upper))
-
-  multstart_lower <- as.numeric(as.data.frame(multstart_lower))
-  multstart_upper <- as.numeric(as.data.frame(multstart_upper))
-
-
-  if(check_startpars) {
-    out <- list(start = start, startvals = startvals)
-    return(out)
-  }
-
-
-  # Set up the formula for the exponential fit
-  expfit_formula <- paste0("activity ~ A * exp(-alpha * (time-",
-                           peaktime_val,"))",
-                           " + B * exp(-beta * (time-",
-                           peaktime_val,"))",
-                           ifelse(fit_exp3, paste0(" + C * exp(-gamma * (time-",
-                                                   peaktime_val,"))"), ""))
-
-
-  # Fit the model, with normal NLS or with multstart
-  if( multstart_iter == 1 ) {
-    modelout <- minpack.lm::nlsLM(as.formula(expfit_formula),
-                                  data = blood,
-                                  lower = lower,
-                                  upper = upper,
-                                  start = start,
-                                  weights = weights,
-                                  control = minpack.lm::nls.lm.control(
-                                    maxiter = 100))
-  } else {
-    modelout <- nls.multstart::nls_multstart(
-      formula = as.formula(expfit_formula), modelweights = weights,
-      data = blood, iter = multstart_iter,
-      start_lower = multstart_lower, start_upper = multstart_upper,
-      supp_errors = "Y", lower = lower, upper = upper)
-
-    if(is.null(modelout)) {
-      stop("None of the model fits were able to converge")
-    }
-  }
-
-  # Prepare output
-  coefficients <- as.data.frame(as.list(coef(modelout)))
-
-  coefficients$peaktime <- peaktime_val
-  coefficients$peakval <- peakval
-
-  coefficients$t0 <- t0
-
-  if (!fit_exp3) {
-    coefficients$C <- 0
-    coefficients$gamma <- 0
-  }
-
-  coefficients <- coefficients[order(names(coefficients))]
-
-  start <- as.data.frame(start)
-  upper <- as.data.frame(as.list(upper), col.names = names(start))
-  lower <- as.data.frame(as.list(lower), col.names = names(start))
-
-  fit_details <- as.data.frame(
-    list(
-      fit_exp3 = fit_exp3
-    ))
-
-  out <- list(
-    par = coefficients,
-    fit = modelout,
-    start = start,
-    lower = lower,
-    upper = upper,
-    fit_details = fit_details,
-    blood = blood
-  )
-
-  class(out) <- c("blood_exp_sep", class(out))
-
-  return(out)
-
-}
+# #' Fit an exponential model to AIF data using the measured peak
+# #'
+# #' This model fits a bi- or tri-exponential model to AIF data. This model, in
+# #' contrast to the \code{blmod_expsep()} model, uses the measured peak as
+# #' the peak, and describes the rise by interpolating between t0 and the peak,
+# #' and fits an exponential model only to the fall of the curve. This model is
+# #' more robust, but less flexible than the fitpeak model.
+# #'
+# #' The model can fit two or three exponentials to the curve
+# #' after the peak (\code{fit_exp0}). For \code{t0}, \code{peaktime} and
+# #' \code{peakval}, the values can be specified by the user, otherwise they are
+# #' determined from the data. \code{t0} is determined by fitting a regression
+# #' line through the rise, while \code{peaktime} and \code{peakval} are just
+# #' the x and y values of the maximal point in the measured data.
+# #'
+# #'
+# #'
+# #' @param time The time of each measurement in seconds
+# #' @param activity The radioactivity of each measurement
+# #' @param Method Optional. The method of collection, i.e. "Discrete" or
+# #'   "Continuous"
+# #' @param weights Optional. Weights of each measurement.
+# #' @param fit_exp3 Should the third exponential be fitted, or should a
+# #'   bi-exponential model be used? Default is TRUE for a tri-exponential model.
+# #' @param peaktime_val Optional. This allows the user to specify the peaktime
+# #'   value which will be used. Otherwise it will be specified from the data.
+# #' @param peakval Optional. This allows the user to specify the peak value
+# #'   which will be used. Otherwise it will be specified from the data.
+# #' @param t0 Optional. This allows the user to specify the t0 value
+# #'   which will be used. Otherwise it will be estimated from the data using a
+# #'   linear regression.
+# #' @param lower Optional. The lower limits of the fit. If left as NULL, they
+# #'   will be given reasonable defaults (mostly 50\% of the starting parameters).
+# #' @param upper Optional. The upper limits of the fit. If left as NULL, they
+# #'   will be given reasonable defaults (mostly 150\% of the starting
+# #'   parameters).
+# #' @param start Optional. The starting parameters for the fit. If left as NULL,
+# #'   they will be selected using \code{blmod_exp_startpars}.
+# #' @param multstart_lower Optional. The lower limits of the starting parameters.
+# #' @param multstart_upper Optional. The upper limits of the starting parameters.
+# #' @param multstart_iter The number of fits to perform with different starting
+# #'   parameters. If set to 1, then the starting parameters will be used for a
+# #'   single fit.
+# #' @param taper_weights Should the weights be tapered to gradually trade off
+# #'   between the continuous and discrete samples after the peak?
+# #' @param check_startpars Optional. Return only the starting parameters. Useful
+# #'   for debugging fits which do not work.
+# #' @param expdecay_props What proportions of the decay should be used for
+# #'   choosing starting parameters for the exponential decay. Defaults to 1/60
+# #'   and 1/10, i.e. start to 1/60, 1/60 to 1/10 and 1/10 to end. If fitting only
+# #'   two exponentials, the second value will be used.
+# #'
+# #' @return A model fit including all of the individual parameters, fit details,
+# #'   and model fit object of class blood_exp.
+# #' @export
+# #'
+# #' @examples
+# #' blooddata <- create_blooddata_bids(pbr28$jsondata[[3]])
+# #' blooddata <- bd_blood_dispcor(blooddata)
+# #' aif <- bd_extract(blooddata, output = "AIF")
+# #' blood_fit <- blmod_exp_sep(aif$time,
+# #'                            aif$aif,
+# #'                            Method = aif$Method, multstart_iter = 1)
+# blmod_exp_sep <- function(time, activity, Method = NULL,
+#                              weights = NULL,
+#                              fit_exp3=TRUE,
+#                              peaktime_val = NULL, peakval = NULL, t0 = NULL,
+#                              lower = NULL,
+#                              upper = NULL,
+#                              start = NULL,
+#                              multstart_lower = NULL,
+#                              multstart_upper = NULL,
+#                              multstart_iter = 100,
+#                              taper_weights = TRUE,
+#                              check_startpars = FALSE,
+#                              expdecay_props = c(1/60, 0.1)) {
+#
+#
+#   # Tidy up
+#   blood <- blmod_tidyinput(time, activity, Method, weights)
+#
+#
+#   # Create starting parameters
+#   ## Note: start contains actual starting parameters. Startvals useful for other
+#   ## things even if starting parameters are defined.
+#   startvals <- blmod_exp_startpars(time, activity,
+#                                    fit_exp3,
+#                                    expdecay_props)
+#   if(is.null(start)) {
+#     start <- startvals
+#   }
+#
+#   # Fix weights
+#   if( length(unique(blood$Method)) == 2 ) { # i.e. both cont and discrete
+#     discrete_before_peak <- which(blood$Method=="Discrete" &
+#                                     blood$time < startvals$peaktime)
+#
+#     blood$weights[discrete_before_peak] <- 0
+#   }
+#
+#   if(taper_weights) {
+#     blood$weights <- ifelse(blood$Method=="Continuous",
+#                             yes = blood$weights * (1-blood$peakfrac),
+#                             no = blood$weights * blood$peakfrac)
+#   }
+#
+#
+#
+#   # Set up parameter bounds
+#
+#   ## lower
+#   if(is.null(lower)) {
+#     lower <- purrr::map(startvals, ~(.x - abs(.x*0.5)))
+#
+#     lower$A <- 0.5*startvals$peakval
+#     lower$B <- 0
+#     lower$C <- 0
+#   }
+#
+#   ## upper
+#   if(is.null(upper)) {
+#     upper <- purrr::map(startvals, ~(.x + abs(.x*0.5)))
+#   }
+#
+#   ## Fitting exp3
+#   if (!fit_exp3) {
+#     lower$C <- NULL
+#     upper$C <- NULL
+#     start$C <- NULL
+#
+#     lower$gamma <- NULL
+#     upper$gamma <- NULL
+#     start$gamma <- NULL
+#   }
+#
+#   ## Fix starting parameters for sep
+#
+#   ### Peaktime
+#   peaktime_val <- startvals$peaktime
+#   lower$peaktime <- NULL
+#   upper$peaktime <- NULL
+#   start$peaktime <- NULL
+#
+#   ### t0
+#   if(is.null(t0)) {
+#     t0 <- startvals$t0
+#   }
+#   lower$t0 <- NULL
+#   upper$t0 <- NULL
+#   start$t0 <- NULL
+#
+#   ### Peakval
+#   if(is.null(peakval)) {
+#     peakval <- startvals$peakval
+#   }
+#   lower$peakval <- NULL
+#   upper$peakval <- NULL
+#   start$peakval <- NULL
+#
+#   ## multstart
+#   if(is.null(multstart_lower)) {
+#     multstart_lower <- lower
+#   }
+#
+#   if(is.null(multstart_upper)) {
+#     multstart_upper <- upper
+#   }
+#
+#   ## Defining them
+#   lower <- as.numeric(as.data.frame(lower))
+#   upper <- as.numeric(as.data.frame(upper))
+#
+#   multstart_lower <- as.numeric(as.data.frame(multstart_lower))
+#   multstart_upper <- as.numeric(as.data.frame(multstart_upper))
+#
+#
+#   if(check_startpars) {
+#     out <- list(start = start, startvals = startvals)
+#     return(out)
+#   }
+#
+#
+#   # Set up the formula for the exponential fit
+#   expfit_formula <- paste0("activity ~ A * exp(-alpha * (time-",
+#                            peaktime_val,"))",
+#                            " + B * exp(-beta * (time-",
+#                            peaktime_val,"))",
+#                            ifelse(fit_exp3, paste0(" + C * exp(-gamma * (time-",
+#                                                    peaktime_val,"))"), ""))
+#
+#
+#   # Fit the model, with normal NLS or with multstart
+#   if( multstart_iter == 1 ) {
+#     modelout <- minpack.lm::nlsLM(as.formula(expfit_formula),
+#                                   data = blood,
+#                                   lower = lower,
+#                                   upper = upper,
+#                                   start = start,
+#                                   weights = weights,
+#                                   control = minpack.lm::nls.lm.control(
+#                                     maxiter = 100))
+#   } else {
+#     modelout <- nls.multstart::nls_multstart(
+#       formula = as.formula(expfit_formula), modelweights = weights,
+#       data = blood, iter = multstart_iter,
+#       start_lower = multstart_lower, start_upper = multstart_upper,
+#       supp_errors = "Y", lower = lower, upper = upper)
+#
+#     if(is.null(modelout)) {
+#       stop("None of the model fits were able to converge")
+#     }
+#   }
+#
+#   # Prepare output
+#   coefficients <- as.data.frame(as.list(coef(modelout)))
+#
+#   coefficients$peaktime <- peaktime_val
+#   coefficients$peakval <- peakval
+#
+#   coefficients$t0 <- t0
+#
+#   if (!fit_exp3) {
+#     coefficients$C <- 0
+#     coefficients$gamma <- 0
+#   }
+#
+#   coefficients <- coefficients[order(names(coefficients))]
+#
+#   start <- as.data.frame(start)
+#   upper <- as.data.frame(as.list(upper), col.names = names(start))
+#   lower <- as.data.frame(as.list(lower), col.names = names(start))
+#
+#   fit_details <- as.data.frame(
+#     list(
+#       fit_exp3 = fit_exp3
+#     ))
+#
+#   out <- list(
+#     par = coefficients,
+#     fit = modelout,
+#     start = start,
+#     lower = lower,
+#     upper = upper,
+#     fit_details = fit_details,
+#     blood = blood
+#   )
+#
+#   class(out) <- c("blood_exp_sep", class(out))
+#
+#   return(out)
+#
+# }
 
 
 
@@ -1019,31 +1019,31 @@ predict.blood_exp <- function(object, newdata = NULL) {
 
 }
 
-predict.blood_exp_sep <- function(object, newdata = NULL) {
-
-  if(is.null(newdata)) {
-    newdata <- list(
-      time = object$blood$time
-    )
-  }
-
-  # Solve for linear portion
-  gradient <- with(object$par, peakval / ( peaktime - t0))
-  intercept <- -1*(object$par$t0 * gradient)
-
-  # Let's tibble
-  dat <- tibble::tibble(time = newdata$time,
-                curve = dplyr::case_when(
-                  time < object$par$t0 ~ "Before t0",
-                  time > object$par$peaktime ~ "Descent",
-                  TRUE ~ "Rise"))
-
-  pred <- dplyr::case_when(
-    dat$curve == "Before t0" ~ 0,
-    dat$curve == "Descent"   ~ predict(object$fit, newdata),
-    dat$curve == "Rise"      ~ newdata$time*gradient + intercept
-  )
-
-  return(pred)
-
-}
+# predict.blood_exp_sep <- function(object, newdata = NULL) {
+#
+#   if(is.null(newdata)) {
+#     newdata <- list(
+#       time = object$blood$time
+#     )
+#   }
+#
+#   # Solve for linear portion
+#   gradient <- with(object$par, peakval / ( peaktime - t0))
+#   intercept <- -1*(object$par$t0 * gradient)
+#
+#   # Let's tibble
+#   dat <- tibble::tibble(time = newdata$time,
+#                 curve = dplyr::case_when(
+#                   time < object$par$t0 ~ "Before t0",
+#                   time > object$par$peaktime ~ "Descent",
+#                   TRUE ~ "Rise"))
+#
+#   pred <- dplyr::case_when(
+#     dat$curve == "Before t0" ~ 0,
+#     dat$curve == "Descent"   ~ predict(object$fit, newdata),
+#     dat$curve == "Rise"      ~ newdata$time*gradient + intercept
+#   )
+#
+#   return(pred)
+#
+# }
