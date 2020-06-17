@@ -808,6 +808,10 @@ bd_extract_bpr <- function(blooddata,
   bprvec <- blood_discrete$activity[blood_discrete$time %in% commonvalues] /
     plasma$activity[plasma$time %in% commonvalues]
 
+  if( is.nan(bprvec[1]) ) {
+    bprvec[1] <- bprvec[2]
+  }
+
 
   bpr <- tibble::tibble(time = commonvalues, bpr = bprvec)
 
@@ -1504,6 +1508,9 @@ bd_getdata <- function(blooddata,
   bprvec <- blood_discrete$activity[blood_discrete$time %in% commonvalues] /
     plasma$activity[plasma$time %in% commonvalues]
 
+  if( is.nan(bprvec[1]) ) {
+    bprvec[1] <- bprvec[2]
+  }
 
   bpr <- tibble::tibble(time = commonvalues, bpr = bprvec)
 
@@ -1785,7 +1792,7 @@ bd_getdata <- function(blooddata,
 }
 
 interpends <- function(x, y, xi, method = "linear", yzero = NULL) {
-  if (is.null(yzero)) {
+  if (is.null(yzero)) { # start point
     yzero <- head(y, 1)
   }
 
