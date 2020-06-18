@@ -215,7 +215,7 @@ plot_Loganfit <- function(loganout, roiname = NULL) {
 
   myColors <- RColorBrewer::brewer.pal(3, "Set1")
   names(myColors) <- levels(plotdf$Equilibrium)
-  colScale <- scale_colour_manual(name = paste0(roiname, "\nEquilibrium"), values = myColors)
+  colScale <- scale_colour_manual(name = paste0(roiname, "\nLinear"), values = myColors)
 
   xlimits <- c(0, tail(plotdf$Logan_Plasma, 1))
 

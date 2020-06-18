@@ -347,7 +347,7 @@ bd_addfit <- function(blooddata, fit, modeltype = c(
                          )) {
 
   # Verify fit object
-  if (!(length(predict(fit)) > 1)) {
+  if (!(length(as.numeric(predict(fit))) > 1)) {
     stop("The fit object should be capable of producing
          predicted values with the predict command.")
   }
@@ -703,13 +703,15 @@ bd_extract_blood <- function(blooddata,
   if (blooddata$Models$Blood$Method == "fit") {
     i_blood <- tibble::tibble(
       time = interptime,
-      activity = predict(blooddata$Models$Blood$Data,
-                         newdata = list(time = interptime)
+      activity = as.numeric(
+        predict(blooddata$Models$Blood$Data,
+                         newdata = list(time = interptime))
       )
     )
 
-    blood$activity <- predict(blooddata$Models$Blood$Data,
-                              newdata = list(time = blood$time)
+    blood$activity <- as.numeric(
+      predict(blooddata$Models$Blood$Data,
+                              newdata = list(time = blood$time))
     )
   }
 
@@ -840,13 +842,15 @@ bd_extract_bpr <- function(blooddata,
   if (blooddata$Models$BPR$Method == "fit") {
     i_bpr <- tibble::tibble(
       time = interptime,
-      bpr = predict(blooddata$Models$BPR$Data,
-        newdata = list(time = interptime)
+      bpr = as.numeric(
+        predict(blooddata$Models$BPR$Data,
+        newdata = list(time = interptime))
       )
     )
 
-    blood$bpr <- predict(blooddata$Models$BPR$Data,
-      newdata = list(time = blood$time)
+    blood$bpr <- as.numeric(
+      predict(blooddata$Models$BPR$Data,
+      newdata = list(time = blood$time))
     )
   }
 
@@ -956,13 +960,15 @@ bd_extract_pf <- function(blooddata,
   if (blooddata$Models$parentFraction$Method == "fit") {
     i_pf <- tibble::tibble(
       time = interptime,
-      parentFraction = predict(blooddata$Models$parentFraction$Data,
-        newdata = list(time = interptime)
+      parentFraction = as.numeric(
+        predict(blooddata$Models$parentFraction$Data,
+        newdata = list(time = interptime))
       )
     )
 
-    blood$parentFraction <- predict(blooddata$Models$parentFraction$Data,
-      newdata = list(time = blood$time)
+    blood$parentFraction <- as.numeric(
+      predict(blooddata$Models$parentFraction$Data,
+      newdata = list(time = blood$time))
     )
   }
 
@@ -1107,8 +1113,9 @@ bd_extract_aif <- function(blooddata,
   if (blooddata$Models$AIF$Method == "fit") {
     i_aif <- tibble::tibble(
       time = interptime,
-      aif = predict(blooddata$Models$AIF$Data,
-        newdata = list(time = interptime)
+      aif = as.numeric(
+        predict(blooddata$Models$AIF$Data,
+        newdata = list(time = interptime))
       )
     )
   }
@@ -1436,13 +1443,15 @@ bd_getdata <- function(blooddata,
   if (blooddata$Models$Blood$Method == "fit") {
     i_blood <- tibble::tibble(
       time = interptime,
-      activity = predict(blooddata$Models$Blood$Data,
-                         newdata = list(time = interptime)
+      activity = as.numeric(
+        predict(blooddata$Models$Blood$Data,
+                         newdata = list(time = interptime))
       )
     )
 
-    blood$activity <- predict(blooddata$Models$Blood$Data,
-                              newdata = list(time = blood$time)
+    blood$activity <- as.numeric(
+      predict(blooddata$Models$Blood$Data,
+                              newdata = list(time = blood$time))
     )
   }
 
@@ -1537,13 +1546,13 @@ bd_getdata <- function(blooddata,
   if (blooddata$Models$BPR$Method == "fit") {
     i_bpr <- tibble::tibble(
       time = interptime,
-      bpr = predict(blooddata$Models$BPR$Data,
-                    newdata = list(time = interptime)
+      bpr = as.numeric(predict(blooddata$Models$BPR$Data,
+                    newdata = list(time = interptime))
       )
     )
 
-    blood$bpr <- predict(blooddata$Models$BPR$Data,
-                         newdata = list(time = blood$time)
+    blood$bpr <- as.numeric(predict(blooddata$Models$BPR$Data,
+                         newdata = list(time = blood$time))
     )
   }
 
@@ -1623,13 +1632,15 @@ bd_getdata <- function(blooddata,
   if (blooddata$Models$parentFraction$Method == "fit") {
     i_pf <- tibble::tibble(
       time = interptime,
-      parentFraction = predict(blooddata$Models$parentFraction$Data,
-                               newdata = list(time = interptime)
+      parentFraction = as.numeric(
+        predict(blooddata$Models$parentFraction$Data,
+                               newdata = list(time = interptime))
       )
     )
 
-    blood$parentFraction <- predict(blooddata$Models$parentFraction$Data,
-                                    newdata = list(time = blood$time)
+    blood$parentFraction <- as.numeric(
+      predict(blooddata$Models$parentFraction$Data,
+                                    newdata = list(time = blood$time))
     )
   }
 
@@ -1739,8 +1750,9 @@ bd_getdata <- function(blooddata,
   if (blooddata$Models$AIF$Method == "fit") {
     i_aif <- tibble::tibble(
       time = interptime,
-      aif = predict(blooddata$Models$AIF$Data,
-                    newdata = list(time = interptime)
+      aif = as.numeric(
+        predict(blooddata$Models$AIF$Data,
+                    newdata = list(time = interptime))
       )
     )
   }

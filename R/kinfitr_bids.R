@@ -482,7 +482,7 @@ bids_create_blooddata <- function(filedata) {
 
 }
 
-bids_parse_pet <- function(filedata) {
+bids_parse_pettimes <- function(filedata) {
 
   if(!("pet" %in% filedata$measurement)) {
     return(NA)
@@ -509,6 +509,26 @@ bids_parse_pet <- function(filedata) {
 
 }
 
+bids_parse_petinfo <- function(filedata) {
+
+  if(!("pet" %in% filedata$measurement)) {
+    return(NA)
+  }
+
+  ### Get the filenames ###
+
+  json_pet <- filedata %>%
+    dplyr::filter(measurement=="pet" & extension=="json") %>%
+    dplyr::pull(path_absolute)
+
+  ### Get the data ###
+
+  jsondat_pet <- jsonlite::fromJSON(json_pet)
+
+  return(jsondat_pet)
+
+}
+
 #' Parse the contents of a PET BIDS study
 #'
 #' This function parses a PET BIDS study, and returns a nested tibble with the
@@ -531,14 +551,30 @@ bids_parse_study <- function(studypath) {
     dplyr::group_by(ses, sub, task, acq)
 
 
+  measurements$petinfo <- purrr::map(measurements$filedata,
+                                      bids_parse_petinfo)
+
   measurements$blooddata <- purrr::map(measurements$filedata,
                                        bids_create_blooddata)
 
   measurements$tactimes <- purrr::map(measurements$filedata,
-                                     bids_parse_pet)
+                                     bids_parse_pettimes)
 
   measurements <- dplyr::filter(measurements, !is.na(tactimes))
 
   return(measurements)
+
+}
+
+bids_weights_create <- function(petinfo, tac, method=2,
+                                    minweight = 0.7, weight_checkn=5) {
+
+  weights_create(t_start = petinfo$FrameTimesStart/60,
+                            t_end = with(petinfo, FrameTimesStart +
+                                           FrameDuration)/60,
+                            tac = tac,
+                            radioisotope = petinfo$TracerRadionuclide,
+                            method=method, minweight=minweight,
+                            weight_checkn=weight_checkn)
 
 }
