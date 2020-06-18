@@ -565,16 +565,3 @@ bids_parse_study <- function(studypath) {
   return(measurements)
 
 }
-
-bids_weights_create <- function(petinfo, tac, method=2,
-                                    minweight = 0.7, weight_checkn=5) {
-
-  weights_create(t_start = petinfo$FrameTimesStart/60,
-                            t_end = with(petinfo, FrameTimesStart +
-                                           FrameDuration)/60,
-                            tac = tac,
-                            radioisotope = petinfo$TracerRadionuclide,
-                            method=method, minweight=minweight,
-                            weight_checkn=weight_checkn)
-
-}
