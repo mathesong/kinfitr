@@ -140,8 +140,13 @@ ma1 <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL,
 
   input <- newvals$input
 
+  par.se <- par
+  names(par.se) <- paste0(names(par.se), ".se")
+  par.se$Vt.se <- get_se(ma1_model, "-term1_equil / term2_equil")
+
+
   out <- list(
-    par = par, fit = ma1_model, tacs = tacs, fitvals = fitvals,
+    par = par, par.se = par.se, fit = ma1_model, tacs = tacs, fitvals = fitvals,
     input = input, weights = weights, inpshift = inpshift, vB = vB,
     tstarIncludedFrames = tstarIncludedFrames, model = "ma1"
   )

@@ -215,12 +215,23 @@ plot_Loganfit <- function(loganout, roiname = NULL) {
 
   myColors <- RColorBrewer::brewer.pal(3, "Set1")
   names(myColors) <- levels(plotdf$Equilibrium)
-  colScale <- scale_colour_manual(name = paste0(roiname, "\nLinear"), values = myColors)
+  colScale <- scale_colour_manual(name = paste0(roiname, "\nLinear"),
+                                  values = myColors)
 
   xlimits <- c(0, tail(plotdf$Logan_Plasma, 1))
 
   xlabel <- "Integ(C_Plasma)/C_Tissue"
   ylabel <- "Integ(C_Tissue)/C_Tissue"
+
+  # xlabel <- expression(paste("", "", integral("", paste("0"), paste("", "t")),
+  #                            "C", phantom()[{paste("Plasma")}], "",
+  #                            phantom()/phantom(), "C", phantom()[{
+  #                              paste("Tissue", "")}]))
+  #
+  # ylabel <- expression(paste("", "", integral("", paste("0"), paste("", "t")),
+  #                            "C", phantom()[{paste("Tissue")}], "",
+  #                             phantom()/phantom(), "C", phantom()[{
+  #                             paste("Tissue", "")}]))
 
   outplot <- ggplot(data = plotdf, aes(x = Logan_Plasma, y = Logan_ROI, colour = Equilibrium)) +
     geom_point(aes(shape = "a", size = Weights)) +

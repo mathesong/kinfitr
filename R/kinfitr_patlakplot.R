@@ -198,12 +198,23 @@ plot_Patlakfit <- function(patlakout, roiname = NULL) {
 
   myColors <- RColorBrewer::brewer.pal(3, "Set1")
   names(myColors) <- levels(plotdf$Equilibrium)
-  colScale <- scale_colour_manual(name = "Equilibrium", values = myColors)
+  colScale <- scale_colour_manual(name = paste0(roiname, "\nLinear"),
+                                  values = myColors)
 
   xlimits <- c(0, tail(plotdf$Patlak_Plasma, 1))
 
   xlabel <- "Integ(C_Plasma)/C_Tissue"
   ylabel <- "Integ(C_Tissue)/C_Tissue"
+
+  # xlabel <- expression(paste("", "", integral("", paste("0"), paste("", "t")),
+  #                            "C", phantom()[{paste("Plasma")}], "",
+  #                            phantom()/phantom(), "C", phantom()[{
+  #                              paste("Plasma", "")}]))
+  #
+  # ylabel <- expression(paste("", "", integral("", paste("0"), paste("", "t")),
+  #                            "C", phantom()[{paste("Tissue")}], "",
+  #                            phantom()/phantom(), "C", phantom()[{
+  #                              paste("Plasma", "")}]))
 
   outplot <- ggplot(data = plotdf, aes(x = Patlak_Plasma, y = Patlak_ROI, colour = Equilibrium)) +
     geom_point(aes(shape = "a", size = Weights)) +

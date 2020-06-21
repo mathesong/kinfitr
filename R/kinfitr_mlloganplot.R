@@ -263,7 +263,8 @@ mlLogan_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL
   highroi_fit <- mlLoganplot(t_tac, highroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
 
   xlabel <- "Fitted Values"
-  ylabel <- "Integ(C_Tissue)"
+  ylabel <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
+                       "C", phantom()[{ paste("Tissue") }]))
 
   low_linplot <- qplot(lowroi_fit$fitvals$Fitted, lowroi_fit$fitvals$Term1_DV) + ggtitle("Low") + xlab(xlabel) + ylab(ylabel)
   med_linplot <- qplot(medroi_fit$fitvals$Fitted, medroi_fit$fitvals$Term1_DV) + ggtitle("Medium") + xlab(xlabel) + ylab(ylabel)
