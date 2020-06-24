@@ -29,7 +29,8 @@ bids_parse_files <- function(studypath) {
     tidyr::unnest(cols=all_of("attr")) %>%
     dplyr::mutate(extension = ifelse( extension=="gz" &
                                       grepl(".nii.gz", path),
-                                      "nii.gz", extension))
+                                      "nii.gz", extension)) %>%
+    dplyr::filter(!is.na(measurement))
 
   if(!("sub" %in% colnames(attributes))) {
     attributes$sub <- "01"
@@ -47,8 +48,65 @@ bids_parse_files <- function(studypath) {
     attributes$acq <- "acq"
   }
 
+  if(!("run" %in% colnames(attributes))) {
+    attributes$run <- 1
+  }
+
+  if(!("rec" %in% colnames(attributes))) {
+    attributes$rec <- "rec"
+  }
+
+  # Test
+  # attributes <- bind_rows(attributes, attributes[1,])
+  # attributes$sub[7] <- NA
+
+  # Inheritance
+
+  # Here I split the files off where information isn't provided to apply to
+  # multiple files by inheritance
+
+  attributes_complete <- attributes %>%
+    dplyr::filter(extension=="json" || extension=="tsv") %>%
+    dplyr::filter(!is.na(sub) &
+                  !is.na(ses) &
+                  !is.na(task) &
+                  !is.na(acq) &
+                  !is.na(run) &
+                  !is.na(rec))
+
+  attributes_inherit <- attributes %>%
+    dplyr::filter(extension=="json" || extension=="tsv") %>%
+    dplyr::filter(is.na(sub) |
+                    is.na(ses) |
+                    is.na(task) |
+                    is.na(acq) |
+                    is.na(run) |
+                    is.na(rec))
+
+
+  if(nrow(attributes_inherit) > 0) {
+    ## https://stackoverflow.com/questions/50483890/dplyr-join-na-match-to-any
+
+    attributes_inherit <- #suppressMessages(
+      attributes_inherit %>%
+        split(seq(nrow(.))) %>%
+        purrr::map_dfr(
+          ~purrr::modify_if(.,is.na,~NULL) %>%
+              dplyr::inner_join(.,
+                dplyr::select(attributes_complete,
+                                -path_absolute,
+                                -path)))#)
+  }
+
+  attributes <- dplyr::bind_rows(attributes_complete,
+                                   attributes_inherit)
+
+
+
+
+
   measurements <- attributes %>%
-    dplyr::group_by(sub, ses, task, acq) %>%
+    dplyr::group_by(sub, ses, task, acq, run, rec) %>%
     tidyr::nest() %>%
     dplyr::rename(filedata = data) %>%
     dplyr::ungroup()
@@ -492,11 +550,13 @@ bids_parse_pettimes <- function(filedata) {
 
   json_pet <- filedata %>%
     dplyr::filter(measurement=="pet" & extension=="json") %>%
-    dplyr::pull(path_absolute)
+    dplyr::mutate(jsondat_pet = purrr::map(
+      path_absolute, jsonlite::fromJSON
+    ))
 
-  ### Get the data ###
+  ### Extract the data ###
 
-  jsondat_pet <- jsonlite::fromJSON(json_pet)
+  jsondat_pet <- purrr::flatten(json_pet$jsondat_pet)
 
   tacdata <- tibble::tibble(
     start = jsondat_pet$FrameTimesStart,
@@ -519,11 +579,13 @@ bids_parse_petinfo <- function(filedata) {
 
   json_pet <- filedata %>%
     dplyr::filter(measurement=="pet" & extension=="json") %>%
-    dplyr::pull(path_absolute)
+    dplyr::mutate(jsondat_pet = purrr::map(
+      path_absolute, jsonlite::fromJSON
+    ))
 
-  ### Get the data ###
+  ### Extract the data ###
 
-  jsondat_pet <- jsonlite::fromJSON(json_pet)
+  jsondat_pet <- purrr::flatten(json_pet$jsondat_pet)
 
   return(jsondat_pet)
 
