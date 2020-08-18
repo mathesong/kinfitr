@@ -1,19 +1,20 @@
 context("test-blooddata")
 
 data(pbr28)
+data(oldbids_json)
 
-blooddata <- create_blooddata_bids(pbr28$jsondata[[5]])
+suppressMessages(
+  blooddata_old <- create_blooddata_bids(oldbids_json) )
+
+blooddata <- pbr28$blooddata[[1]]
 
 blooddata <- bd_blood_dispcor(blooddata)
 
-blooddata_nocont <- blooddata
-blooddata_nocont$Data$Blood$Continuous <- NULL
 
-test_that("creating blooddata from BIDS works", {
-  blooddata <- create_blooddata_bids(pbr28$jsondata[[3]])
-  expect_true(class(blooddata) == "blooddata")
+test_that("plotting blooddata works", {
+  bdplot <- plot(blooddata)
+  expect_true(any(class(bdplot) == "ggplot"))
 })
-
 
 test_that("creating blooddata from vectors works", {
 
@@ -40,12 +41,180 @@ test_that("creating blooddata from vectors works", {
      TimeShift = 0)
 
   expect_true(class(blooddata2) == "blooddata")
-})
 
-test_that("plotting blooddata works", {
-  bdplot <- plot(blooddata)
+  bdplot <- plot(blooddata2)
   expect_true(any(class(bdplot) == "ggplot"))
 })
+
+
+test_that("blooddata from vectors with no continuous works", {
+
+  blood_discrete <- tibble::tibble(
+    time = c(blooddata$Data$Blood$Discrete$Values$time,  # d & c as discrete
+             blooddata$Data$Blood$Continuous$Values$time),
+    activity = c(blooddata$Data$Blood$Discrete$Values$activity,  # d & c as discrete
+                 blooddata$Data$Blood$Continuous$Values$activity)
+  ) %>%
+    dplyr::distinct(time, .keep_all = TRUE)
+
+  blooddata2 <- create_blooddata_components(
+    Blood.Discrete.Values.time =
+      blood_discrete$time,
+    Blood.Discrete.Values.activity =
+      blood_discrete$activity,
+    Plasma.Values.time =
+      blooddata$Data$Plasma$Values$time,
+    Plasma.Values.activity =
+      blooddata$Data$Plasma$Values$activity,
+    Metabolite.Values.time =
+      blooddata$Data$Metabolite$Values$time,
+    Metabolite.Values.parentFraction =
+      blooddata$Data$Metabolite$Values$parentFraction,
+    #Blood.Continuous.Values.time =
+    #  blooddata$Data$Blood$Continuous$Values$time,
+    #Blood.Continuous.Values.activity =
+    #  blooddata$Data$Blood$Continuous$Values$activity,
+    #Blood.Continuous.DispersionConstant =
+    #  blooddata$Data$Blood$Continuous$DispersionConstant,
+    #Blood.Continuous.DispersionCorrected = FALSE,
+    TimeShift = 0)
+
+  expect_true(class(blooddata2) == "blooddata")
+
+  bdplot <- plot(blooddata2)
+  expect_true(any(class(bdplot) == "ggplot"))
+})
+
+test_that("blooddata with missing plasma works", {
+
+  blooddata2 <- create_blooddata_components(
+    Blood.Discrete.Values.time =
+      blooddata$Data$Blood$Discrete$Values$time,
+    Blood.Discrete.Values.activity =
+      blooddata$Data$Blood$Discrete$Values$activity,
+    #Plasma.Values.time =
+    #  blooddata$Data$Plasma$Values$time,
+    #Plasma.Values.activity =
+    #  blooddata$Data$Plasma$Values$activity,
+    Metabolite.Values.time =
+      blooddata$Data$Metabolite$Values$time,
+    Metabolite.Values.parentFraction =
+      blooddata$Data$Metabolite$Values$parentFraction,
+    Blood.Continuous.Values.time =
+      blooddata$Data$Blood$Continuous$Values$time,
+    Blood.Continuous.Values.activity =
+      blooddata$Data$Blood$Continuous$Values$activity,
+    Blood.Continuous.DispersionConstant =
+      blooddata$Data$Blood$Continuous$DispersionConstant,
+    Blood.Continuous.DispersionCorrected = FALSE,
+    TimeShift = 0)
+
+  expect_true(class(blooddata2) == "blooddata")
+
+  bdplot <- plot(blooddata2)
+  expect_true(any(class(bdplot) == "ggplot"))
+})
+
+test_that("blooddata with missing metabolite works", {
+
+  blooddata2 <- create_blooddata_components(
+    Blood.Discrete.Values.time =
+      blooddata$Data$Blood$Discrete$Values$time,
+    Blood.Discrete.Values.activity =
+      blooddata$Data$Blood$Discrete$Values$activity,
+    Plasma.Values.time =
+     blooddata$Data$Plasma$Values$time,
+    Plasma.Values.activity =
+     blooddata$Data$Plasma$Values$activity,
+    # Metabolite.Values.time =
+    #   blooddata$Data$Metabolite$Values$time,
+    # Metabolite.Values.parentFraction =
+    #   blooddata$Data$Metabolite$Values$parentFraction,
+    Blood.Continuous.Values.time =
+      blooddata$Data$Blood$Continuous$Values$time,
+    Blood.Continuous.Values.activity =
+      blooddata$Data$Blood$Continuous$Values$activity,
+    Blood.Continuous.DispersionConstant =
+      blooddata$Data$Blood$Continuous$DispersionConstant,
+    Blood.Continuous.DispersionCorrected = FALSE,
+    TimeShift = 0)
+
+  expect_true(class(blooddata2) == "blooddata")
+
+  bdplot <- plot(blooddata2)
+  expect_true(any(class(bdplot) == "ggplot"))
+})
+
+test_that("blooddata with missing WB works", {
+
+  blooddata2 <- create_blooddata_components(
+    #Blood.Discrete.Values.time =
+    #  blooddata$Data$Blood$Discrete$Values$time,
+    #Blood.Discrete.Values.activity =
+    #  blooddata$Data$Blood$Discrete$Values$activity,
+    Plasma.Values.time =
+      blooddata$Data$Plasma$Values$time,
+    Plasma.Values.activity =
+      blooddata$Data$Plasma$Values$activity,
+    Metabolite.Values.time =
+      blooddata$Data$Metabolite$Values$time,
+    Metabolite.Values.parentFraction =
+      blooddata$Data$Metabolite$Values$parentFraction,
+    # Blood.Continuous.Values.time =
+    #   blooddata$Data$Blood$Continuous$Values$time,
+    # Blood.Continuous.Values.activity =
+    #   blooddata$Data$Blood$Continuous$Values$activity,
+    # Blood.Continuous.DispersionConstant =
+    #   blooddata$Data$Blood$Continuous$DispersionConstant,
+    # Blood.Continuous.DispersionCorrected = FALSE,
+    TimeShift = 0)
+
+  expect_true(class(blooddata2) == "blooddata")
+
+  bdplot <- plot(blooddata2)
+  expect_true(any(class(bdplot) == "ggplot"))
+})
+
+test_that("blooddata with missing WB and metabolite works", {
+
+  blooddata2 <- create_blooddata_components(
+    #Blood.Discrete.Values.time =
+    #  blooddata$Data$Blood$Discrete$Values$time,
+    #Blood.Discrete.Values.activity =
+    #  blooddata$Data$Blood$Discrete$Values$activity,
+    Plasma.Values.time =
+      blooddata$Data$Plasma$Values$time,
+    Plasma.Values.activity =
+      blooddata$Data$Plasma$Values$activity,
+    # Metabolite.Values.time =
+    #   blooddata$Data$Metabolite$Values$time,
+    # Metabolite.Values.parentFraction =
+    #   blooddata$Data$Metabolite$Values$parentFraction,
+    # Blood.Continuous.Values.time =
+    #   blooddata$Data$Blood$Continuous$Values$time,
+    # Blood.Continuous.Values.activity =
+    #   blooddata$Data$Blood$Continuous$Values$activity,
+    # Blood.Continuous.DispersionConstant =
+    #   blooddata$Data$Blood$Continuous$DispersionConstant,
+    # Blood.Continuous.DispersionCorrected = FALSE,
+    TimeShift = 0)
+
+  expect_true(class(blooddata2) == "blooddata")
+
+  bdplot <- plot(blooddata2)
+  expect_true(any(class(bdplot) == "ggplot"))
+})
+
+test_that("updating blooddata works", {
+
+  blooddata2 <- update_blooddata(blooddata_old)
+
+  expect_true(class(blooddata2) == "blooddata")
+
+  bdplot <- plot(blooddata2)
+  expect_true(any(class(bdplot) == "ggplot"))
+})
+
 
 test_that("getting data from blooddata works", {
   blood <- bd_extract(blooddata, output = "Blood")

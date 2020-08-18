@@ -24,34 +24,36 @@
 #'   shifted (in seconds). Defaults to 0.
 #'
 #' @return a blooddata object
-#' @export
-#'
-#' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @examples
-#' \dontrun{
+#'
+#' blooddata <- pbr28$blooddata[[1]]
+#'
 #' blooddata2 <- create_blooddata_components(
 #'    Blood.Discrete.Values.time =
-#'      blooddata$Blood$Discrete$Values$time,
+#'      blooddata$Data$Blood$Discrete$Values$time,
 #'    Blood.Discrete.Values.activity =
-#'      blooddata$Blood$Discrete$Values$activity,
+#'      blooddata$Data$Blood$Discrete$Values$activity,
 #'    Plasma.Values.time =
-#'      blooddata$Plasma$Values$time,
+#'      blooddata$Data$Plasma$Values$time,
 #'    Plasma.Values.activity =
-#'      blooddata$Plasma$Values$activity,
+#'      blooddata$Data$Plasma$Values$activity,
 #'    Metabolite.Values.time =
-#'      blooddata$Metabolite$Values$time,
+#'      blooddata$Data$Metabolite$Values$time,
 #'    Metabolite.Values.parentFraction =
-#'      blooddata$Metabolite$Values$parentFraction,
+#'      blooddata$Data$Metabolite$Values$parentFraction,
 #'    Blood.Continuous.Values.time =
-#'      blooddata$Blood$Continuous$Values$time,
+#'      blooddata$Data$Blood$Continuous$Values$time,
 #'    Blood.Continuous.Values.activity =
-#'      blooddata$Blood$Continuous$Values$activity,
+#'      blooddata$Data$Blood$Continuous$Values$activity,
 #'    Blood.Continuous.DispersionConstant =
-#'      blooddata$Blood$Continuous$DispersionConstant,
+#'      blooddata$Data$Blood$Continuous$DispersionConstant,
 #'    Blood.Continuous.DispersionCorrected = FALSE,
 #'    TimeShift = 0)
 #'    }
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @export
 create_blooddata_components <- function(
                                         Blood.Discrete.Values.time = NULL,
                                         Blood.Discrete.Values.activity = NULL,
@@ -154,7 +156,7 @@ create_blooddata_components <- function(
     Metabolite <- list(
       Values = tibble::tibble(
         time = Metabolite.Values.time,
-        activity = Metabolite.Values.parentFraction
+        parentFraction = Metabolite.Values.parentFraction
       ),
       Avail = TRUE,
       time = list(
@@ -187,9 +189,9 @@ create_blooddata_components <- function(
   ### No metabolite, but blood/plasma: metab=1
   if( !Metabolite$Avail ) {
 
-    Metabolite$Values <- tibble:tibble(
+    Metabolite$Values <- tibble::tibble(
       time = Plasma$Values$time,
-      parentFraction = 1
+      parentFraction = rep(1, nrow(Plasma$Values))
     )
 
     Metabolite$Avail = TRUE
@@ -237,7 +239,7 @@ create_blooddata_components <- function(
 
 #' Create a blooddata object from BIDS data
 #'
-#' Deprecated. This function creates a blooddata object from data structured according to
+#' Deprecated. This function creates a blooddata object from JSON data structured according to
 #' the old PET BIDS standard.
 #'
 #' @param bids_data The filename of a PET BIDS json sidecar, or a list
@@ -2129,9 +2131,15 @@ plot_blooddata <- function(blooddata,
     plotmax <- 1
   }
 
+  if (!( "Continuous" %in% measured$Measurement )) {
+    shapes = 16
+  } else {
+    shapes = c(1, 16)
+  }
+
   ggplot(data = measured, aes(x = Time, y = Value, colour = Outcome)) +
     geom_point(aes(shape = Measurement, size = dotsize)) +
-    scale_shape_manual(values = c(1, 16)) +
+    scale_shape_manual(values = shapes) +
     scale_size(range = c(1, 2.5)) +
     geom_line(
       data = pred, size = 0.8, colour = "grey46",
