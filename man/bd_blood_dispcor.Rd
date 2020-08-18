@@ -8,7 +8,8 @@ bd_blood_dispcor(
   blooddata,
   timedelta = NULL,
   keep_interpolated = T,
-  smooth_iterations = 0
+  smooth_iterations = 0,
+  tau = NULL
 )
 }
 \arguments{
@@ -23,6 +24,10 @@ were not included in the original input be included in the output.}
 
 \item{smooth_iterations}{The number of times that the smoothing of each pair
 of observations should be performed using blood_smooth. Defaults to 0.}
+
+\item{tau}{The dispersion constant in unit seconds. If NULL (default),
+this value will be extracted from the constant in the blooddata object.
+This parameter is included as a manual override.}
 }
 \value{
 A blooddata object after dispersion correction.

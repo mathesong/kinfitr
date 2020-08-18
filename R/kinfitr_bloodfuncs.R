@@ -514,10 +514,13 @@ plot_inptac_fit <- function(fitout, roiname = NULL, zoomTime = 5) {
 #'
 #' @export
 plot_input <- function(input) {
+
+  bloodmax <- max(c(input$Blood, input$Plasma))
+
   input$BPR <- input$Blood / input$Plasma
-  input$Blood <- input$Blood / max(c(input$Blood, input$Plasma))
-  input$Plasma <- input$Plasma / max(c(input$Blood, input$Plasma))
-  input$AIF <- input$AIF
+  input$Blood <- input$Blood / bloodmax
+  input$Plasma <- input$Plasma / bloodmax
+  input$AIF <- input$AIF / bloodmax
 
   input <- dplyr::rename(input,
     "Parent Fraction" = ParentFraction,
@@ -529,7 +532,8 @@ plot_input <- function(input) {
 
   ggplot(tidyinput, aes(x = Time, y = Radioactivity, colour = Data)) +
     geom_line() +
-    coord_cartesian(ylim = c(0, 1))
+    coord_cartesian(ylim = c(0, 1)) +
+    labs(y="")
 }
 
 #' Perform dispersion correction on blood data collected using ABSS

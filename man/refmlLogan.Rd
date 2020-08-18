@@ -11,6 +11,7 @@ refmlLogan(
   k2prime,
   tstarIncludedFrames,
   weights = NULL,
+  dur = NULL,
   frameStartEnd = NULL
 )
 }
@@ -33,6 +34,9 @@ the function is linear after pseudo-equilibrium is reached. This is a count from
 
 \item{weights}{Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
 if not included, it is added. If not specified, uniform weights will be used.}
+
+\item{dur}{Optional. Numeric vector of the time durations of the frames. If
+not included, the integrals will be calculated using trapezoidal integration.}
 
 \item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 This is to assess time stability.}

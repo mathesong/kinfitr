@@ -16,6 +16,8 @@
 #' tissue compartment model (like SRTM).  If this is not the case, a t* is required.
 #' @param weights Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
 #' if not included, it is added. If not specified, uniform weights will be used.
+#' @param dur Optional. Numeric vector of the time durations of the frames. If
+#' not included, the integrals will be calculated using trapezoidal integration.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 #' This is to assess time stability.
 
@@ -39,11 +41,17 @@
 #'
 #' @export
 
-mrtm1 <- function(t_tac, reftac, roitac, weights = NULL, tstarIncludedFrames = NULL, frameStartEnd = NULL) {
+mrtm1 <- function(t_tac, reftac, roitac, tstarIncludedFrames = NULL,
+                  weights = NULL, dur = NULL, frameStartEnd = NULL) {
 
   # Tidying
 
   tidyinput <- tidyinput_ref(t_tac, reftac, roitac, weights, frameStartEnd)
+
+  if (!is.null(dur)) {
+    tidyinput_dur <- tidyinput_ref(dur, reftac, roitac, weights, frameStartEnd)
+    dur <- tidyinput_dur$t_tac
+  }
 
   t_tac <- tidyinput$t_tac
   reftac <- tidyinput$reftac
@@ -63,9 +71,20 @@ mrtm1 <- function(t_tac, reftac, roitac, weights = NULL, tstarIncludedFrames = N
 
   # Parameters
 
-  term1 <- pracma::cumtrapz(t_tac, reftac)
-  term2 <- pracma::cumtrapz(t_tac, roitac)
-  term3 <- reftac
+  if (!is.null(dur)) {
+
+    term1 <- frame_cumsum(dur, reftac)
+    term2 <- frame_cumsum(dur, roitac)
+    term3 <- reftac
+
+  } else {
+
+    term1 <- pracma::cumtrapz(t_tac, reftac)
+    term2 <- pracma::cumtrapz(t_tac, roitac)
+    term3 <- reftac
+
+  }
+
 
   fitvals <- data.frame(
     Time = t_tac, Reference = reftac, Target = roitac, Weights = weights,
@@ -89,15 +108,15 @@ mrtm1 <- function(t_tac, reftac, roitac, weights = NULL, tstarIncludedFrames = N
 
   # Output
 
-  ic <- 0 # is there an intercept?
-
-  bp <- as.numeric(-((coef(mrtm1_model)[1 + ic] / coef(mrtm1_model)[2 + ic]) + 1))
-  k2prime <- as.numeric(coef(mrtm1_model)[1 + ic] / coef(mrtm1_model)[3 + ic])
+  bp <- as.numeric(-((coef(mrtm1_model)[1] / coef(mrtm1_model)[2]) + 1))
+  k2prime <- as.numeric(coef(mrtm1_model)[1] / coef(mrtm1_model)[3])
 
   par <- as.data.frame(list(bp = bp, k2prime = k2prime))
   fit <- mrtm1_model
 
   tacs <- data.frame(Time = t_tac, Reference = reftac, Target = roitac)
+
+  if (!is.null(dur)) { tacs$Duration <- dur }
 
   fitvals <- fitvals_equil
   fitvals$Target_fitted <- as.numeric(predict(mrtm1_model))

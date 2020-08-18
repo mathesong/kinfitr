@@ -4,7 +4,8 @@
 \name{pbr28}
 \alias{pbr28}
 \title{PBR28 Test-Retest Data}
-\format{A nested data frame with 24 rows and 10 variables:
+\format{
+A nested data frame with 24 rows and 10 variables:
 \describe{
   \item{PET}{Descriptor of the PET measurement}
   \item{Subjname}{Descriptor of which individual was measured}
@@ -14,7 +15,8 @@
   \item{Genotype}{Refers to the High Affinity Binder (HAB) or Mixed Affinity Binder (MAB) genotype}
   \item{injRad}{Injected radioactivity}
   \item{jsondata}{This information is the contents of the BIDS json sidecar for each PET measurement. This contains all the raw blood data.}
-}}
+}
+}
 \source{
 \url{https://ejnmmires.springeropen.com/articles/10.1186/s13550-017-0304-1}
 }

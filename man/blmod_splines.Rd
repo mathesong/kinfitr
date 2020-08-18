@@ -45,9 +45,9 @@ A model fit including all of the individual models of class blood_splines.
 Fits two or three (if both discrete and continuous) splines to blood or AIF data to smooth it
 }
 \examples{
-blooddata <- create_blooddata_bids(pbr28$jsondata[[1]])
+blooddata <- pbr28$blooddata[[1]]
 blooddata <- bd_blood_dispcor(blooddata)
-blood <- bd_getdata(blooddata, output = "Blood")
+blood <- bd_extract(blooddata, output = "Blood")
 blood_fit <- blmod_splines(blood$time,
                            blood$activity,
                            Method = blood$Method)

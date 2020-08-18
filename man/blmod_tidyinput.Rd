@@ -22,8 +22,9 @@ A blood data frame ready for modelling
 Tidies the inputs to blood models ready for modelling
 }
 \examples{
-blooddata <- create_blooddata_bids(pbr28$jsondata[[1]])
-blood <- bd_getdata(blooddata, output = "Blood")
+blooddata <- pbr28$blooddata[[1]]
+blooddata <- bd_blood_dispcor(blooddata)
+blood <- bd_extract(blooddata, output = "Blood")
 blood <- blmod_tidyinput(blood$time,
                            blood$activity,
                            Method = blood$Method)

@@ -13,6 +13,8 @@
 #' 10 means that last 10 frames will be used. This value can be estimated using \code{refPatlak_tstar}.
 #' @param weights Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
 #' if not included, it is added. If not specified, uniform weights will be used.
+#' @param dur Optional. Numeric vector of the time durations of the frames. If
+#' not included, the integrals will be calculated using trapezoidal integration.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 #' This is to assess time stability.
 #'
@@ -23,14 +25,14 @@
 #' @examples
 #' # Note: Reference region models, and irreversible binding models, should not
 #' # be used for PBR28 - this is just to demonstrate function
-#' 
+#'
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' reftac <- pbr28$tacs[[2]]$CBL
 #' roitac <- pbr28$tacs[[2]]$STR
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#'
 #' fit <- refPatlak(t_tac, reftac, roitac, tstarIncludedFrames = 10, weights = weights)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -38,12 +40,18 @@
 #'
 #' @export
 
-refPatlak <- function(t_tac, reftac, roitac, tstarIncludedFrames, weights = NULL, frameStartEnd = NULL) {
+refPatlak <- function(t_tac, reftac, roitac, tstarIncludedFrames,
+                      weights = NULL, dur = NULL, frameStartEnd = NULL) {
 
 
   # Tidying
 
   tidyinput <- tidyinput_ref(t_tac, reftac, roitac, weights, frameStartEnd)
+
+  if (!is.null(dur)) {
+    tidyinput_dur <- tidyinput_ref(dur, reftac, roitac, weights, frameStartEnd)
+    dur <- tidyinput_dur$t_tac
+  }
 
   t_tac <- tidyinput$t_tac
   reftac <- tidyinput$reftac
@@ -53,8 +61,17 @@ refPatlak <- function(t_tac, reftac, roitac, tstarIncludedFrames, weights = NULL
 
   # Parameters
 
-  patlak_roi <- roitac / reftac
-  patlak_ref <- pracma::cumtrapz(t_tac, reftac) / reftac
+  if (!is.null(dur)) {
+
+    patlak_roi <- roitac / reftac
+    patlak_ref <- frame_cumsum(dur, reftac) / reftac
+
+  } else {
+
+    patlak_roi <- roitac / reftac
+    patlak_ref <- pracma::cumtrapz(t_tac, reftac) / reftac
+
+  }
 
   patlak_equil_roi <- tail(patlak_roi, tstarIncludedFrames)
   patlak_equil_ref <- tail(patlak_ref, tstarIncludedFrames)
@@ -70,7 +87,11 @@ refPatlak <- function(t_tac, reftac, roitac, tstarIncludedFrames, weights = NULL
   par <- as.data.frame(list(K = as.numeric(patlak_model$coefficients[2])))
   fit <- patlak_model
 
-  tacs <- data.frame(Time = t_tac, Reference = reftac, Target = roitac)
+  tacs <- data.frame(Time = t_tac, Reference = reftac, Target = roitac )
+
+  if (!is.null(dur)) {
+    tacs$Duration <- dur
+  }
 
   fitvals <- data.frame(Patlak_ROI = patlak_roi, Patlak_Ref = patlak_ref)
 
@@ -96,16 +117,16 @@ refPatlak <- function(t_tac, reftac, roitac, tstarIncludedFrames, weights = NULL
 #' @examples
 #' # Note: Reference region models, and irreversible binding models, should not
 #' # be used for PBR28 - this is just to demonstrate function
-#' 
+#'
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' reftac <- pbr28$tacs[[2]]$CBL
 #' roitac <- pbr28$tacs[[2]]$STR
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#'
 #' fit <- refPatlak(t_tac, reftac, roitac, tstarIncludedFrames = 10, weights = weights)
-#' 
+#'
 #' plot_refPatlakfit(fit)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -166,7 +187,7 @@ plot_refPatlakfit <- function(refpatlakout, roiname = NULL) {
 #' \dontrun{
 #' refPatlak_tstar(t_tac, reftac, taclow, tacmed, tachigh, "demonstration")
 #' }
-#' 
+#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2

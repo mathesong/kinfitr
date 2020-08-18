@@ -9,6 +9,7 @@ reftac <- simref$tacs[[meas]]$Reference
 roitac <- simref$tacs[[meas]]$ROI1
 t_tac <- simref$tacs[[meas]]$Times
 weights <- simref$tacs[[meas]]$Weights
+dur <- simref$tacs[[meas]]$Duration
 
 lowroi <- simref$tacs[[meas]]$ROI1
 medroi <- simref$tacs[[meas]]$ROI2
@@ -155,6 +156,21 @@ test_that("refLogan works with frameStartEnd", {
   expect_true(any(class(plot(refLoganout)) == "ggplot"))
 })
 
+test_that("refLogan works with durations", {
+  refLoganout <- refLogan(t_tac, reftac, roitac, 0.1, 10, weights = weights, dur=dur)
+  expect_gt(refLoganout$par$bp, 1.5)
+  expect_lt(refLoganout$par$bp, 2.5)
+  expect_true(any(class(plot(refLoganout)) == "ggplot"))
+})
+
+test_that("refLogan works with durations and frameStartEnd", {
+  refLoganout <- refLogan(t_tac, reftac, roitac, 0.1, 10, weights = weights,
+                          dur=dur, frameStartEnd = c(1, 33))
+  expect_gt(refLoganout$par$bp, 1.5)
+  expect_lt(refLoganout$par$bp, 2.5)
+  expect_true(any(class(plot(refLoganout)) == "ggplot"))
+})
+
 test_that("refLogan tstarfinder works", {
   suppressWarnings(
     tstar <- refLogan_tstar(t_tac, reftac, lowroi, medroi, highroi,
@@ -178,6 +194,24 @@ test_that("refmlLogan works with frameStartEnd", {
   refmlLoganout <- refmlLogan(t_tac, reftac, roitac, 0.1, 10,
     weights = weights,
     frameStartEnd = c(1, 33)
+  )
+  expect_gt(refmlLoganout$par$bp, 1.5)
+  expect_lt(refmlLoganout$par$bp, 2.5)
+  expect_true(any(class(plot(refmlLoganout)) == "ggplot"))
+})
+
+test_that("refmlLogan works with durations", {
+  refmlLoganout <- refmlLogan(t_tac, reftac, roitac, 0.1, 10,
+                              weights = weights, dur=dur)
+  expect_gt(refmlLoganout$par$bp, 1.5)
+  expect_lt(refmlLoganout$par$bp, 2.5)
+  expect_true(any(class(plot(refmlLoganout)) == "ggplot"))
+})
+
+test_that("refmlLogan works with durations and frameStartEnd", {
+  refmlLoganout <- refmlLogan(t_tac, reftac, roitac, 0.1, 10,
+                              weights = weights, dur=dur,
+                              frameStartEnd = c(1, 33)
   )
   expect_gt(refmlLoganout$par$bp, 1.5)
   expect_lt(refmlLoganout$par$bp, 2.5)
@@ -234,6 +268,21 @@ test_that("mrtm1 works with tstar and frameStartEnd", {
   expect_true(any(class(plot(mrtm1out)) == "ggplot"))
 })
 
+test_that("mrtm1 works with duration", {
+  mrtm1out <- mrtm1(t_tac, reftac, roitac, weights = weights, dur=dur)
+  expect_gt(mrtm1out$par$bp, 1.5)
+  expect_lt(mrtm1out$par$bp, 2.5)
+  expect_true(any(class(plot(mrtm1out)) == "ggplot"))
+})
+
+test_that("mrtm1 works with duration and frameStartEnd", {
+  mrtm1out <- mrtm1(t_tac, reftac, roitac, weights = weights, dur=dur,
+                    frameStartEnd = c(1, 33))
+  expect_gt(mrtm1out$par$bp, 1.5)
+  expect_lt(mrtm1out$par$bp, 2.5)
+  expect_true(any(class(plot(mrtm1out)) == "ggplot"))
+})
+
 test_that("mrtm1 tstarfinder works", {
   suppressWarnings(
     tstar <- mrtm1_tstar(t_tac, reftac, lowroi, medroi, highroi)
@@ -277,6 +326,21 @@ test_that("mrtm2 works with tstar and frameStartEnd", {
     frameStartEnd = c(1, 33),
     tstarIncludedFrames = 10
   )
+  expect_gt(mrtm2out$par$bp, 1.5)
+  expect_lt(mrtm2out$par$bp, 2.5)
+  expect_true(any(class(plot(mrtm2out)) == "ggplot"))
+})
+
+test_that("mrtm2 works with duration", {
+  mrtm2out <- mrtm2(t_tac, reftac, roitac, 0.1, weights = weights, dur=dur)
+  expect_gt(mrtm2out$par$bp, 1.5)
+  expect_lt(mrtm2out$par$bp, 2.5)
+  expect_true(any(class(plot(mrtm2out)) == "ggplot"))
+})
+
+test_that("mrtm2 works with duration and frameStartEnd", {
+  mrtm2out <- mrtm2(t_tac, reftac, roitac, 0.1, weights = weights,
+                    dur=dur, frameStartEnd = c(1, 33))
   expect_gt(mrtm2out$par$bp, 1.5)
   expect_lt(mrtm2out$par$bp, 2.5)
   expect_true(any(class(plot(mrtm2out)) == "ggplot"))
@@ -376,6 +440,21 @@ test_that("refPatlak works with frameStartEnd", {
     weights = weights,
     frameStartEnd = c(1, 33)
   )
+  expect_gt(refPatlakout$par$K, -1)
+  expect_lt(refPatlakout$par$K, 0.5)
+  expect_true(any(class(plot(refPatlakout)) == "ggplot"))
+})
+
+test_that("refPatlak works with duration", {
+  refPatlakout <- refPatlak(t_tac, reftac, roitac, 10, weights = weights, dur=dur)
+  expect_gt(refPatlakout$par$K, -1)
+  expect_lt(refPatlakout$par$K, 0.5)
+  expect_true(any(class(plot(refPatlakout)) == "ggplot"))
+})
+
+test_that("refPatlak works with duration and frameStartEnd", {
+  refPatlakout <- refPatlak(t_tac, reftac, roitac, 10, weights = weights,
+                            dur=dur, frameStartEnd = c(1, 33))
   expect_gt(refPatlakout$par$K, -1)
   expect_lt(refPatlakout$par$K, 0.5)
   expect_true(any(class(plot(refPatlakout)) == "ggplot"))

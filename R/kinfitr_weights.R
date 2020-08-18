@@ -21,6 +21,9 @@
 #'   number of weights are all above half of the maximum weight.
 #'
 #' @return The vector of weights.
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
 #' @export
 #'
 #' @examples
@@ -83,3 +86,46 @@ weights_create <- function(t_start, t_end, tac,
   return(calcweights)
 }
 
+#' Create weights from BIDS data
+#'
+#' This uses the BIDS PET JSON sidecar information and a TAC to create a
+#' weights vector.
+#'
+#' @param petinfo The parsed information from the PET JSON sidecar. This can be
+#' extracted simply using jsonlite::fromJSON() on the JSON file, or else at a
+#' study level using bids_parse_study()
+#' @param tac The time activity curve: preferably for a region with high signal-to-noise ratio.
+#' @param method Which method should be used? 1 represents duration^2 /
+#'   (tac_uncorrected). 2 represents sqrt(durations*tac_uncorrected). 3
+#'   represents duration / tac. 4 represents sqrt(durations). 5 represents
+#'   durations * exp((-ln(2)) / halflife ). 6 represents durations /
+#'   tac. 7 represents durations.
+#' @param minweight The minimum weight. Weights will be calculated as a fraction
+#'   between this value and 1. A zero frame with duration=0 will be set to 0
+#'   though.
+#' @param weight_checkn The number of values of the weights to check to make
+#'   sure that things haven't gone terribly wrong. It will check that this
+#'   number of weights are all above half of the maximum weight.
+#'
+#' @return A vector of weights.
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' bids_weights_create(studydata$petinfo[[1]],tacdata$Neo.cx)
+#' }
+weights_create_bids <- function(petinfo, tac, method=2,
+                                minweight = 0.7, weight_checkn=5) {
+
+  weights_create(t_start = petinfo$FrameTimesStart/60,
+                 t_end = with(petinfo, FrameTimesStart +
+                                FrameDuration)/60,
+                 tac = tac,
+                 radioisotope = petinfo$TracerRadionuclide,
+                 method=method, minweight=minweight,
+                 weight_checkn=weight_checkn)
+
+}

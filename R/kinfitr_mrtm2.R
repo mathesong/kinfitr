@@ -18,6 +18,8 @@
 #' tissue compartment model (like SRTM).  If this is not the case, a t* is required.
 #' @param weights Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
 #' if not included, it is added. If not specified, uniform weights will be used.
+#' @param dur Optional. Numeric vector of the time durations of the frames. If
+#' not included, the integrals will be calculated using trapezoidal integration.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 #' This is to assess time stability.
 #'
@@ -33,20 +35,28 @@
 #' reftac <- simref$tacs[[2]]$Reference
 #' roitac <- simref$tacs[[2]]$ROI1
 #' weights <- simref$tacs[[2]]$Weights
+#' dur <- simref$tacs[[2]]$Duration
 #'
-#' fit <- mrtm2(t_tac, reftac, roitac, 0.001, weights = weights)
+#' fit <- mrtm2(t_tac, reftac, roitac, 0.1, weights = weights)
+#' fit_dur <- mrtm2(t_tac, reftac, roitac, 0.1, weights = weights, dur = dur)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references @references Ichise M, Liow JS, Lu JQ, Takano A, Model K, Toyama H, Suhara T, Suzuki K, Innis RB, Carson RE. Linearized Reference Tissue Parametric Imaging Methods: Application to [11C]DASB Positron Emission Tomography Studies of the Serotonin Transporter in Human Brain. Journal of Cerebral Blood Flow & Metabolism. 2003 Sep 1;23(9):1096-112.
 #'
 #' @export
 
-mrtm2 <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames = NULL, weights = NULL, frameStartEnd = NULL) {
+mrtm2 <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames = NULL,
+                  weights = NULL, dur = NULL, frameStartEnd = NULL) {
 
 
   # Tidying
 
   tidyinput <- tidyinput_ref(t_tac, reftac, roitac, weights, frameStartEnd)
+
+  if (!is.null(dur)) {
+    tidyinput_dur <- tidyinput_ref(dur, reftac, roitac, weights, frameStartEnd)
+    dur <- tidyinput_dur$t_tac
+  }
 
   t_tac <- tidyinput$t_tac
   reftac <- tidyinput$reftac
@@ -60,13 +70,23 @@ mrtm2 <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames = NULL, we
 
   # Parameters
 
-  term1 <- pracma::cumtrapz(t_tac, reftac) + (1 / k2prime) * reftac
-  term2 <- pracma::cumtrapz(t_tac, roitac)
+  if (!is.null(dur)) {
+
+    term1 <- frame_cumsum(dur, reftac) + (1 / k2prime) * reftac
+    term2 <- frame_cumsum(dur, roitac)
+
+  } else {
+
+    term1 <- pracma::cumtrapz(t_tac, reftac) + (1 / k2prime) * reftac
+    term2 <- pracma::cumtrapz(t_tac, roitac)
+
+  }
 
   fitvals <- data.frame(
     Time = t_tac, Reference = reftac, Target = roitac, Weights = weights,
     Term1 = term1, Term2 = term2
   )
+
 
   if (is.null(tstarIncludedFrames) != T) {
     equil <- rep("Before", length(roitac))
@@ -85,14 +105,14 @@ mrtm2 <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames = NULL, we
 
   # Output
 
-  ic <- 0 # is there an intercept?
-
-  bp <- as.numeric(-((coef(mrtm2_model)[1 + ic] / coef(mrtm2_model)[2 + ic]) + 1))
+  bp <- as.numeric(-((coef(mrtm2_model)[1] / coef(mrtm2_model)[2]) + 1))
 
   par <- as.data.frame(list(bp = bp))
   fit <- mrtm2_model
 
   tacs <- data.frame(Time = t_tac, Reference = reftac, Target = roitac)
+
+  if (!is.null(dur)) { tacs$Duration <- dur }
 
   fitvals <- fitvals_equil
   fitvals$Target_fitted <- as.numeric(predict(mrtm2_model))

@@ -18,6 +18,8 @@
 #' @param vB Optional. The blood volume fraction.  If not specified, this will be ignored and assumed to be 0%. If specified, it
 #' will be corrected for prior to parameter estimation using the following equation:
 #' \deqn{C_{T}(t) = \frac{C_{Measured}(t) - vB\times C_{B}(t)}{1-vB}}
+#' @param dur Optional. Numeric vector of the time durations of the frames. If
+#' not included, the integrals will be calculated using trapezoidal integration.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 #' This is to assess time stability.
 #'
@@ -30,19 +32,21 @@
 #'
 #' @examples
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#' dur <- pbr28$tacs[[2]]$Duration/60
+#'
 #' input <- blood_interp(
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1
 #' )
-#' 
+#'
 #' fit1 <- mlLoganplot(t_tac, tac, input, 10, weights)
 #' fit2 <- mlLoganplot(t_tac, tac, input, 10, weights, inpshift = 0.1, vB = 0.05)
+#' fit3 <- mlLoganplot(t_tac, tac, input, 10, weights, inpshift = 0.1, vB = 0.05, dur=dur)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Turkheimer FE, Aston JA, Banati RB, Riddell C, Cunningham VJ. A linear wavelet filter for parametric imaging with dynamic PET. IEEE transactions on medical imaging. 2003 Mar;22(3):289-301.
@@ -50,12 +54,18 @@
 #' @export
 
 
-mlLoganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL, inpshift = 0, vB = 0, frameStartEnd = NULL) {
+mlLoganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL,
+                        inpshift = 0, vB = 0, dur = NULL, frameStartEnd = NULL) {
 
 
   # Tidying
 
   tidyinput <- tidyinput_art(t_tac, tac, weights, frameStartEnd)
+
+  if (!is.null(dur)) {
+    tidyinput_dur <- tidyinput_art(dur, tac, weights, frameStartEnd)
+    dur <- tidyinput_dur$t_tac
+  }
 
   t_tac <- tidyinput$t_tac
   tac <- tidyinput$tac
@@ -84,14 +94,28 @@ mlLoganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL, 
 
   # Blood Volume Correction (nothing happens if vB = 0)
   i_tac <- (i_tac - vB * blood) / (1 - vB)
+  tac_uncor <- tac
+  tac <- pracma::interp1(interptime, i_tac, t_tac, method = "linear")
 
-  term1_dv <- as.numeric(pracma::cumtrapz(interptime, i_tac))
-  term2 <- as.numeric(pracma::cumtrapz(interptime, aif))
-  term3 <- -i_tac
+  if (!is.null(dur)) {
 
-  term1_dv <- pracma::interp1(interptime, term1_dv, t_tac, method = "linear")
-  term2 <- pracma::interp1(interptime, term2, t_tac, method = "linear")
-  term3 <- pracma::interp1(interptime, term3, t_tac, method = "linear")
+    term1_dv <- frame_cumsum(dur, tac)
+    term2 <- as.numeric(pracma::cumtrapz(interptime, aif))
+    term3 <- -tac
+
+    term2 <- pracma::interp1(interptime, term2, t_tac, method = "linear")
+
+  } else {
+
+    term1_dv <- as.numeric(pracma::cumtrapz(interptime, i_tac))
+    term2 <- as.numeric(pracma::cumtrapz(interptime, aif))
+    term3 <- -i_tac
+
+    term1_dv <- pracma::interp1(interptime, term1_dv, t_tac, method = "linear")
+    term2 <- pracma::interp1(interptime, term2, t_tac, method = "linear")
+    term3 <- pracma::interp1(interptime, term3, t_tac, method = "linear")
+
+  }
 
   fitvals <- data.frame(
     Time = t_tac, Weights = weights,
@@ -116,7 +140,7 @@ mlLoganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL, 
   k2 <- as.numeric(1 / mllogan_model$coefficients[2])
   par <- as.data.frame(list(Vt = Vt, k2 = k2))
 
-  tacs <- data.frame(Time = t_tac, Target = tac)
+  tacs <- data.frame(Time = t_tac, Target = tac, Target_uncor = tac_uncor) # uncorrected for blood volume
 
   fittedvals <- (as.numeric(mllogan_model$coefficients[1]) * term2) + (as.numeric(mllogan_model$coefficients[2] * term3))
   fitvals <- data.frame(Term1_DV = term1_dv, Term2 = term2, Term3 = term3, Fitted = fittedvals)
@@ -147,17 +171,17 @@ mlLoganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL, 
 #'
 #' @examples
 #' data(pbr28)
-#' 
+#'
 #' t_tac <- pbr28$tacs[[2]]$Times / 60
 #' tac <- pbr28$tacs[[2]]$FC
 #' weights <- pbr28$tacs[[2]]$Weights
-#' 
+#'
 #' input <- blood_interp(
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
 #'   t_parentfrac = 1, parentfrac = 1
 #' )
-#' 
+#'
 #' fit <- mlLoganplot(t_tac, tac, input, 10, weights)
 #' plot_mlLoganfit(fit)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
@@ -225,7 +249,7 @@ plot_mlLoganfit <- function(mlloganout, roiname = NULL) {
 #'   inpshift = onetcmout$par$inpshift, vB = 0.05, gridbreaks = 4
 #' )
 #' }
-#' 
+#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @import ggplot2
@@ -239,7 +263,8 @@ mlLogan_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL
   highroi_fit <- mlLoganplot(t_tac, highroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
 
   xlabel <- "Fitted Values"
-  ylabel <- "Integ(C_Tissue)"
+  ylabel <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
+                       "C", phantom()[{ paste("Tissue") }]))
 
   low_linplot <- qplot(lowroi_fit$fitvals$Fitted, lowroi_fit$fitvals$Term1_DV) + ggtitle("Low") + xlab(xlabel) + ylab(ylabel)
   med_linplot <- qplot(medroi_fit$fitvals$Fitted, medroi_fit$fitvals$Term1_DV) + ggtitle("Medium") + xlab(xlabel) + ylab(ylabel)

@@ -5,61 +5,38 @@
 \title{Create a blooddata object from data vectors}
 \usage{
 create_blooddata_components(
-  Blood.Discrete.Data.Values.sampleStartTime,
-  Blood.Discrete.Data.Values.sampleDuration = 0,
-  Blood.Discrete.Data.Values.activity,
-  Plasma.Data.Values.sampleStartTime,
-  Plasma.Data.Values.sampleDuration = 0,
-  Plasma.Data.Values.activity,
-  Metabolite.Data.Values.sampleStartTime,
-  Metabolite.Data.Values.sampleDuration = 0,
-  Metabolite.Data.Values.parentFraction,
-  Blood.Continuous.Data.Values.time = NULL,
-  Blood.Continuous.Data.Values.activity = NULL,
-  Blood.Continuous.WithdrawalRate = NULL,
+  Blood.Discrete.Values.time = NULL,
+  Blood.Discrete.Values.activity = NULL,
+  Plasma.Values.time = NULL,
+  Plasma.Values.activity = NULL,
+  Metabolite.Values.time = NULL,
+  Metabolite.Values.parentFraction = NULL,
+  Blood.Continuous.Values.time = NULL,
+  Blood.Continuous.Values.activity = NULL,
   Blood.Continuous.DispersionConstant = NULL,
-  Blood.Continuous.DispersionConstantUnits = NULL,
   Blood.Continuous.DispersionCorrected = TRUE,
   TimeShift = 0
 )
 }
 \arguments{
-\item{Blood.Discrete.Data.Values.sampleStartTime}{In seconds. Sample start
-times (if durations known), or simply sample times (if durations unkown).}
+\item{Blood.Discrete.Values.time}{Sample times in seconds.}
 
-\item{Blood.Discrete.Data.Values.sampleDuration}{In seconds. Sample durations
-(if known). Defaults to zero if durations unknown.}
+\item{Blood.Discrete.Values.activity}{Measured radioactivity in kBq/ml.}
 
-\item{Blood.Discrete.Data.Values.activity}{In kBq/ml. Measured radioactivity.}
+\item{Plasma.Values.time}{In seconds. Sample times in seconds.}
 
-\item{Plasma.Data.Values.sampleStartTime}{In seconds. Sample start times (if
-durations known), or simply sample times (if durations unkown).}
+\item{Plasma.Values.activity}{Measured radioactivity in kBq/ml.}
 
-\item{Plasma.Data.Values.sampleDuration}{In seconds. Sample durations (if
-known). Defaults to zero if durations unknown.}
+\item{Metabolite.Values.time}{Sample times in seconds.}
 
-\item{Plasma.Data.Values.activity}{In kBq/ml. Measured radioactivity.}
+\item{Metabolite.Values.parentFraction}{Measured fraction (unitless).}
 
-\item{Metabolite.Data.Values.sampleStartTime}{In seconds. Sample start times
-(if durations known), or simply sample times (if durations unkown).}
+\item{Blood.Continuous.Values.time}{In seconds.}
 
-\item{Metabolite.Data.Values.sampleDuration}{In seconds. Sample durations (if
-known). Defaults to zero if durations unknown.}
-
-\item{Metabolite.Data.Values.parentFraction}{Measured fraction.}
-
-\item{Blood.Continuous.Data.Values.time}{In seconds.}
-
-\item{Blood.Continuous.Data.Values.activity}{in kBq/ml.}
-
-\item{Blood.Continuous.WithdrawalRate}{The rate at which the blood was
-withdrawn from the subject.}
+\item{Blood.Continuous.Values.activity}{in kBq/ml.}
 
 \item{Blood.Continuous.DispersionConstant}{External dispersion time constant
-resulting from tubing.}
-
-\item{Blood.Continuous.DispersionConstantUnits}{The units of the dispersion
-constant.}
+resulting from tubing in seconds.}
 
 \item{Blood.Continuous.DispersionCorrected}{Boolean flag specifying whether
 the continuous blood data have been dispersion-corrected.}
@@ -73,44 +50,39 @@ a blooddata object
 \description{
 This function creates a blooddata object from data vectors. This function
 creates data objects which contain the minimum amount of data for modelling.
+Leave blank fields which do not exist.
+}
+\details{
 Ideally, I recommend storing your data according to the BIDS specification
-and using the create_blooddata_bids command instead. Please refer to the PET
+and using the bids_create_blooddata() command instead. Please refer to the PET
 BIDS standard for further details about the inputs.
 }
 \examples{
-\dontrun{
+
+blooddata <- pbr28$blooddata[[1]]
+
 blooddata2 <- create_blooddata_components(
-   Blood.Discrete.Data.Values.sampleStartTime =
-     blooddata$Data$Blood$Discrete$Data$Values$sampleStartTime,
-   Blood.Discrete.Data.Values.sampleDuration =
-     blooddata$Data$Blood$Discrete$Data$Values$sampleDuration,
-   Blood.Discrete.Data.Values.activity =
-     blooddata$Data$Blood$Discrete$Data$Values$activity,
-   Plasma.Data.Values.sampleStartTime =
-     blooddata$Data$Plasma$Data$Values$sampleStartTime,
-   Plasma.Data.Values.sampleDuration =
-     blooddata$Data$Plasma$Data$Values$sampleDuration,
-   Plasma.Data.Values.activity =
-     blooddata$Data$Plasma$Data$Values$activity,
-   Metabolite.Data.Values.sampleStartTime =
-     blooddata$Data$Metabolite$Data$Values$sampleStartTime,
-   Metabolite.Data.Values.sampleDuration =
-     blooddata$Data$Metabolite$Data$Values$sampleDuration,
-   Metabolite.Data.Values.parentFraction =
-     blooddata$Data$Metabolite$Data$Values$parentFraction,
-   Blood.Continuous.Data.Values.time =
-     blooddata$Data$Blood$Continuous$Data$Values$time,
-   Blood.Continuous.Data.Values.activity =
-     blooddata$Data$Blood$Continuous$Data$Values$activity,
-   Blood.Continuous.WithdrawalRate =
-     blooddata$Data$Blood$Continuous$WithdrawalRate,
+   Blood.Discrete.Values.time =
+     blooddata$Data$Blood$Discrete$Values$time,
+   Blood.Discrete.Values.activity =
+     blooddata$Data$Blood$Discrete$Values$activity,
+   Plasma.Values.time =
+     blooddata$Data$Plasma$Values$time,
+   Plasma.Values.activity =
+     blooddata$Data$Plasma$Values$activity,
+   Metabolite.Values.time =
+     blooddata$Data$Metabolite$Values$time,
+   Metabolite.Values.parentFraction =
+     blooddata$Data$Metabolite$Values$parentFraction,
+   Blood.Continuous.Values.time =
+     blooddata$Data$Blood$Continuous$Values$time,
+   Blood.Continuous.Values.activity =
+     blooddata$Data$Blood$Continuous$Values$activity,
    Blood.Continuous.DispersionConstant =
      blooddata$Data$Blood$Continuous$DispersionConstant,
-   Blood.Continuous.DispersionConstantUnits =
-     blooddata$Data$Blood$Continuous$DispersionConstantUnits,
    Blood.Continuous.DispersionCorrected = FALSE,
    TimeShift = 0)
-   }
+
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}

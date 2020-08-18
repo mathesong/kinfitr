@@ -129,9 +129,9 @@ srtm <- function(t_tac, reftac, roitac, weights = NULL, frameStartEnd = NULL,
   ) {
     warning(
       paste0(
-        "Fitted parameters are hitting upper or lower limit bounds. Consider \n",
+        "\nFitted parameters are hitting upper or lower limit bounds. Consider \n",
         "either modifying the upper and lower limit boundaries, or else using \n",
-        "multstart when fitting the model (see the function documentation).") )
+        "multstart when fitting the model (see the function documentation).\n") )
   }
 
   # Output

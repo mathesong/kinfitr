@@ -63,7 +63,8 @@
 #'
 #' @export
 
-Patlakplot <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL, inpshift = 0, vB = 0, frameStartEnd = NULL) {
+Patlakplot <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL,
+                       inpshift = 0, vB = 0, frameStartEnd = NULL) {
 
 
   # Tidying
@@ -97,6 +98,8 @@ Patlakplot <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL, i
 
   # Blood Volume Correction (nothing happens if vB = 0)
   i_tac <- (i_tac - vB * blood) / (1 - vB)
+  tac_uncor <- tac
+  tac <- pracma::interp1(interptime, i_tac, t_tac, method = "linear")
 
   patlak_roi <- i_tac / aif
   patlak_plasma <- as.numeric((pracma::cumtrapz(interptime, aif)) / aif)
@@ -118,7 +121,7 @@ Patlakplot <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL, i
   par <- as.data.frame(list(K = as.numeric(patlak_model$coefficients[2])))
   fit <- patlak_model
 
-  tacs <- data.frame(Time = t_tac, Target = tac)
+  tacs <- data.frame(Time = t_tac, Target = tac, Target_uncor = tac_uncor) # uncorrected for blood volume
 
   fitvals <- data.frame(Patlak_Plasma = patlak_plasma, Patlak_ROI = patlak_roi)
 
@@ -195,12 +198,23 @@ plot_Patlakfit <- function(patlakout, roiname = NULL) {
 
   myColors <- RColorBrewer::brewer.pal(3, "Set1")
   names(myColors) <- levels(plotdf$Equilibrium)
-  colScale <- scale_colour_manual(name = "Equilibrium", values = myColors)
+  colScale <- scale_colour_manual(name = paste0(roiname, "\nLinear"),
+                                  values = myColors)
 
   xlimits <- c(0, tail(plotdf$Patlak_Plasma, 1))
 
   xlabel <- "Integ(C_Plasma)/C_Tissue"
   ylabel <- "Integ(C_Tissue)/C_Tissue"
+
+  # xlabel <- expression(paste("", "", integral("", paste("0"), paste("", "t")),
+  #                            "C", phantom()[{paste("Plasma")}], "",
+  #                            phantom()/phantom(), "C", phantom()[{
+  #                              paste("Plasma", "")}]))
+  #
+  # ylabel <- expression(paste("", "", integral("", paste("0"), paste("", "t")),
+  #                            "C", phantom()[{paste("Tissue")}], "",
+  #                            phantom()/phantom(), "C", phantom()[{
+  #                              paste("Plasma", "")}]))
 
   outplot <- ggplot(data = plotdf, aes(x = Patlak_Plasma, y = Patlak_ROI, colour = Equilibrium)) +
     geom_point(aes(shape = "a", size = Weights)) +

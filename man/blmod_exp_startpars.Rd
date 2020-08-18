@@ -33,9 +33,9 @@ models. I use the suggestions from page 515 of Pinheiro & Bates Mixed-Effects
 Models in S and S-PLUS for creating the exponential starting parameters.
 }
 \examples{
-blooddata <- create_blooddata_bids(pbr28$jsondata[[1]])
+blooddata <- pbr28$blooddata[[1]]
 blooddata <- bd_blood_dispcor(blooddata)
-aif <- bd_getdata(blooddata, output = "AIF")
+aif <- bd_extract(blooddata, output = "AIF")
 start <- blmod_exp_startpars(aif$time,
                            aif$aif)
 }

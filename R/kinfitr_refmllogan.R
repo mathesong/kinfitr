@@ -15,6 +15,8 @@
 #' 10 means that last 10 frames will be used. This value can be estimated using \code{refmlLogan_tstar}.
 #' @param weights Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
 #' if not included, it is added. If not specified, uniform weights will be used.
+#' @param dur Optional. Numeric vector of the time durations of the frames. If
+#' not included, the integrals will be calculated using trapezoidal integration.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 #' This is to assess time stability.
 #'
@@ -38,29 +40,43 @@
 #'
 #' @export
 
-refmlLogan <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames, weights = NULL, frameStartEnd = NULL) {
+refmlLogan <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames,
+                       weights = NULL, dur = NULL, frameStartEnd = NULL) {
 
 
   # Tidying
 
   tidyinput <- tidyinput_ref(t_tac, reftac, roitac, weights, frameStartEnd)
 
+  if (!is.null(dur)) {
+    tidyinput_dur <- tidyinput_ref(dur, reftac, roitac, weights, frameStartEnd)
+    dur <- tidyinput_dur$t_tac
+  }
+
   t_tac <- tidyinput$t_tac
   reftac <- tidyinput$reftac
   roitac <- tidyinput$roitac
   weights <- tidyinput$weights
 
-
   # Parameters
 
-  term1_dv <- pracma::cumtrapz(t_tac, roitac)
-  term2 <- pracma::cumtrapz(t_tac, reftac) + reftac / k2prime
-  term3 <- -roitac
+  if (!is.null(dur)) {
+
+    term1_dv <- frame_cumsum(dur, roitac)
+    term2 <- frame_cumsum(dur, reftac) + reftac / k2prime
+    term3 <- -roitac
+
+  } else {
+
+    term1_dv <- pracma::cumtrapz(t_tac, roitac)
+    term2 <- pracma::cumtrapz(t_tac, reftac) + reftac / k2prime
+    term3 <- -roitac
+
+  }
 
   fitvals <- data.frame(
     Time = t_tac, Reference = reftac, Weights = weights,
-    Term1_DV = term1_dv, Term2 = term2, Term3 = term3
-  )
+    Term1_DV = term1_dv, Term2 = term2, Term3 = term3 )
 
   if (is.null(tstarIncludedFrames) != T) {
     equil <- rep("Before", length(roitac))
@@ -86,6 +102,8 @@ refmlLogan <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames, weig
   fit <- mllogan_model
 
   tacs <- data.frame(Time = t_tac, Reference = reftac, Target = roitac)
+
+  if(!is.null(dur)) { tacs$Duration = dur }
 
   fittedvals <- (as.numeric(mllogan_model$coefficients[1]) * term2) + (as.numeric(mllogan_model$coefficients[2] * term3))
   fitvals <- data.frame(Term1_DV = term1_dv, Term2 = term2, Term3 = term3, Fitted = fittedvals)
