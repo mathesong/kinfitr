@@ -58,29 +58,31 @@ and using the bids_create_blooddata() command instead. Please refer to the PET
 BIDS standard for further details about the inputs.
 }
 \examples{
-\dontrun{
+
+blooddata <- pbr28$blooddata[[1]]
+
 blooddata2 <- create_blooddata_components(
    Blood.Discrete.Values.time =
-     blooddata$Blood$Discrete$Values$time,
+     blooddata$Data$Blood$Discrete$Values$time,
    Blood.Discrete.Values.activity =
-     blooddata$Blood$Discrete$Values$activity,
+     blooddata$Data$Blood$Discrete$Values$activity,
    Plasma.Values.time =
-     blooddata$Plasma$Values$time,
+     blooddata$Data$Plasma$Values$time,
    Plasma.Values.activity =
-     blooddata$Plasma$Values$activity,
+     blooddata$Data$Plasma$Values$activity,
    Metabolite.Values.time =
-     blooddata$Metabolite$Values$time,
+     blooddata$Data$Metabolite$Values$time,
    Metabolite.Values.parentFraction =
-     blooddata$Metabolite$Values$parentFraction,
+     blooddata$Data$Metabolite$Values$parentFraction,
    Blood.Continuous.Values.time =
-     blooddata$Blood$Continuous$Values$time,
+     blooddata$Data$Blood$Continuous$Values$time,
    Blood.Continuous.Values.activity =
-     blooddata$Blood$Continuous$Values$activity,
+     blooddata$Data$Blood$Continuous$Values$activity,
    Blood.Continuous.DispersionConstant =
-     blooddata$Blood$Continuous$DispersionConstant,
+     blooddata$Data$Blood$Continuous$DispersionConstant,
    Blood.Continuous.DispersionCorrected = FALSE,
    TimeShift = 0)
-   }
+
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}

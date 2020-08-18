@@ -50,7 +50,7 @@
 #'      blooddata$Data$Blood$Continuous$DispersionConstant,
 #'    Blood.Continuous.DispersionCorrected = FALSE,
 #'    TimeShift = 0)
-#'    }
+#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export

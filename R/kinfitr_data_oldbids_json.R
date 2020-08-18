@@ -14,7 +14,7 @@
 #' }
 #' @source \url{https://ejnmmires.springeropen.com/articles/10.1186/s13550-017-0304-1}
 #' @references Matheson, Granville J, Plav\'en-Sigray, Pontus, Forsberg, Anton, Varrone, Andrea, Farde, Lars & Cervenka, Simon (2017). Assessment of simplified ratio-based approaches for quantification of PET [11 C] PBR28 data. EJNMMI research, 7, 58.
-"pbr28"
+"oldbids_json"
 #' @usage data("oldbids_json")
 #' @keywords PET, TSPO, PBR28, JSON
 #' @docType data

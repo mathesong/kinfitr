@@ -17,7 +17,7 @@ shifted (in seconds). Defaults to 0.}
 A blooddata object
 }
 \description{
-Deprecated. This function creates a blooddata object from data structured according to
+Deprecated. This function creates a blooddata object from JSON data structured according to
 the old PET BIDS standard.
 }
 \examples{

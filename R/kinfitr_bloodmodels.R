@@ -11,8 +11,8 @@
 #' @export
 #'
 #' @examples
-#' blooddata <- create_blooddata_bids(pbr28$jsondata[[1]])
-#' blooddata <- update_blooddata(blooddata)
+#' blooddata <- pbr28$blooddata[[1]]
+#' blooddata <- bd_blood_dispcor(blooddata)
 #' blood <- bd_extract(blooddata, output = "Blood")
 #' blood <- blmod_tidyinput(blood$time,
 #'                            blood$activity,
@@ -96,7 +96,7 @@ blmod_tidyinput <- function(time, activity, Method = NULL, weights = NULL) {
 #' @export
 #'
 #' @examples
-#' blooddata <- create_blooddata_bids(pbr28$jsondata[[1]])
+#' blooddata <- pbr28$blooddata[[1]]
 #' blooddata <- bd_blood_dispcor(blooddata)
 #' blood <- bd_extract(blooddata, output = "Blood")
 #' blood_fit <- blmod_splines(blood$time,
@@ -179,7 +179,7 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL,
 # #' @export
 # #'
 # #' @examples
-# #' blooddata <- create_blooddata_bids(pbr28$jsondata[[1]])
+# #' blooddata <- pbr28$blooddata[[1]]
 # #' blood <- bd_extract(blooddata, output = "Blood")
 # #' blood_fit <- blmod_splines(blood$time,
 # #'                            blood$activity,
@@ -280,7 +280,7 @@ predict.blood_splines <- function(object, newdata = NULL) {
 #' @export
 #'
 #' @examples
-#' blooddata <- create_blooddata_bids(pbr28$jsondata[[1]])
+#' blooddata <- pbr28$blooddata[[1]]
 #' blooddata <- bd_blood_dispcor(blooddata)
 #' aif <- bd_extract(blooddata, output = "AIF")
 #' start <- blmod_exp_startpars(aif$time,
@@ -488,7 +488,7 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
 #' @export
 #'
 #' @examples
-#' blooddata <- create_blooddata_bids(pbr28$jsondata[[1]])
+#' blooddata <- pbr28$blooddata[[1]]
 #' blooddata <- bd_blood_dispcor(blooddata)
 #' aif <- bd_extract(blooddata, output = "AIF")
 #' blood_fit <- blmod_exp(aif$time,
