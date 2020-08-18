@@ -320,7 +320,7 @@ test_that("2TCM1k with fitted delay & multstart works", {
     k3.lower = 0.14, k3.upper = 0.18,
     k4.lower = 0.1, k4.upper = 0.2,
     Kb.start = 0.12, Kb.upper = 0.2,
-    Kb.lower = 0.12,
+    Kb.lower = 0.1,
     multstart_iter = 2
   )
   expect_lt(twotcm1kout$par$Vt, 2)
