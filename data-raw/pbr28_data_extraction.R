@@ -164,7 +164,7 @@ bidsdat <- jsondat %>%
 pbr28 <- petdat %>%
   inner_join(demog) %>%
   inner_join(bidsdat) %>%
-  mutate(input = map(blooddata, blooddata2input))
+  mutate(input = map(blooddata, blooddata2input)) %>%
   arrange(PET)
 
 save(pbr28, file = "data/pbr28.RData", compress = "xz")
