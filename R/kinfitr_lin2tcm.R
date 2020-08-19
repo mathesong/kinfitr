@@ -357,9 +357,10 @@ plot_lin2tcmfit <- function(lin2tcmout, roiname = NULL) {
 #'   t_parentfrac = 1, parentfrac = 1
 #' )
 #'
-#' lin2tcm_inpshiftProfile(t_tac, tac, input, weights)
-#' lin2tcm_inpshiftProfile(t_tac, tac, input, weights, dur = dur)
-#' lin2tcm_inpshiftProfile(t_tac, tac, input, weights, vB=0.05,
+#' lin2tcm_inpshiftProfile(t_tac, tac, input, weights,
+#'    inpshift_vals = seq(-0.5, 0.5, length.out=101))
+#' lin2tcm_inpshiftProfile(t_tac, tac, input, dur = dur)
+#' lin2tcm_inpshiftProfile(t_tac, tac, input, vB=0.05,
 #'   frameStartEnd = c(1,15))
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
