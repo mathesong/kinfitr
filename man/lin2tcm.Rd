@@ -32,7 +32,7 @@ if not included, it is added. If not specified, uniform weights will be used.}
 If not specified, this will be set to 0. This can be fitted using 1TCM or 2TCM.}
 
 \item{vB}{Optional. The blood volume fraction.  If not specified, this will
-be fitted. If specified as a numer (e.g. 0.05 for 5%), then that value will
+be fitted. If specified as a number (e.g. 0.05 for 5%), then that value will
 be used.}
 
 \item{dur}{Optional. Numeric vector of the time durations of the frames. If

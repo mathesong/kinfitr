@@ -325,6 +325,21 @@ test_that("lin2tcm with durations and frameStartEnd", {
 })
 
 
+# Linearised 2TCM for inpshift profiling
+
+test_that("lin2tcm inpshift profiling", {
+
+  is1 <- lin2tcm_inpshiftProfile(t_tac, tac, input, weights)
+  is2 <- lin2tcm_inpshiftProfile(t_tac, tac, input, weights, dur = dur)
+  is3 <- lin2tcm_inpshiftProfile(t_tac, tac, input, weights, vB=0.05,
+                          frameStartEnd = c(1,15))
+
+  expect_true(any(class(is1) == "ggplot"))
+  expect_true(any(class(is2) == "ggplot"))
+  expect_true(any(class(is3) == "ggplot"))
+})
+
+
 
 
 #### Irreversible

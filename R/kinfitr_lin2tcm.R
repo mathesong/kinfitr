@@ -13,7 +13,7 @@
 #' @param inpshift Optional. The number of minutes by which to shift the timing of the input data frame forwards or backwards.
 #' If not specified, this will be set to 0. This can be fitted using 1TCM or 2TCM.
 #' @param vB Optional. The blood volume fraction.  If not specified, this will
-#'   be fitted. If specified as a numer (e.g. 0.05 for 5%), then that value will
+#'   be fitted. If specified as a number (e.g. 0.05 for 5%), then that value will
 #'   be used.
 #' @param dur Optional. Numeric vector of the time durations of the frames. If
 #' not included, the integrals will be calculated using trapezoidal integration.
@@ -54,8 +54,6 @@
 #' Raven Press, 51-79.
 #'
 #' @export
-
-
 lin2tcm <- function(t_tac, tac, input, weights = NULL, inpshift = 0,
                     vB = NULL, dur = NULL, frameStartEnd = NULL) {
 
@@ -309,4 +307,118 @@ plot_lin2tcmfit <- function(lin2tcmout, roiname = NULL) {
     guides(shape = FALSE, color = guide_legend(order = 1)) + scale_size(range = c(1, 3))
 
   return(outplot)
+}
+
+
+#' Profile the inpshift using the linearised 2TCM
+#'
+#' Function to fit the linearised 2TCM function with several different delay
+#' values to find the optimal delay.
+#'
+#' @param t_tac Numeric vector of times for each frame in minutes. We use the
+#'   time halfway through the frame as well as a zero. If a time zero frame is
+#'   not included, it will be added.
+#' @param tac Numeric vector of radioactivity concentrations in the target
+#'   tissue for each frame. We include zero at time zero: if not included, it is
+#'   added.
+#' @param input Data frame containing the blood, plasma, and parent fraction
+#'   concentrations over time.  This can be generated using the
+#'   \code{blood_interp} function.
+#' @param weights Optional. Numeric vector of the weights assigned to each frame
+#'   in the fitting. We include zero at time zero: if not included, it is added.
+#'   If not specified, uniform weights will be used.
+#' @param vB Optional. The blood volume fraction.  If not specified, this will
+#'   be fitted. If specified as a number (e.g. 0.05 for 5%), then that value
+#'   will be used.
+#' @param dur Optional. Numeric vector of the time durations of the frames. If
+#'   not included, the integrals will be calculated using trapezoidal
+#'   integration.
+#' @param frameStartEnd Optional: This allows one to specify the beginning and
+#'   final frame to use for modelling, e.g. c(1,20). This is to assess time
+#'   stability.
+#' @param inpshift_vals Optional. The values of the inpshift to assess with the
+#'   grid. By default, a grid between -1 and 1 with spacing of 0.01 will be
+#'   used.
+#'
+#' @return A plot with the residual weighted sums of squares for each value of
+#'   the input shift
+#'
+#' @examples
+#' data(pbr28)
+#'
+#' t_tac <- pbr28$tacs[[2]]$Times / 60
+#' tac <- pbr28$tacs[[2]]$FC
+#' weights <- pbr28$tacs[[2]]$Weights
+#' dur <- pbr28$tacs[[2]]$Duration/60
+#'
+#' input <- blood_interp(
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
+#'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cpl_metabcorr,
+#'   t_parentfrac = 1, parentfrac = 1
+#' )
+#'
+#' lin2tcm_inpshiftProfile(t_tac, tac, input, weights)
+#' lin2tcm_inpshiftProfile(t_tac, tac, input, weights, dur = dur)
+#' lin2tcm_inpshiftProfile(t_tac, tac, input, weights, vB=0.05,
+#'   frameStartEnd = c(1,15))
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @references Oikonen, V (2003). Multilinear solution for 4-compartment model:
+#' I. Tissue compartments in series. Gjedde A, Wong DF 1990. Modeling
+#' neuroreceptor binding of radioligands in vivo. In: Quantitative imaging:
+#' neuroreceptors, neurotransmitters, and enzymes. (Eds. Frost JJ, Wagner HM
+#' Jr). Raven Press, 51-79.
+#'
+#' @export
+lin2tcm_inpshiftProfile <- function(t_tac, tac, input, weights = NULL, vB = NULL,
+                                    dur = NULL, frameStartEnd = NULL,
+                                    inpshift_vals = NULL) {
+
+  if ( is.null(inpshift_vals) ) {
+    inpshift_vals <- seq(from = -1, to = 1, by = 0.01)
+  }
+
+
+  inpshift_RSS <- purrr::map_dbl(inpshift_vals, ~lin2tcm_RSS(
+    t_tac, tac, input, weights, inpshift = .x,
+    vB, dur, frameStartEnd))
+
+
+  inpshift_profile <- tibble::tibble(
+    inpshift = inpshift_vals,
+    log_RSS = log(inpshift_RSS),
+    lag = dplyr::lag(log_RSS, 1),
+    lead = dplyr::lead(log_RSS, 1)
+  )
+
+  inpshift_labels <- inpshift_profile %>%
+    dplyr::mutate(Label = ifelse(log_RSS < lag & log_RSS < lead,
+                                 yes = inpshift, no = NA)) %>%
+    dplyr::filter(!is.na(Label))  %>%
+    dplyr::arrange(log_RSS) %>%
+    dplyr::mutate(Label = round(Label, 2)) %>%
+    dplyr::slice(1:3)
+
+  inpshift_profile <- dplyr::left_join(inpshift_profile, inpshift_labels)
+
+
+  ggplot(inpshift_profile, aes(x=inpshift, y=log_RSS)) +
+    geom_line() +
+    geom_text(aes(label=Label), nudge_y = -0.4) +
+    geom_point(aes(x=Label), size=4, shape=1) +
+    labs(y = "log(RSS)", x="Input Shift (min)")
+
+}
+
+lin2tcm_RSS <- function(t_tac, tac, input, weights = NULL, inpshift = 0,
+                        vB = NULL, dur = NULL, frameStartEnd = NULL) {
+
+  fit <- lin2tcm(t_tac, tac, input, weights, inpshift,
+                 vB, dur, frameStartEnd)
+
+  sum(weights(fit$fit) * residuals(fit$fit)^2)
+
+
+
 }
