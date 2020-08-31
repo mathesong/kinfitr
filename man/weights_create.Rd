@@ -10,7 +10,7 @@ weights_create(
   tac,
   radioisotope = c("C11", "O15", "F18"),
   method = 2,
-  minweight = 0.7,
+  minweight = 0.67,
   weight_checkn = 5
 )
 }
@@ -27,7 +27,7 @@ weights_create(
 (tac_uncorrected). 2 represents sqrt(durations*tac_uncorrected). 3
 represents duration / tac. 4 represents sqrt(durations). 5 represents
 durations * exp((-ln(2)) / halflife ). 6 represents durations /
-tac. 7 represents durations.}
+tac. 7 represents durations. Uncorrected refers to decay correction.}
 
 \item{minweight}{The minimum weight. Weights will be calculated as a fraction
 between this value and 1. A zero frame with duration=0 will be set to 0
@@ -49,7 +49,7 @@ using a large region (e.g. whole brain).
 data(pbr28)
 s1 <- pbr28$tacs[[1]]
 
-# Assuming the data were not decay-corrected (they are)
+
 weights_create(
   s1$StartTime/60,
   (s1$StartTime + s1$Duration)/60,

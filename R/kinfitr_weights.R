@@ -12,7 +12,7 @@
 #'   (tac_uncorrected). 2 represents sqrt(durations*tac_uncorrected). 3
 #'   represents duration / tac. 4 represents sqrt(durations). 5 represents
 #'   durations * exp((-ln(2)) / halflife ). 6 represents durations /
-#'   tac. 7 represents durations.
+#'   tac. 7 represents durations. Uncorrected refers to decay correction.
 #' @param minweight The minimum weight. Weights will be calculated as a fraction
 #'   between this value and 1. A zero frame with duration=0 will be set to 0
 #'   though.
@@ -30,7 +30,7 @@
 #' data(pbr28)
 #' s1 <- pbr28$tacs[[1]]
 #'
-#' # Assuming the data were not decay-corrected (they are)
+#'
 #' weights_create(
 #'   s1$StartTime/60,
 #'   (s1$StartTime + s1$Duration)/60,
@@ -39,7 +39,7 @@
 weights_create <- function(t_start, t_end, tac,
                                     radioisotope = c("C11", "O15", "F18"),
                                     method = 2,
-                                    minweight = 0.7, weight_checkn = 5) {
+                                    minweight = 0.67, weight_checkn = 5) {
 
   radioisotope <- match.arg(radioisotope, c("C11", "O15", "F18"))
 
@@ -78,9 +78,18 @@ weights_create <- function(t_start, t_end, tac,
   calcweights <- calcweights/maxweight
 
   # Apply scaling factor
-  calcweights <- minweight + calcweights * (1-minweight)
+  if( min(calcweights) < minweight ) {
 
-  # This shouldn't have the scaling factor
+    min_calcweight <- min(calcweights[durations!=0])
+
+    # scale 0 - 1
+    calcweights <- calcweights - min_calcweight / (1- min_calcweight)
+
+    # proportion
+    calcweights <- minweight + calcweights * (1-minweight)
+  }
+
+  # Any dur=0 shouldn't have the scaling factor
   calcweights[durations==0] <- 0
 
   return(calcweights)
