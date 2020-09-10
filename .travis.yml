@@ -12,6 +12,9 @@ addons:
     packages:
       - libgl1-mesa-dev
       - libglu1-mesa-dev
+      
+# r_packages:
+#   - mgcv
 
 before_install:
   - Rscript -e 'install.packages("mgcv")'
