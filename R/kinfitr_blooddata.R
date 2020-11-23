@@ -802,7 +802,8 @@ bd_extract_bpr <- function(blooddata,
     dplyr::filter(!is.na(activity)) %>%
     dplyr::arrange(time)
 
-  blood <- bd_extract_blood(blooddata, startTime, stopTime, what = "raw")
+  blood <- bd_extract_blood(blooddata, startTime, stopTime, what = "pred")
+
 
   blood_discrete <- blood %>%
     dplyr::filter(Method=="Discrete")
@@ -1054,6 +1055,8 @@ bd_extract_aif <- function(blooddata,
   interptime <- tidied$interptime
 
   # Preparing
+
+
 
   aif <- bd_extract_pf(blooddata, startTime, stopTime, what = "pred") %>%
     dplyr::rename(blood = activity) %>%
