@@ -9,6 +9,7 @@ weights_create_bids(
   tac,
   method = 2,
   minweight = 0.7,
+  minweight_risetopeak = FALSE,
   weight_checkn = 5
 )
 }
@@ -28,6 +29,11 @@ tac. 7 represents durations.}
 \item{minweight}{The minimum weight. Weights will be calculated as a fraction
 between this value and 1. A zero frame with duration=0 will be set to 0
 though.}
+
+\item{minweight_risetopeak}{Should there be a linear rise of the minimum weight to
+the peak weight value? This means that values before the maximum weight can
+be below the minweight specified. This is helpful for downweighting noisy
+values towards the start of the TAC. Defaults to FALSE.}
 
 \item{weight_checkn}{The number of values of the weights to check to make
 sure that things haven't gone terribly wrong. It will check that this
