@@ -582,6 +582,12 @@ bd_tidy_times <- function(blooddata,
                               stopTime = NULL,
                               interpPoints = 6000) {
 
+  # Check that it actually is a blooddata object, even if old
+  if( class(blooddata) != "blooddata" ) {
+    stop("The input data does not appear to be a blooddata object. Please make
+           sure that the input data is correct.")
+  }
+
   # Compatibility with old PET BIDS
 
   if(is.null(blooddata$Data$Plasma$Avail)) {
@@ -1056,13 +1062,31 @@ bd_extract_aif <- function(blooddata,
 
   # Preparing
 
-
-
+  ### Note: here, the plasm_uncor is generated from the blood and bpr
+  ### curves. But, if we've fitted the bpr, we're actually not using
+  ### the true raw plasma data when possible.
   aif <- bd_extract_pf(blooddata, startTime, stopTime, what = "pred") %>%
     dplyr::rename(blood = activity) %>%
     dplyr::mutate(plasma_uncor = blood * (1 / bpr),
                   aif = plasma_uncor * parentFraction
     )
+
+  ### Here the raw plasma data is extracted to replace the calculated
+  ### values where raw plasma measurements were actually taken.
+  bpr <- bd_extract_bpr(blooddata, startTime, stopTime, what = "raw")
+  blood <- bd_extract_blood(blooddata, startTime, stopTime, what = "raw") %>%
+    dplyr::filter(Method=="Discrete")
+
+  rawplasma <- dplyr::left_join(bpr, blood) %>%
+    dplyr::mutate(measplasma = activity * (1 / bpr)) %>%
+    dplyr::select(time, measplasma, Method)
+
+  ### Now the calculated raw plasma values are replaced with the measured ones.
+  aif <- dplyr::left_join(aif, rawplasma) %>%
+    dplyr::mutate(plasma_uncor = ifelse( is.na(measplasma),
+                                         yes = plasma_uncor,
+                                         no = measplasma)) %>%
+    dplyr::select(-measplasma)
 
   if (what == "raw") {
     return(aif)
