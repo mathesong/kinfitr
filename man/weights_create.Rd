@@ -24,11 +24,12 @@ weights_create(
 
 \item{radioisotope}{The radioisotope.}
 
-\item{method}{Which method should be used? 1 represents duration^2 /
+\item{method}{Which method should be used? 1 represents duration /
 (tac_uncorrected). 2 represents sqrt(durations*tac_uncorrected). 3
 represents duration / tac. 4 represents sqrt(durations). 5 represents
 durations * exp((-ln(2)) / halflife ). 6 represents durations /
-tac. 7 represents durations. Uncorrected refers to decay correction.}
+tac. 7 represents durations. 8 represents duration^2 / tac_uncor.
+Uncorrected refers to decay correction.}
 
 \item{minweight}{The minimum weight. Weights will be calculated as a fraction
 between this value and 1. A zero frame with duration=0 will be set to 0

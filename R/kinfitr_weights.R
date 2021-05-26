@@ -8,11 +8,12 @@
 #' @param t_end The end times of the frames in minutes.
 #' @param tac The time activity curve.
 #' @param radioisotope The radioisotope.
-#' @param method Which method should be used? 1 represents duration^2 /
+#' @param method Which method should be used? 1 represents duration /
 #'   (tac_uncorrected). 2 represents sqrt(durations*tac_uncorrected). 3
 #'   represents duration / tac. 4 represents sqrt(durations). 5 represents
 #'   durations * exp((-ln(2)) / halflife ). 6 represents durations /
-#'   tac. 7 represents durations. Uncorrected refers to decay correction.
+#'   tac. 7 represents durations. 8 represents duration^2 / tac_uncor.
+#'   Uncorrected refers to decay correction.
 #' @param minweight The minimum weight. Weights will be calculated as a fraction
 #'   between this value and 1. A zero frame with duration=0 will be set to 0
 #'   though.
@@ -59,13 +60,14 @@ weights_create <- function(t_start, t_end, tac,
   )
 
   calcweights <- dplyr::case_when(
-    method == 1 ~ durations^2 / (tac_uncor),
+    method == 1 ~ durations / tac_uncor,
     method == 2 ~ sqrt(durations*tac_uncor),
     method == 3 ~ sqrt(durations) / tac,
     method == 4 ~ sqrt(durations),
     method == 5 ~ durations * exp( (-1*log(2)) / hl ),
     method == 6 ~ durations / tac,
-    method == 7 ~ durations
+    method == 7 ~ durations,
+    method == 8 ~ durations^2 / tac_uncor
   )
 
   # Fixing before checking

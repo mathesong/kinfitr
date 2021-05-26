@@ -1089,6 +1089,7 @@ bd_extract_aif <- function(blooddata,
     dplyr::select(-measplasma)
 
   if (what == "raw") {
+    aif <- dplyr::mutate(aif, aif = plasma_uncor * parentFraction) # raw values
     return(aif)
   }
 
@@ -1097,11 +1098,9 @@ bd_extract_aif <- function(blooddata,
   if (blooddata$Models$AIF$Method == "interp") {
     aif_for_interp <- aif
 
-    aif_discrete <- aif %>%
-      dplyr::filter(Method=="Discrete")
+    aif_discrete <- dplyr::filter(aif, Method=="Discrete")
 
-    aif_continuous <- aif %>%
-      dplyr::filter(Method=="Continuous")
+    aif_continuous <- dplyr::filter(aif, Method=="Continuous")
 
     ### Comment - for interpolation of blood data, I remove the discrete samples
     ### from the first half of the overlap between discrete and continuous
@@ -1147,11 +1146,18 @@ bd_extract_aif <- function(blooddata,
         newdata = list(time = interptime))
       )
     )
+
+    aif$aif = as.numeric(
+      predict(blooddata$Models$AIF$Data,
+              newdata = list(time = aif$time)))
   }
 
   ## Fit pars
   if (blooddata$Models$AIF$Method == "fitpars") {
     modelname <- blooddata$Models$AIF$Data$Model
+
+
+    # Interp
     Pars <- append(
       list(time = interptime),
       as.list(blooddata$Models$AIF$Data$Pars)
@@ -1164,6 +1170,16 @@ bd_extract_aif <- function(blooddata,
         args = Pars
       )
     )
+
+    # Original times
+    Pars <- append(
+      list(time = aif$time),
+      as.list(blooddata$Models$AIF$Data$Pars)
+    )
+
+    aif$aif <- do.call(
+        what = modelname,
+        args = Pars)
   }
 
   ## Fitted
@@ -1177,6 +1193,14 @@ bd_extract_aif <- function(blooddata,
         method = "linear",
         yzero = 0
       )
+    )
+
+    aif$aif <- interpends(
+      blooddata$Models$AIF$Data$time,
+      blooddata$Models$AIF$Data$predicted,
+      aif$time,
+      method = "linear",
+      yzero = 0
     )
   }
 
