@@ -305,12 +305,22 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
   # t0
   bloodrise <- blood[blood$time <= startpars$peaktime, ]
   rise_lm <- lm(activity ~ time, data=bloodrise)
-  rise_seg <- segmented::segmented(rise_lm)
 
-  if(is.numeric(rise_seg$psi[2])) {
-    startpars$t0 <- rise_seg$psi[2]
+  rise_seg <- try(segmented::segmented(rise_lm, npsi=1), silent = T)
+
+  if( any(class(rise_seg) != "try-error") ) {  # If success
+    if(is.numeric(rise_seg$psi[2])) {     # And if numeric
+      startpars$t0 <- rise_seg$psi[2]
+    } else {
+      startpars$t0 <- NA
+    }
   } else {
-    #### Old Method
+    startpars$t0 <- NA
+  }
+
+  #### Old Method
+  if( is.na(startpars$t0) ) {
+
     rise_lm <- lm(activity ~ time, data=bloodrise, weights=activity)
     rise_coef <- coef(rise_lm)
     startpars$t0 <- as.numeric(-1*(rise_coef[1] / rise_coef[2]))
