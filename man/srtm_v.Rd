@@ -19,7 +19,7 @@ srtm_v(
   k2.lower = 1e-04,
   k2.upper = 1,
   bp.start = 1.5,
-  bp.lower = -10,
+  bp.lower = 0,
   bp.upper = 15,
   vBr.start = 0.05,
   vBr.lower = 1e-04,

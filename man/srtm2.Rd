@@ -18,7 +18,7 @@ srtm2(
   k2prime.lower = 0.001,
   k2prime.upper = 1,
   bp.start = 1.5,
-  bp.lower = -10,
+  bp.lower = 0,
   bp.upper = 15,
   multstart_iter = 1,
   multstart_lower = NULL,

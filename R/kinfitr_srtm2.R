@@ -74,7 +74,7 @@
 srtm2 <- function(t_tac, reftac, roitac, k2prime=NULL, weights = NULL, frameStartEnd = NULL,
                  R1.start = 1, R1.lower = 0, R1.upper = 10,
                  k2prime.start = 0.1, k2prime.lower = 0.001, k2prime.upper = 1,
-                 bp.start = 1.5, bp.lower = -10, bp.upper = 15,
+                 bp.start = 1.5, bp.lower = 0, bp.upper = 15,
                  multstart_iter = 1, multstart_lower = NULL, multstart_upper = NULL,
                  printvals = F) {
 

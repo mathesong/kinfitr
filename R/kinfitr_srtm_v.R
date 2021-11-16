@@ -102,7 +102,7 @@
 srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights = NULL, vBr = NULL, frameStartEnd = NULL,
                    R1.start = 1, R1.lower = 0.0001, R1.upper = 10,
                    k2.start = 0.1, k2.lower = 0.0001, k2.upper = 1,
-                   bp.start = 1.5, bp.lower = -10, bp.upper = 15,
+                   bp.start = 1.5, bp.lower = 0, bp.upper = 15,
                    vBr.start = 0.05, vBr.lower = 0.0001, vBr.upper = 0.15,
                    vBt.start = 0.05, vBt.lower = 0.0001, vBt.upper = 0.15,
                    multstart_iter = 1, multstart_lower = NULL, multstart_upper = NULL,

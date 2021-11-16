@@ -17,7 +17,7 @@ srtm(
   k2.lower = 0,
   k2.upper = 1,
   bp.start = 1.5,
-  bp.lower = -10,
+  bp.lower = 0,
   bp.upper = 15,
   multstart_iter = 1,
   multstart_lower = NULL,

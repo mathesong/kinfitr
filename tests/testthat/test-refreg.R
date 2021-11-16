@@ -137,6 +137,50 @@ test_that("srtm2 works with frameStartEnd and multstart and set k2prime", {
 })
 
 
+# FRTM
+
+test_that("frtm works", {
+  frtmout <- frtm(t_tac, reftac, roitac, weights = weights,
+                  k4.upper=1e6) # Note: this model isn't really right here
+  expect_gt(frtmout$par$bp, 1.5)
+  expect_lt(frtmout$par$bp, 2.5)
+  expect_true(any(class(plot(frtmout)) == "ggplot"))
+})
+
+test_that("frtm works with frameStartEnd", {
+  frtmout <- frtm(t_tac, reftac, roitac,
+                  weights = weights,
+                  frameStartEnd = c(1, 33),
+                  k4.upper=1e6 # Note: this model isn't really right here
+  )
+  expect_gt(frtmout$par$bp, 1.5)
+  expect_lt(frtmout$par$bp, 2.5)
+  expect_true(any(class(plot(frtmout)) == "ggplot"))
+})
+
+# test_that("frtm works with multstart", {
+#   frtmout <- frtm(t_tac, reftac, roitac,
+#                   weights = weights,
+#                   multstart_iter = 2,
+#                   k4.upper=1e6 # Note: this model isn't really right here
+#   )
+#   expect_gt(frtmout$par$bp, 1.5)
+#   expect_lt(frtmout$par$bp, 2.5)
+#   expect_true(any(class(plot(frtmout)) == "ggplot"))
+# })
+#
+# test_that("frtm works with frameStartEnd and multstart", {
+#   frtmout <- frtm(t_tac, reftac, roitac,
+#                   weights = weights,
+#                   frameStartEnd = c(1, 33),
+#                   multstart_iter = 5
+#   )
+#   expect_gt(frtmout$par$bp, 1.5)
+#   expect_lt(frtmout$par$bp, 2.5)
+#   expect_true(any(class(plot(frtmout)) == "ggplot"))
+# })
+
+
 # refLogan
 
 test_that("refLogan works", {
