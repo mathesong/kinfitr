@@ -240,7 +240,7 @@ plot_Loganfit <- function(loganout, roiname = NULL) {
       intercept = as.numeric(loganout$fit$coefficients[1])
     ) +
     xlab(xlabel) + ylab(ylabel) + xlim(xlimits) + colScale +
-    guides(shape = FALSE, color = guide_legend(order = 1)) + scale_size(range = c(1, 3))
+    guides(shape = "none", color = guide_legend(order = 1)) + scale_size(range = c(1, 3))
 
   return(outplot)
 }

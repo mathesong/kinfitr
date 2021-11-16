@@ -155,7 +155,7 @@ plot_refLoganfit <- function(refloganout, roiname = NULL) {
       intercept = as.numeric(refloganout$fit$coefficients[1])
     ) +
     xlab("[Integ(C_Ref)+C_Ref/k2prime] / C_Tissue") + ylab("Integ(C_Tissue) / C_Tissue") + colScale +
-    guides(shape = FALSE, color = guide_legend(order = 1)) + scale_size(range = c(1, 3))
+    guides(shape = "none", color = guide_legend(order = 1)) + scale_size(range = c(1, 3))
 
   return(outplot)
 }

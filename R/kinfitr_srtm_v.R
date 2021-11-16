@@ -356,7 +356,7 @@ plot_srtm_vfit <- function(srtmvout, roiname = NULL, refname = NULL) {
     geom_line(data = tidyfitted) +
     geom_point(data = measured, aes(x = Time, y = Blood), colour = "black") +
     geom_line(data = measured, aes(x = Time, y = Blood), colour = "black") +
-    guides(shape = FALSE, color = guide_legend(order = 1)) + colScale +
+    guides(shape = "none", color = guide_legend(order = 1)) + colScale +
     scale_size(range = c(1, 3)) +
     coord_cartesian(ylim = c(0, max(tidymeasured$Radioactivity) * 1.5))
 

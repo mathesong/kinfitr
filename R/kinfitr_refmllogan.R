@@ -166,7 +166,7 @@ plot_refmlLoganfit <- function(refmlloganout, roiname = NULL) {
     geom_point(aes(shape = "a", size = Weights)) +
     geom_abline(slope = 1, intercept = 0) +
     xlab("Fitted Values") + ylab("Integ(C_Tissue)") + colScale +
-    guides(shape = FALSE, color = guide_legend(order = 1)) + scale_size(range = c(1, 3))
+    guides(shape = "none", color = guide_legend(order = 1)) + scale_size(range = c(1, 3))
 
   return(outplot)
 }

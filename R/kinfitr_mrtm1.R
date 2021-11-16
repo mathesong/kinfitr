@@ -211,7 +211,7 @@ plot_mrtm1fit <- function(mrtm1out, roiname = NULL, refname = NULL) {
   outplot <- ggplot(tidymeasured, aes(x = Time, y = Radioactivity, colour = Region)) +
     geom_point(data = tidymeasured, aes(shape = "a", size = Weights)) +
     geom_line(data = tidyfitted) +
-    guides(shape = FALSE, color = guide_legend(order = 1)) + colScale +
+    guides(shape = "none", color = guide_legend(order = 1)) + colScale +
     scale_size(range = c(1, 3))
 
   # print(outplot)

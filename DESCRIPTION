@@ -36,7 +36,8 @@ Imports:
     car,
     mgcv,
     fs,
-    stringr
+    stringr,
+    segmented
 Suggests:
     knitr,
     devtools,

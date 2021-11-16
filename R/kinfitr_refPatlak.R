@@ -159,7 +159,7 @@ plot_refPatlakfit <- function(refpatlakout, roiname = NULL) {
       intercept = as.numeric(refpatlakout$fit$coefficients[1])
     ) +
     xlab("Integ(C_Ref) / C_Ref") + ylab("C_Tissue / C_Ref") + colScale +
-    guides(shape = FALSE, color = guide_legend(order = 1)) + scale_size(range = c(1, 3))
+    guides(shape = "none", color = guide_legend(order = 1)) + scale_size(range = c(1, 3))
 
   return(outplot)
 }

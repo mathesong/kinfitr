@@ -1086,7 +1086,8 @@ bd_extract_aif <- function(blooddata,
     dplyr::mutate(plasma_uncor = ifelse( is.na(measplasma),
                                          yes = plasma_uncor,
                                          no = measplasma)) %>%
-    dplyr::select(-measplasma)
+    dplyr::select(-measplasma) %>%
+    dplyr::mutate(aif = plasma_uncor * parentFraction)
 
   if (what == "raw") {
     aif <- dplyr::mutate(aif, aif = plasma_uncor * parentFraction) # raw values
@@ -1265,8 +1266,10 @@ bd_create_input <- function(blooddata,
   i_pf <- bd_extract_pf(blooddata, what = "interp",
                         startTime,stopTime,interpPoints)
 
-  i_aif <- bd_extract_aif(blooddata, what = "interp",
-                          startTime,stopTime,interpPoints)
+  i_aif <- suppressMessages(
+    bd_extract_aif(blooddata, what = "interp",
+                   startTime,stopTime,interpPoints)
+  )
 
   input <- tibble::tibble(
     Time = (interptime + blooddata$TimeShift) / 60,
@@ -2197,7 +2200,7 @@ plot_blooddata <- function(blooddata,
       aes(group = Outcome), alpha = 0.5
     ) +
     geom_line(data = pred) +
-    guides(size = FALSE) +
+    guides(size = "none") +
     coord_cartesian(ylim = c(0, plotmax))
 }
 

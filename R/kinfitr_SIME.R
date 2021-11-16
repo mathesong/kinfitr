@@ -372,7 +372,7 @@ plot_SIMEfit <- function(SIMEout) {
       labels = scales::trans_format("log10", scales::math_format(10^.x))
     ) +
     scale_shape_manual(values=c(19, 1)) +
-    guides(shape=FALSE)
+    guides(shape="none")
 
   return(outplot)
 }

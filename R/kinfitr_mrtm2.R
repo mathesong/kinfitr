@@ -203,7 +203,7 @@ plot_mrtm2fit <- function(mrtm2out, roiname = NULL, refname = NULL) {
   output <- ggplot(tidymeasured, aes(x = Time, y = Radioactivity, colour = Region)) +
     geom_point(data = tidymeasured, aes(shape = "a", size = Weights)) +
     geom_line(data = tidyfitted) + colScale +
-    guides(shape = FALSE, color = guide_legend(order = 1)) + scale_size(range = c(1, 3))
+    guides(shape = "none", color = guide_legend(order = 1)) + scale_size(range = c(1, 3))
 
   return(output)
 }
