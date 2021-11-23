@@ -308,7 +308,7 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
 
   rise_seg <- try(segmented::segmented(rise_lm, npsi=1), silent = T)
 
-  if( any(class(rise_seg) != "try-error") ) {  # If success
+  if( !any(class(rise_seg) == "try-error") ) {  # If success
     if(is.numeric(rise_seg$psi[2])) {     # And if numeric
       startpars$t0 <- rise_seg$psi[2]
     } else {
@@ -665,15 +665,43 @@ blmod_exp <- function(time, activity, Method = NULL,
                       start = start,
                       weights = weights)
   } else {
-    modelout <- nls.multstart::nls_multstart(
+
+    modelout_single <- try(minpack.lm::nlsLM(as.formula(formula),
+                                  data = blood,
+                                  lower = lower,
+                                  upper = upper,
+                                  start = start,
+                                  weights = weights))
+
+    if( !any(class(modelout_single) == "try-error") ) {  # If success
+      AIC_single <- AIC(modelout_single)
+    } else {
+      AIC_single <- Inf
+    }
+
+    multmodelout_multi <- nls.multstart::nls_multstart(
       formula = as.formula(formula), modelweights = weights,
       data = blood, iter = multstart_iter,
       start_lower = multstart_lower, start_upper = multstart_upper,
       supp_errors = "Y", lower = lower, upper = upper)
 
-    if(is.null(modelout)) {
-      stop("None of the model fits were able to converge")
+    if( !is.null(multmodelout_multi) ) {  # If success
+      AIC_multi <- AIC(multmodelout_multi)
+    } else {
+        AIC_multi <- Inf
     }
+
+    if( min( c(AIC_single, AIC_multi) ) == Inf ) {
+      stop("None of the model fits were able to converge")
+    } else {
+      if(AIC_multi < AIC_single) {
+        modelout <- multmodelout_multi
+      } else {
+        modelout <- modelout_single
+      }
+    }
+
+
   }
 
   # Prepare output
