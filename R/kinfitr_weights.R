@@ -49,6 +49,8 @@ weights_create <- function(t_start, t_end, tac,
 
   radioisotope <- match.arg(radioisotope, c("C11", "O15", "F18"))
 
+  tac <- ifelse(tac < 0, 0, tac)
+
   tac_uncor <- decay_uncorrect(t_start, t_end, tac, radioisotope)
   durations <- t_end - t_start
   t_tac <- t_start + durations/2
