@@ -110,8 +110,10 @@ mrtm1 <- function(t_tac, reftac, roitac, tstarIncludedFrames = NULL,
 
   bp <- as.numeric(-((coef(mrtm1_model)[1] / coef(mrtm1_model)[2]) + 1))
   k2prime <- as.numeric(coef(mrtm1_model)[1] / coef(mrtm1_model)[3])
+  R1 <- as.numeric(coef(mrtm1_model)[3])
+  k2 <- as.numeric(-coef(mrtm1_model)[2])
 
-  par <- as.data.frame(list(bp = bp, k2prime = k2prime))
+  par <- as.data.frame(list(bp = bp, k2prime = k2prime, R1 = R1, k2 = k2))
   fit <- mrtm1_model
 
   tacs <- data.frame(Time = t_tac, Reference = reftac, Target = roitac)
