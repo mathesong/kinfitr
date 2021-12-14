@@ -2,28 +2,37 @@
 #'
 #' Function to fit the linearised 2TCM function.
 #'
-#' @param t_tac Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
-#' zero. If a time zero frame is not included, it will be added.
-#' @param tac Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
-#' zero: if not included, it is added.
-#' @param input Data frame containing the blood, plasma, and parent fraction concentrations over time.  This can be generated
-#' using the \code{blood_interp} function.
-#' @param weights Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
-#' if not included, it is added. If not specified, uniform weights will be used.
-#' @param inpshift Optional. The number of minutes by which to shift the timing of the input data frame forwards or backwards.
-#' If not specified, this will be set to 0. This can be fitted using 1TCM or 2TCM.
+#' @param t_tac Numeric vector of times for each frame in minutes. We use the
+#'   time halfway through the frame as well as a zero. If a time zero frame is
+#'   not included, it will be added.
+#' @param tac Numeric vector of radioactivity concentrations in the target
+#'   tissue for each frame. We include zero at time zero: if not included, it is
+#'   added.
+#' @param input Data frame containing the blood, plasma, and parent fraction
+#'   concentrations over time.  This can be generated using the
+#'   \code{blood_interp} function.
+#' @param weights Optional. Numeric vector of the weights assigned to each frame
+#'   in the fitting. We include zero at time zero: if not included, it is added.
+#'   If not specified, uniform weights will be used.
+#' @param inpshift Optional. The number of minutes by which to shift the timing
+#'   of the input data frame forwards or backwards. If not specified, this will
+#'   be set to 0. This can be fitted using 1TCM or 2TCM.
 #' @param vB Optional. The blood volume fraction.  If not specified, this will
-#'   be fitted. If specified as a number (e.g. 0.05 for 5%), then that value will
-#'   be used.
+#'   be fitted. If specified as a number (e.g. 0.05 for 5%), then that value
+#'   will be used.
 #' @param dur Optional. Numeric vector of the time durations of the frames. If
-#' not included, the integrals will be calculated using trapezoidal integration.
-#' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
-#' This is to assess time stability.
+#'   not included, the integrals will be calculated using trapezoidal
+#'   integration.
+#' @param frameStartEnd Optional: This allows one to specify the beginning and
+#'   final frame to use for modelling, e.g. c(1,20). This is to assess time
+#'   stability.
 #'
-#' @return A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit},
-#' a dataframe containing the TACs of the data \code{out$tacs}, a dataframe containing the fitted values \code{out$fitvals},
-#' the blood input data frame after time shifting \code{input}, a vector of the weights \code{out$weights},
-#' the inpshift value used \code{inpshift} and the specified vB value \code{out$vB}.
+#' @return A list with a data frame of the fitted parameters \code{out$par}, the
+#'   model fit object \code{out$fit}, a dataframe containing the TACs of the
+#'   data \code{out$tacs}, a dataframe containing the fitted values
+#'   \code{out$fitvals}, the blood input data frame after time shifting
+#'   \code{input}, a vector of the weights \code{out$weights}, the inpshift
+#'   value used \code{inpshift} and the specified vB value \code{out$vB}.
 #'
 #' @examples
 #' data(pbr28)
@@ -45,13 +54,11 @@
 #' fit4 <- lin2tcm(t_tac, tac, input, weights, inpshift = 0.1, dur = dur)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
-#' @references
-#' Oikonen, V (2003). Multilinear solution for 4-compartment model:
-#' I. Tissue compartments in series.
-#' Gjedde A, Wong DF 1990. Modeling neuroreceptor
-#' binding of radioligands in vivo. In: Quantitative imaging: neuroreceptors,
-#' neurotransmitters, and enzymes. (Eds. Frost JJ, Wagner HM Jr).
-#' Raven Press, 51-79.
+#' @references Oikonen, V (2003). Multilinear solution for 4-compartment model:
+#' I. Tissue compartments in series. Gjedde A, Wong DF 1990. Modeling
+#' neuroreceptor binding of radioligands in vivo. In: Quantitative imaging:
+#' neuroreceptors, neurotransmitters, and enzymes. (Eds. Frost JJ, Wagner HM
+#' Jr). Raven Press, 51-79.
 #'
 #' @export
 lin2tcm <- function(t_tac, tac, input, weights = NULL, inpshift = 0,

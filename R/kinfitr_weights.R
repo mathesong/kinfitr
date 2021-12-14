@@ -13,6 +13,8 @@
 #'   represents duration / tac. 4 represents sqrt(durations). 5 represents
 #'   durations * exp((-ln(2)) / halflife ). 6 represents durations /
 #'   tac. 7 represents durations. 8 represents duration^2 / tac_uncor.
+#'   9 represents((durations^2 / (durations*tac))*corrections^2) (courtesy of
+#'   Claus Svarer).
 #'   Uncorrected refers to decay correction.
 #' @param minweight The minimum weight. Weights will be calculated as a fraction
 #'   between this value and 1. A zero frame with duration=0 will be set to 0
@@ -39,11 +41,17 @@
 #'   s1$StartTime/60,
 #'   (s1$StartTime + s1$Duration)/60,
 #'   radioisotope = "C11",
-#'   tac = s1$WB, minweight_risetopeak=TRUE)
+#'   tac = s1$WB)
+#'
+#' weights_create(
+#'   s1$StartTime/60,
+#'   (s1$StartTime + s1$Duration)/60,
+#'   radioisotope = "C11", method=9,
+#'   tac = s1$WB)
 weights_create <- function(t_start, t_end, tac,
                            radioisotope = c("C11", "O15", "F18"),
                            method = 2,
-                           minweight = 0.67,
+                           minweight = 0.5,
                            minweight_risetopeak = FALSE,
                            weight_checkn = 5) {
 
@@ -55,21 +63,28 @@ weights_create <- function(t_start, t_end, tac,
   durations <- t_end - t_start
   t_tac <- t_start + durations/2
 
+  corrections <- tac_uncor / tac
+  if( is.nan(corrections[1]) ) corrections[1] <- 1
+
   hl <- dplyr::case_when(
     radioisotope == "C11" ~ 20.4,
     radioisotope == "O15" ~ 2.05,
     radioisotope == "F18" ~ 109.8
   )
 
+
+  # pmaxes here to prevent denominators sending weights to infinity
   calcweights <- dplyr::case_when(
-    method == 1 ~ durations / tac_uncor,
+    method == 1 ~ durations / pmax(tac_uncor, 0.01*max(tac_uncor)),
     method == 2 ~ sqrt(durations*tac_uncor),
-    method == 3 ~ sqrt(durations) / tac,
+    method == 3 ~ sqrt(durations) / pmax(tac, 0.01*max(tac)),
     method == 4 ~ sqrt(durations),
     method == 5 ~ durations * exp( (-1*log(2)) / hl ),
-    method == 6 ~ durations / tac,
+    method == 6 ~ durations / pmax(tac, 0.01*max(tac)),
     method == 7 ~ durations,
-    method == 8 ~ durations^2 / tac_uncor
+    method == 8 ~ durations^2 / pmax(tac_uncor, 0.01*max(tac_uncor)),
+    # method == 9 ~ (durations^2 / pmax(tac*durations, 0.01*max(tac*durations))) * corrections^2
+    method == 9 ~ (durations^2 / pmax(tac, 0.01*max(tac)) * durations) * corrections^2
   )
 
   # Fixing before checking
@@ -94,7 +109,7 @@ weights_create <- function(t_start, t_end, tac,
     t_tac <- t_start + 0.5*(t_end - t_start)
 
     # Find the maximum TAC weight
-    t_weightpeak <- t_tac[which.max(calcweights)]
+    t_weightpeak <- t_tac[tail(which(calcweights==max(calcweights)), 1)]
 
     # Assign times a fraction of the peaktime
     t_peakfrac <- t_tac / t_weightpeak

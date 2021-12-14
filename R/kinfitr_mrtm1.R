@@ -1,30 +1,46 @@
 #' Ichise's Multilinear Reference Tissue Model
 #'
-#' Function to fit MRTM1 of Ichise et al. (2003) to data.  This model is often used alongside MRTM2: MRTM1 is run on a
-#' high-binding region to obtain an estimate of k2prime, and this k2prime value is used for MRTM2.
+#' Function to fit MRTM1 of Ichise et al. (2003) to data.  This model is often
+#' used alongside MRTM2: MRTM1 is run on a high-binding region to obtain an
+#' estimate of k2prime, and this k2prime value is used for MRTM2.
 #'
-#' @param t_tac Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
-#' zero. If a time zero frame is not included, it will be added.
-#' @param reftac Numeric vector of radioactivity concentrations in the reference tissue for each frame. We include zero at
-#' time zero: if not included, it is added.
-#' @param roitac Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
-#' zero: if not included, it is added.
-#' @param tstarIncludedFrames Optional. The number of frames to be used in the multiple regression. This is a count from the end of the
-#' measurement, so a value of 10 means that last 10 frames will be used. This value can be estimated using \code{mrtm1_tstar}. Note
-#' that this tstar differs from that of the non-invasive Logan plot (which is the point at which pseudo-equilibrium is reached).
-#' Rather, with MRTM1 and MRTM2, all frames can be used provided that the kinetics in the target tissue can be described by a one
-#' tissue compartment model (like SRTM).  If this is not the case, a t* is required.
-#' @param weights Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
-#' if not included, it is added. If not specified, uniform weights will be used.
+#' @param t_tac Numeric vector of times for each frame in minutes. We use the
+#'   time halfway through the frame as well as a zero. If a time zero frame is
+#'   not included, it will be added.
+#' @param reftac Numeric vector of radioactivity concentrations in the reference
+#'   tissue for each frame. We include zero at time zero: if not included, it is
+#'   added.
+#' @param roitac Numeric vector of radioactivity concentrations in the target
+#'   tissue for each frame. We include zero at time zero: if not included, it is
+#'   added.
+#' @param tstarIncludedFrames Optional. The number of frames to be used in the
+#'   multiple regression. This is a count from the end of the measurement, so a
+#'   value of 10 means that last 10 frames will be used. This value can be
+#'   estimated using \code{mrtm1_tstar}. Note that this tstar differs from that
+#'   of the non-invasive Logan plot (which is the point at which
+#'   pseudo-equilibrium is reached). Rather, with MRTM1 and MRTM2, all frames
+#'   can be used provided that the kinetics in the target tissue can be
+#'   described by a one tissue compartment (1TC) model (like SRTM).  If this is
+#'   not the case, a t* is required. If the number of included frames is greater
+#'   than the number of frames minus 2, then the par output will also include R1
+#'   and k2 values. These parameters are only applicable if 1TC dynamics can be
+#'   assumed.
+#' @param weights Optional. Numeric vector of the weights assigned to each frame
+#'   in the fitting. We include zero at time zero: if not included, it is added.
+#'   If not specified, uniform weights will be used.
 #' @param dur Optional. Numeric vector of the time durations of the frames. If
-#' not included, the integrals will be calculated using trapezoidal integration.
-#' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
-#' This is to assess time stability.
+#'   not included, the integrals will be calculated using trapezoidal
+#'   integration.
+#' @param frameStartEnd Optional: This allows one to specify the beginning and
+#'   final frame to use for modelling, e.g. c(1,20). This is to assess time
+#'   stability.
 
 #'
-#' @return A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit}, a dataframe
-#' containing the TACs of the data \code{out$tacs}, a dataframe containing the TACs of the fitted values \code{out$fitvals},
-#' a vector of the weights \code{out$weights}, and the specified tstarIncludedFrames value \code{out$tstarIncludedFrames}
+#' @return A list with a data frame of the fitted parameters \code{out$par}, the
+#'   model fit object \code{out$fit}, a dataframe containing the TACs of the
+#'   data \code{out$tacs}, a dataframe containing the TACs of the fitted values
+#'   \code{out$fitvals}, a vector of the weights \code{out$weights}, and the
+#'   specified tstarIncludedFrames value \code{out$tstarIncludedFrames}
 #'
 #' @examples
 #' data(simref)
@@ -37,7 +53,11 @@
 #' fit <- mrtm1(t_tac, reftac, roitac, weights = weights)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
-#' @references Ichise M, Liow JS, Lu JQ, Takano A, Model K, Toyama H, Suhara T, Suzuki K, Innis RB, Carson RE. Linearized Reference Tissue Parametric Imaging Methods: Application to [11C]DASB Positron Emission Tomography Studies of the Serotonin Transporter in Human Brain. Journal of Cerebral Blood Flow & Metabolism. 2003 Sep 1;23(9):1096-112.
+#' @references Ichise M, Liow JS, Lu JQ, Takano A, Model K, Toyama H, Suhara T,
+#'   Suzuki K, Innis RB, Carson RE. Linearized Reference Tissue Parametric
+#'   Imaging Methods: Application to [11C]DASB Positron Emission Tomography
+#'   Studies of the Serotonin Transporter in Human Brain. Journal of Cerebral
+#'   Blood Flow & Metabolism. 2003 Sep 1;23(9):1096-112.
 #'
 #' @export
 
@@ -111,9 +131,15 @@ mrtm1 <- function(t_tac, reftac, roitac, tstarIncludedFrames = NULL,
   bp <- as.numeric(-((coef(mrtm1_model)[1] / coef(mrtm1_model)[2]) + 1))
   k2prime <- as.numeric(coef(mrtm1_model)[1] / coef(mrtm1_model)[3])
   R1 <- as.numeric(coef(mrtm1_model)[3])
-  k2 <- as.numeric(-coef(mrtm1_model)[2])
+  k2 <- -as.numeric(coef(mrtm1_model)[2])
 
-  par <- as.data.frame(list(bp = bp, k2prime = k2prime, R1 = R1, k2 = k2))
+  par <- as.data.frame(list(bp = bp, k2prime = k2prime))
+
+  if( tstarIncludedFrames >= length(reftac) - 1 ) {
+    par$R1 <- R1
+    par$k2 <- k2
+  }
+
   fit <- mrtm1_model
 
   tacs <- data.frame(Time = t_tac, Reference = reftac, Target = roitac)
@@ -222,19 +248,26 @@ plot_mrtm1fit <- function(mrtm1out, roiname = NULL, refname = NULL) {
 
 #' Tstar Finder: MRTM1
 #'
-#' Function to identify where t* is for MRTM1. Remember that this is unnecessary if the kinetics in the target tissue can be described by a one
-#' tissue compartment model (like SRTM).
+#' Function to identify where t* is for MRTM1. Remember that this is unnecessary
+#' if the kinetics in the target tissue can be described by a one tissue
+#' compartment model (like SRTM).
 #'
 #'
-#' @param t_tac Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
-#' zero. If a time zero frame is not included, it will be added.
-#' @param reftac Numeric vector of radioactivity concentrations in the reference tissue for each frame.
-#' @param lowroi Numeric vector of radioactivity concentrations in a target tissue for each frame. This should be from a ROI with low binding.
-#' @param medroi Numeric vector of radioactivity concentrations in a target tissue for each frame. This should be from a ROI with medium binding.
-#' @param highroi Numeric vector of radioactivity concentrations in a target tissue for each frame. This should be from a ROI with high binding.
+#' @param t_tac Numeric vector of times for each frame in minutes. We use the
+#'   time halfway through the frame as well as a zero. If a time zero frame is
+#'   not included, it will be added.
+#' @param reftac Numeric vector of radioactivity concentrations in the reference
+#'   tissue for each frame.
+#' @param lowroi Numeric vector of radioactivity concentrations in a target
+#'   tissue for each frame. This should be from a ROI with low binding.
+#' @param medroi Numeric vector of radioactivity concentrations in a target
+#'   tissue for each frame. This should be from a ROI with medium binding.
+#' @param highroi Numeric vector of radioactivity concentrations in a target
+#'   tissue for each frame. This should be from a ROI with high binding.
 #' @param filename The name of the output image: filename_mrtm1.jpeg
-#' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
-#' This is to assess time stability.
+#' @param frameStartEnd Optional: This allows one to specify the beginning and
+#'   final frame to use for modelling, e.g. c(1,20). This is to assess time
+#'   stability.
 #' @param gridbreaks Optional. The size of the grid in the plots. Default: 2.
 #'
 #' @return Saves a jpeg of the plots as filename_mrtm1.jpeg

@@ -15,38 +15,54 @@ mrtm1(
 )
 }
 \arguments{
-\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
-zero. If a time zero frame is not included, it will be added.}
+\item{t_tac}{Numeric vector of times for each frame in minutes. We use the
+time halfway through the frame as well as a zero. If a time zero frame is
+not included, it will be added.}
 
-\item{reftac}{Numeric vector of radioactivity concentrations in the reference tissue for each frame. We include zero at
-time zero: if not included, it is added.}
+\item{reftac}{Numeric vector of radioactivity concentrations in the reference
+tissue for each frame. We include zero at time zero: if not included, it is
+added.}
 
-\item{roitac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
-zero: if not included, it is added.}
+\item{roitac}{Numeric vector of radioactivity concentrations in the target
+tissue for each frame. We include zero at time zero: if not included, it is
+added.}
 
-\item{tstarIncludedFrames}{Optional. The number of frames to be used in the multiple regression. This is a count from the end of the
-measurement, so a value of 10 means that last 10 frames will be used. This value can be estimated using \code{mrtm1_tstar}. Note
-that this tstar differs from that of the non-invasive Logan plot (which is the point at which pseudo-equilibrium is reached).
-Rather, with MRTM1 and MRTM2, all frames can be used provided that the kinetics in the target tissue can be described by a one
-tissue compartment model (like SRTM).  If this is not the case, a t* is required.}
+\item{tstarIncludedFrames}{Optional. The number of frames to be used in the
+multiple regression. This is a count from the end of the measurement, so a
+value of 10 means that last 10 frames will be used. This value can be
+estimated using \code{mrtm1_tstar}. Note that this tstar differs from that
+of the non-invasive Logan plot (which is the point at which
+pseudo-equilibrium is reached). Rather, with MRTM1 and MRTM2, all frames
+can be used provided that the kinetics in the target tissue can be
+described by a one tissue compartment (1TC) model (like SRTM).  If this is
+not the case, a t* is required. If the number of included frames is greater
+than the number of frames minus 2, then the par output will also include R1
+and k2 values. These parameters are only applicable if 1TC dynamics can be
+assumed.}
 
-\item{weights}{Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
-if not included, it is added. If not specified, uniform weights will be used.}
+\item{weights}{Optional. Numeric vector of the weights assigned to each frame
+in the fitting. We include zero at time zero: if not included, it is added.
+If not specified, uniform weights will be used.}
 
 \item{dur}{Optional. Numeric vector of the time durations of the frames. If
-not included, the integrals will be calculated using trapezoidal integration.}
+not included, the integrals will be calculated using trapezoidal
+integration.}
 
-\item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
-This is to assess time stability.}
+\item{frameStartEnd}{Optional: This allows one to specify the beginning and
+final frame to use for modelling, e.g. c(1,20). This is to assess time
+stability.}
 }
 \value{
-A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit}, a dataframe
-containing the TACs of the data \code{out$tacs}, a dataframe containing the TACs of the fitted values \code{out$fitvals},
-a vector of the weights \code{out$weights}, and the specified tstarIncludedFrames value \code{out$tstarIncludedFrames}
+A list with a data frame of the fitted parameters \code{out$par}, the
+  model fit object \code{out$fit}, a dataframe containing the TACs of the
+  data \code{out$tacs}, a dataframe containing the TACs of the fitted values
+  \code{out$fitvals}, a vector of the weights \code{out$weights}, and the
+  specified tstarIncludedFrames value \code{out$tstarIncludedFrames}
 }
 \description{
-Function to fit MRTM1 of Ichise et al. (2003) to data.  This model is often used alongside MRTM2: MRTM1 is run on a
-high-binding region to obtain an estimate of k2prime, and this k2prime value is used for MRTM2.
+Function to fit MRTM1 of Ichise et al. (2003) to data.  This model is often
+used alongside MRTM2: MRTM1 is run on a high-binding region to obtain an
+estimate of k2prime, and this k2prime value is used for MRTM2.
 }
 \examples{
 data(simref)
@@ -59,7 +75,11 @@ weights <- simref$tacs[[2]]$Weights
 fit <- mrtm1(t_tac, reftac, roitac, weights = weights)
 }
 \references{
-Ichise M, Liow JS, Lu JQ, Takano A, Model K, Toyama H, Suhara T, Suzuki K, Innis RB, Carson RE. Linearized Reference Tissue Parametric Imaging Methods: Application to [11C]DASB Positron Emission Tomography Studies of the Serotonin Transporter in Human Brain. Journal of Cerebral Blood Flow & Metabolism. 2003 Sep 1;23(9):1096-112.
+Ichise M, Liow JS, Lu JQ, Takano A, Model K, Toyama H, Suhara T,
+  Suzuki K, Innis RB, Carson RE. Linearized Reference Tissue Parametric
+  Imaging Methods: Application to [11C]DASB Positron Emission Tomography
+  Studies of the Serotonin Transporter in Human Brain. Journal of Cerebral
+  Blood Flow & Metabolism. 2003 Sep 1;23(9):1096-112.
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}

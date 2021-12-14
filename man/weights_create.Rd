@@ -10,7 +10,7 @@ weights_create(
   tac,
   radioisotope = c("C11", "O15", "F18"),
   method = 2,
-  minweight = 0.67,
+  minweight = 0.5,
   minweight_risetopeak = FALSE,
   weight_checkn = 5
 )
@@ -29,6 +29,8 @@ weights_create(
 represents duration / tac. 4 represents sqrt(durations). 5 represents
 durations * exp((-ln(2)) / halflife ). 6 represents durations /
 tac. 7 represents durations. 8 represents duration^2 / tac_uncor.
+9 represents((durations^2 / (durations*tac))*corrections^2) (courtesy of
+Claus Svarer).
 Uncorrected refers to decay correction.}
 
 \item{minweight}{The minimum weight. Weights will be calculated as a fraction
@@ -60,7 +62,13 @@ weights_create(
   s1$StartTime/60,
   (s1$StartTime + s1$Duration)/60,
   radioisotope = "C11",
-  tac = s1$WB, minweight_risetopeak=TRUE)
+  tac = s1$WB)
+
+weights_create(
+  s1$StartTime/60,
+  (s1$StartTime + s1$Duration)/60,
+  radioisotope = "C11", method=9,
+  tac = s1$WB)
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
