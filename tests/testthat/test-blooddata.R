@@ -240,7 +240,7 @@ test_that("getting input data from blooddata works", {
 
 test_that("addfit works", {
   pf <- bd_extract(blooddata, output = "parentFraction")
-  pf_fit <- metab_hillguo(pf$time, pf$parentFraction)
+  pf_fit <- metab_sigmoid(pf$time, pf$parentFraction)
   blooddata <- bd_addfit(blooddata, fit = pf_fit, modeltype = "parentFraction")
 
   bdplot <- plot(blooddata)
@@ -250,7 +250,7 @@ test_that("addfit works", {
 
 test_that("addfitted works", {
   pf <- bd_extract(blooddata, output = "parentFraction")
-  pf_fit <- metab_hillguo(pf$time, pf$parentFraction)
+  pf_fit <- metab_sigmoid(pf$time, pf$parentFraction)
 
   fitted <- tibble::tibble(
     time = seq(min(pf$time), max(pf$time), length.out = 100)
@@ -270,12 +270,12 @@ test_that("addfitted works", {
 
 test_that("addfitpars works", {
   pf <- bd_extract(blooddata, output = "parentFraction")
-  pf_fit <- metab_hillguo(pf$time, pf$parentFraction)
+  pf_fit <- metab_sigmoid(pf$time, pf$parentFraction)
 
   fitpars <- as.list(coef(pf_fit))
 
   blooddata <- bd_addfitpars(blooddata,
-    modelname = "metab_hillguo_model", fitpars = fitpars,
+    modelname = "metab_sigmoid_model", fitpars = fitpars,
     modeltype = "parentFraction"
   )
 

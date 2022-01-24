@@ -199,9 +199,9 @@ metab_hill <- function(time, parentFraction,
 
 
 
-#' Hill Function Model modified by Guo et al for Parent Fraction
+#' Sigmoid Model for Parent Fraction
 #'
-#' This is the model function for fitting of the modification of the Hill function by Guo et al. (2013).
+#' This is the model function for fitting of the sigmoid function by Guo et al. (2013).
 #'
 #' @param time Time in seconds.
 #' @param a Parameter A.
@@ -216,8 +216,8 @@ metab_hill <- function(time, parentFraction,
 #' @references Guo Q, Colasanti A, Owen DR, et al. Quantification of the specific translocator protein signal of 18F-PBR111 in healthy humans: a genetic polymorphism effect on in vivo binding. J Nucl Med 2013; 54: 1915–1923.
 #'
 #' @examples
-#' metab_hillguo_model(seq(0, 60 * 60, by = 120), 7, 0.6, 0.04, 1, 0)
-metab_hillguo_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
+#' metab_sigmoid_model(seq(0, 60 * 60, by = 120), 7, 0.6, 0.04, 1, 0)
+metab_sigmoid_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
   tcorr <- time - delay
   t_before <- tcorr[ which(!(tcorr > 0)) ]
   t_after <- tcorr[ which(tcorr > 0) ]
@@ -233,9 +233,9 @@ metab_hillguo_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
 }
 
 
-#' Fit a Hill Function modification by Guo et al (2013) for Parent Fraction.
+#' Fit a sigmoid function for Parent Fraction.
 #'
-#' This function fits the modification of the Hill function by Guo et al. (2013) to parent fraction data.
+#' This function fits the sigmoid function by Guo et al. (2013) to parent fraction data.
 #'
 #' @param time Time in seconds.
 #' @param parentFraction Measured values of parent fraction.
@@ -255,9 +255,9 @@ metab_hillguo_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
 #' @examples
 #' \dontrun{
 #' pf <- bd_getdata(blooddata, output = "parentFraction")
-#' metab_hillguo(pf$time, pf$parentFraction)
+#' metab_sigmoid(pf$time, pf$parentFraction)
 #' }
-metab_hillguo <- function(time, parentFraction,
+metab_sigmoid <- function(time, parentFraction,
                           fit_ppf0 = FALSE,
                           fit_delay = FALSE,
                           lower = list(a = 0, b = 0, c = 0, ppf0 = 0.8, delay = -30),
@@ -268,7 +268,7 @@ metab_hillguo <- function(time, parentFraction,
   pf <- tibble::tibble(time = time, parentFraction = parentFraction)
   pf <- dplyr::arrange(pf, time)
 
-  formula <- paste("parentFraction ~ metab_hillguo_model(time, a, b, c, ",
+  formula <- paste("parentFraction ~ metab_sigmoid_model(time, a, b, c, ",
     "ppf0", ifelse(fit_ppf0, "", "=1"), ", ",
     "delay", ifelse(fit_delay, "", "=0"), ")",
     sep = ""
