@@ -527,26 +527,27 @@ metab_exponential <- function(time, parentFraction,
 
 #' Inverse Gamma Function Model for Parent Fraction
 #'
-#' This is the model function for fitting of the inverse Gamma function for the parent fraction.
+#' This is the model function for fitting of the inverted integrated gamma function for the parent fraction.
 #'
 #' @param time Time in seconds.
-#' @param shape Shape parameter.
-#' @param rate Rate parameter.
-#' @param ppf0 The starting point of the parent fraction curve.
+#' @param a Parameter a. This parameter affects the ppf0 point.
+#' @param b Parameter b.
+#' @param c Shape parameter.
+#' @param d Rate parameter.
 #' @param delay The delay of the metabolism curve.
 #'
 #' @return Predicted values
 #' @export
 #'
 #' @examples
-#' metab_invgamma_model(seq(0, 60 * 60, by = 120), 1.97, 708, 1, 0)
-metab_invgamma_model <- function(time, shape, rate, ppf0 = 1, delay = 0) {
+#' metab_invgamma_model(seq(0, 60 * 60, by = 120), 1, 0.95, 1.97, 708, 0)
+metab_invgamma_model <- function(time, a, b, c, d, delay = 0) {
   tcorr <- time - delay
   t_before <- tcorr[ which(!(tcorr > 0)) ]
   t_after <- tcorr[ which(tcorr > 0) ]
 
-  ind1_out <- rep(ppf0, length.out = length(t_before))
-  ind2_out <- ppf0 - invgamma::pinvgamma(t_after, shape, rate)
+  ind1_out <- rep(a, length.out = length(t_before))
+  ind2_out <- a * (1 - b*invgamma::pinvgamma(q = t_after, shape = c, rate=d))
 
   out <- c(ind1_out, ind2_out)
 
@@ -557,7 +558,7 @@ metab_invgamma_model <- function(time, shape, rate, ppf0 = 1, delay = 0) {
 
 #' Fit the Inverted Gamma Function for Modelling Parent Fraction.
 #'
-#' This function fits the inverted gamma function to parent fraction data.
+#' This function fits the inverted integrated gamma function to parent fraction data.
 #'
 #' @param time Time in seconds.
 #' @param parentFraction Measured values of parent fraction.
@@ -572,6 +573,8 @@ metab_invgamma_model <- function(time, shape, rate, ppf0 = 1, delay = 0) {
 #' @return An nls fit object.
 #' @export
 #'
+#' @references Finnema SJ, Nabulsi NB, Mercier J, Lin SF, Chen MK, Matuskey D, Gallezot JD, Henry S, Hannestad J, Huang Y, Carson RE. Kinetic evaluation and test–retest reproducibility of [11C] UCB-J, a novel radioligand for positron emission tomography imaging of synaptic vesicle glycoprotein 2A in humans. Journal of Cerebral Blood Flow & Metabolism. 2018 Nov;38(11):2041-52.
+#'
 #' @examples
 #' \dontrun{
 #' pf <- bd_getdata(blooddata, output = "parentFraction")
@@ -580,23 +583,23 @@ metab_invgamma_model <- function(time, shape, rate, ppf0 = 1, delay = 0) {
 metab_invgamma <- function(time, parentFraction,
                            fit_ppf0 = FALSE,
                            fit_delay = FALSE,
-                           lower = list(shape = 0, rate = 0, ppf0 = 0.8, delay = -30),
-                           upper = list(shape = 1000, rate = 1000, ppf0 = 1.1, delay = 30),
+                           lower = list(a=0.8, b=0.3, c=0, d=0, delay = -30),
+                           upper = list(a=1.1, b=3, c=20, d=1e6, delay = 30),
                            multstart_lower = NULL,
                            multstart_upper = NULL,
-                           multstart_iter = 100) {
+                           multstart_iter = 1000) {
   pf <- tibble::tibble(time = time, parentFraction = parentFraction)
   pf <- dplyr::arrange(pf, time)
 
-  formula <- paste("parentFraction ~ metab_invgamma_model(time, shape, rate, ",
-    "ppf0", ifelse(fit_ppf0, "", "=1"), ", ",
-    "delay", ifelse(fit_delay, "", "=0"), ")",
-    sep = ""
-  )
+  formula <- paste("parentFraction ~ metab_invgamma_model(time, ",
+                   "a", ifelse(fit_ppf0, "", "=1"), ", ",
+                   "b, c, d, ",
+                   "delay", ifelse(fit_delay, "", "=0"), ")",
+                   sep = "")
 
   if (!fit_ppf0) {
-    lower$ppf0 <- NULL
-    upper$ppf0 <- NULL
+    lower$a <- NULL
+    upper$a <- NULL
   }
 
   if (!fit_delay) {
@@ -619,7 +622,7 @@ metab_invgamma <- function(time, parentFraction,
     multstart_upper <- as.numeric(as.data.frame(multstart_upper))
   }
 
-  nls.multstart::nls_multstart(as.formula(formula),
+  fit <- nls.multstart::nls_multstart(as.formula(formula),
     data = pf,
     lower = lower,
     upper = upper,
@@ -628,4 +631,156 @@ metab_invgamma <- function(time, parentFraction,
     iter = multstart_iter,
     supp_errors = "Y"
   )
+
+  # Check for parameters hitting limits
+
+  limcheck_u <- purrr::map2_lgl(round(upper,3), round(coef(fit),3), identical)
+  limcheck_l <- purrr::map2_lgl(round(lower,3), round(coef(fit),3), identical)
+  limcheck <- limcheck_u + limcheck_l
+  limcheck <- limcheck==1
+
+  if(
+    any(limcheck)
+  ) {
+    warning(
+      paste0(
+        "\nFitted parameters are hitting upper or lower limit bounds. Consider \n",
+        "modifying the upper and lower limit boundaries.\n") )
+  }
+
+  return(fit)
+
+
+}
+
+
+
+#' Gamma Function for Parent Fraction
+#'
+#' This is the model function for fitting of the integrated gamma function for the parent fraction.
+#'
+#' @param time Time in seconds.
+#' @param a Parameter a. This parameter affects the ppf0 point.
+#' @param b Parameter b.
+#' @param c Shape parameter.
+#' @param d Rate parameter.
+#' @param delay The delay of the metabolism curve.
+#'
+#' @return Predicted values
+#' @export
+#'
+#' @references Naganawa M, Jacobsen LK, Zheng MQ, Lin SF, Banerjee A, Byon W, Weinzimmer D, Tomasi G, Nabulsi N, Grimwood S, Badura LL. Evaluation of the agonist PET radioligand [11C] GR103545 to image kappa opioid receptor in humans: Kinetic model selection, test–retest reproducibility and receptor occupancy by the antagonist PF-04455242. Neuroimage. 2014 Oct 1;99:69-79.
+#'
+#' @examples
+#' metab_gamma_model(seq(0, 60 * 60, by = 120), 1.97, 708, 1, 0)
+metab_gamma_model <- function(time, a, b, c, d, delay = 0) {
+  tcorr <- time - delay
+  t_before <- tcorr[ which(!(tcorr > 0)) ]
+  t_after <- tcorr[ which(tcorr > 0) ]
+
+  ind1_out <- rep(a, length.out = length(t_before))
+  ind2_out <- a * (1 - b*pgamma(q = t_after, c, 1/d))
+
+  out <- c(ind1_out, ind2_out)
+
+  return(out)
+}
+
+
+
+#' Fit the Gamma Function for Modelling Parent Fraction.
+#'
+#' This function fits the integrated gamma function to parent fraction data.
+#'
+#' @param time Time in seconds.
+#' @param parentFraction Measured values of parent fraction.
+#' @param fit_ppf0 Should the starting plasma parent fraction be fitted? Otherwise, it is set to 1. Defaults to FALSE.
+#' @param fit_delay Should the delay of the plasma parent fraction be fitted? Otherwise, it is set to 0. Defaults to FALSE.
+#' @param lower Named list of the lower limits.
+#' @param upper Named list of the upper limits.
+#' @param multstart_lower Named list of the lower starting limits.
+#' @param multstart_upper Named list of the upper starting limits.
+#' @param multstart_iter Number of fits to perform before deciding on an optimal.
+#'
+#' @return An nls fit object.
+#' @export
+#'
+#' @references Naganawa M, Jacobsen LK, Zheng MQ, Lin SF, Banerjee A, Byon W, Weinzimmer D, Tomasi G, Nabulsi N, Grimwood S, Badura LL. Evaluation of the agonist PET radioligand [11C] GR103545 to image kappa opioid receptor in humans: Kinetic model selection, test–retest reproducibility and receptor occupancy by the antagonist PF-04455242. Neuroimage. 2014 Oct 1;99:69-79.
+#'
+#' @examples
+#' \dontrun{
+#' pf <- bd_getdata(blooddata, output = "parentFraction")
+#' metab_gamma(pf$time, pf$parentFraction)
+#' }
+metab_gamma <- function(time, parentFraction,
+                           fit_ppf0 = FALSE,
+                           fit_delay = FALSE,
+                           lower = list(a=0.8, b=0.3, c=0, d=0, delay = -30),
+                           upper = list(a=1.1, b=3, c=20, d=1e6, delay = 30),
+                           multstart_lower = NULL,
+                           multstart_upper = NULL,
+                           multstart_iter = 1000) {
+  pf <- tibble::tibble(time = time, parentFraction = parentFraction)
+  pf <- dplyr::arrange(pf, time)
+
+  formula <- paste("parentFraction ~ metab_gamma_model(time, ",
+                   "a", ifelse(fit_ppf0, "", "=1"), ", ",
+                   "b, c, d, ",
+                   "delay", ifelse(fit_delay, "", "=0"), ")",
+                   sep = "")
+
+  if (!fit_ppf0) {
+    lower$a <- NULL
+    upper$a <- NULL
+  }
+
+  if (!fit_delay) {
+    lower$delay <- NULL
+    upper$delay <- NULL
+  }
+
+  lower <- as.numeric(as.data.frame(lower))
+  upper <- as.numeric(as.data.frame(upper))
+
+  if (is.null(multstart_lower)) {
+    multstart_lower <- lower
+  } else {
+    multstart_lower <- as.numeric(as.data.frame(multstart_lower))
+  }
+
+  if (is.null(multstart_upper)) {
+    multstart_upper <- upper
+  } else {
+    multstart_upper <- as.numeric(as.data.frame(multstart_upper))
+  }
+
+  fit <- nls.multstart::nls_multstart(as.formula(formula),
+                               data = pf,
+                               lower = lower,
+                               upper = upper,
+                               start_lower = multstart_lower,
+                               start_upper = multstart_upper,
+                               iter = multstart_iter,
+                               supp_errors = "Y"
+  )
+
+  # Check for parameters hitting limits
+
+  limcheck_u <- purrr::map2_lgl(round(upper,3), round(coef(fit),3), identical)
+  limcheck_l <- purrr::map2_lgl(round(lower,3), round(coef(fit),3), identical)
+  limcheck <- limcheck_u + limcheck_l
+  limcheck <- limcheck==1
+
+  if(
+    any(limcheck)
+  ) {
+    warning(
+      paste0(
+        "\nFitted parameters are hitting upper or lower limit bounds. Consider \n",
+        "modifying the upper and lower limit boundaries.\n") )
+  }
+
+  return(fit)
+
+
 }

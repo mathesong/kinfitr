@@ -4,16 +4,18 @@
 \alias{metab_invgamma_model}
 \title{Inverse Gamma Function Model for Parent Fraction}
 \usage{
-metab_invgamma_model(time, shape, rate, ppf0 = 1, delay = 0)
+metab_invgamma_model(time, a, b, c, d, delay = 0)
 }
 \arguments{
 \item{time}{Time in seconds.}
 
-\item{shape}{Shape parameter.}
+\item{a}{Parameter a. This parameter affects the ppf0 point.}
 
-\item{rate}{Rate parameter.}
+\item{b}{Parameter b.}
 
-\item{ppf0}{The starting point of the parent fraction curve.}
+\item{c}{Shape parameter.}
+
+\item{d}{Rate parameter.}
 
 \item{delay}{The delay of the metabolism curve.}
 }
@@ -21,8 +23,8 @@ metab_invgamma_model(time, shape, rate, ppf0 = 1, delay = 0)
 Predicted values
 }
 \description{
-This is the model function for fitting of the inverse Gamma function for the parent fraction.
+This is the model function for fitting of the inverted integrated gamma function for the parent fraction.
 }
 \examples{
-metab_invgamma_model(seq(0, 60 * 60, by = 120), 1.97, 708, 1, 0)
+metab_invgamma_model(seq(0, 60 * 60, by = 120), 1, 0.95, 1.97, 708, 0)
 }

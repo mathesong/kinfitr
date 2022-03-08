@@ -177,31 +177,25 @@ bids_parse_blood <- function(filedata) {
   json_blood_discrete <- filedata %>%
     dplyr::filter(measurement=="blood" &
                     extension=="json" &
-                    recording=="discrete") %>%
+                    recording=="manual") %>%
     dplyr::pull(path_absolute)
 
   tsv_blood_discrete <- filedata %>%
     dplyr::filter(measurement=="blood" &
                     extension=="tsv" &
-                    recording=="discrete") %>%
+                    recording=="manual") %>%
     dplyr::pull(path_absolute)
 
   json_blood_cont <- filedata %>%
     dplyr::filter(measurement=="blood" &
                     extension=="json" &
-                    recording=="continuous") %>%
+                    recording=="autosampler") %>%
     dplyr::pull(path_absolute)
 
   tsv_blood_cont <- filedata %>%
     dplyr::filter(measurement=="blood" &
                     extension=="tsv" &
-                    recording=="continuous") %>%
-    dplyr::pull(path_absolute)
-
-  json_blood_discrete <- filedata %>%
-    dplyr::filter(measurement=="blood" &
-                    extension=="json" &
-                    recording=="discrete") %>%
+                    recording=="autosampler") %>%
     dplyr::pull(path_absolute)
 
 
@@ -210,35 +204,39 @@ bids_parse_blood <- function(filedata) {
 
   ### Get the data ###
 
-  jsondat_pet <- jsonlite::fromJSON(json_pet)
+  jsondat_blood_discrete <- jsonlite::fromJSON(json_blood_discrete)
 
   # Read data
 
   ## Discrete
-  if( jsondat_pet$PlasmaAvail | jsondat_pet$DiscreteBloodAvail ) {
+  if( jsondat_blood_discrete$PlasmaAvail | jsondat_blood_discrete$WholeBloodAvail ) {
 
     # Checks
     if( length(json_blood_discrete) == 0 ) {
-      stop("No discrete blood JSON found")
+      stop("No manual blood JSON found")
     }
     if( length(tsv_blood_discrete) == 0 ) {
-      stop("No discrete blood TSV file found")
+      stop("No manual blood TSV file found")
     }
 
-    jsondat_blood_discrete <- jsonlite::fromJSON(json_blood_discrete)
     tsvdat_blood_discrete  <- read.delim(tsv_blood_discrete, sep = "\t") %>%
-      dplyr::filter(!is.na(time))
+      dplyr::filter(!is.na(time)) %>%
+      dplyr::mutate(dplyr::across(everything(), ~ifelse(.x=="n/a",
+                                                      yes = NA,
+                                                      no = .x))) %>%
+      dplyr::mutate(dplyr::across(everything(), as.numeric)) %>%
+      dplyr::as_tibble()
   }
 
   ## Continuous
-  if( jsondat_pet$ContinuousBloodAvail ) {
+  if( length(json_blood_cont) > 0 ) {
 
     # Checks
     if( length(json_blood_cont) == 0 ) {
-      stop("No continuous blood JSON found")
+      stop("No autosampler blood JSON found")
     }
     if( length(tsv_blood_cont) == 0 ) {
-      stop("No continuous blood TSV file found")
+      stop("No autosampler blood TSV file found")
     }
 
     jsondat_blood_cont <- jsonlite::fromJSON(json_blood_cont)
@@ -247,7 +245,7 @@ bids_parse_blood <- function(filedata) {
   }
 
   ## Get Metabolite
-  if( jsondat_pet$MetaboliteAvail ) {
+  if( jsondat_blood_discrete$MetaboliteAvail ) {
 
     pf <- dplyr::select(tsvdat_blood_discrete, time,
                            starts_with("metabolite_")) %>%
@@ -263,7 +261,7 @@ bids_parse_blood <- function(filedata) {
   }
 
   ## Get Plasma
-  if( jsondat_pet$PlasmaAvail ) {
+  if( jsondat_blood_discrete$PlasmaAvail ) {
 
     plasma <- dplyr::select(tsvdat_blood_discrete, time,
                             activity = plasma_radioactivity) %>%
@@ -274,7 +272,7 @@ bids_parse_blood <- function(filedata) {
   }
 
   ## Get Discrete Whole Blood
-  if( jsondat_pet$DiscreteBloodAvail ) {
+  if( jsondat_blood_discrete$WholeBloodAvail ) {
 
     blood_discrete <- dplyr::select(tsvdat_blood_discrete, time,
                             activity = whole_blood_radioactivity) %>%
@@ -286,7 +284,7 @@ bids_parse_blood <- function(filedata) {
   }
 
   ## Get Continuous Whole Blood
-  if( jsondat_pet$ContinuousBloodAvail ) {
+  if( length(json_blood_cont) > 0 ) {
 
     blood_cont <- dplyr::select(tsvdat_blood_cont, time,
                                     activity = whole_blood_radioactivity) %>%
@@ -299,7 +297,8 @@ bids_parse_blood <- function(filedata) {
   ## Edge cases
 
   ### No plasma, but only whole blood: use blood instead of plasma
-  if( !jsondat_pet$PlasmaAvail & jsondat_pet$DiscreteBloodAvail ) {
+  if( !jsondat_blood_discrete$PlasmaAvail &
+      jsondat_blood_discrete$WholeBloodAvail ) {
 
     plasma <- dplyr::select(tsvdat_blood_discrete, time,
                             activity = whole_blood_radioactivity) %>%
@@ -313,8 +312,8 @@ bids_parse_blood <- function(filedata) {
   }
 
   ### No metabolite, but blood/plasma: metab=1
-  if( !jsondat_pet$MetaboliteAvail &
-      (jsondat_pet$DiscreteBloodAvail | jsondat_pet$PlasmaAvail) ) {
+  if( !jsondat_blood_discrete$MetaboliteAvail &
+      (jsondat_blood_discrete$WholeBloodAvail | jsondat_blood_discrete$PlasmaAvail) ) {
 
     pf <- dplyr::select(tsvdat_blood_discrete, time,
                             parentFraction = 1)
@@ -326,7 +325,7 @@ bids_parse_blood <- function(filedata) {
   }
 
   ### No whole blood, only plasma: use plasma as blood
-  if( jsondat_pet$PlasmaAvail & !jsondat_pet$DiscreteBloodAvail ) {
+  if( jsondat_blood_discrete$PlasmaAvail & !jsondat_blood_discrete$WholeBloodAvail ) {
 
     blood_discrete <- dplyr::select(tsvdat_blood_discrete, time,
                             activity = plasma_radioactivity) %>%
@@ -347,26 +346,30 @@ bids_parse_blood <- function(filedata) {
 
   ### Arrange the Data ###
 
-  MetaboliteData <- jsondat_pet[grep("Metabolite", names(jsondat_pet))]
+  MetaboliteData <- jsondat_blood_discrete[grep("Metabolite", names(jsondat_blood_discrete))]
   names(MetaboliteData) <- gsub("Metabolite", "", names(MetaboliteData))
   MetaboliteData$Values <- pf
   MetaboliteData <- c(MetaboliteData, pf_desc)
 
-  PlasmaData <- jsondat_pet[grep("Plasma", names(jsondat_pet))]
+  PlasmaData <- jsondat_blood_discrete[grep("Plasma", names(jsondat_blood_discrete))]
   names(PlasmaData) <- gsub("Plasma", "", names(PlasmaData))
   PlasmaData$Values <- plasma
   PlasmaData <- c(PlasmaData, plasma_desc)
 
-  DBloodData <- jsondat_pet[grep("DiscreteBlood", names(jsondat_pet))]
-  names(DBloodData) <- gsub("DiscreteBlood", "", names(DBloodData))
+  DBloodData <- jsondat_blood_discrete[grep("WholeBlood", names(jsondat_blood_discrete))]
+  names(DBloodData) <- gsub("WholeBlood", "", names(DBloodData))
   DBloodData$Values <- blood_discrete
   DBloodData <- c(DBloodData, blood_discrete_desc)
 
-  CBloodData <- jsondat_pet[grep("ContinuousBlood", names(jsondat_pet))]
-  names(CBloodData) <- gsub("ContinuousBlood", "", names(CBloodData))
-  if( CBloodData$Avail ) {
+  CBloodData <- json_blood_cont[grep("WholeBlood", names(json_blood_cont))]
+  names(CBloodData) <- gsub("WholeBlood", "", names(CBloodData))
+  if( length(json_blood_cont) > 0 ) {
     CBloodData$Values <- blood_cont
     CBloodData <- c(CBloodData, blood_cont_desc)
+    CBloodData$Avail = TRUE
+  } else {
+    CBloodData <- as.list(CBloodData)
+    CBloodData$Avail = FALSE
   }
 
 

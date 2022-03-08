@@ -421,6 +421,60 @@ test_that("exponential with start parameters works", {
   expect_true(any(class(bdplot) == "ggplot"))
 })
 
+
+# Parent Fraction Model Tests ----------------------------------------------
+
+pf <- bd_extract(blooddata, "parentFraction")
+set.seed(12345)
+
+test_that("hill function works", {
+
+  fit <- metab_hill(pf$time, pf$parentFraction)
+
+  expect_true(any(class(fit) == "nls"))
+
+})
+
+test_that("exponential function works", {
+
+  fit <- metab_exponential(pf$time, pf$parentFraction)
+
+  expect_true(any(class(fit) == "nls"))
+
+})
+
+test_that("power function works", {
+
+  fit <- metab_power(pf$time, pf$parentFraction)
+
+  expect_true(any(class(fit) == "nls"))
+
+})
+
+test_that("sigmoid function works", {
+
+  fit <- metab_sigmoid(pf$time, pf$parentFraction)
+
+  expect_true(any(class(fit) == "nls"))
+
+})
+
+test_that("gamma function works", {
+
+  fit <- metab_gamma(pf$time, pf$parentFraction)
+
+  expect_true(any(class(fit) == "nls"))
+
+})
+
+test_that("invgamma function works", {
+
+  fit <- metab_invgamma(pf$time, pf$parentFraction)
+
+  expect_true(any(class(fit) == "nls"))
+
+})
+
 # test_that("exp_sep works", {
 #
 #   aif <- bd_extract(blooddata, output = "AIF")
