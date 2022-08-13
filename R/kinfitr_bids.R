@@ -321,7 +321,7 @@ bids_parse_blood <- function(filedata) {
     pf_desc <- list(jsondat_blood_discrete[c("time")])
     pf_desc$parentFraction <- list(Description =
                             "All set to 1 because no metabolite data available",
-                            Units = "unitless")
+                            Units = "arbitrary")
   }
 
   ### No whole blood, only plasma: use plasma as blood
@@ -387,7 +387,7 @@ bids_parse_blood <- function(filedata) {
     }
   }
 
-  if( MetaboliteData$parentFraction$Units != "unitless" ) {
+  if( MetaboliteData$parentFraction$Units != "arbitrary" ) {
       stop(paste("Unrecognised parentFraction units for Metabolite:",
                  MetaboliteData$parentFraction$Units))
   }
