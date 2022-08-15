@@ -387,9 +387,34 @@ bids_parse_blood <- function(filedata) {
     }
   }
 
-  if( MetaboliteData$parentFraction$Units != "arbitrary" ) {
-      stop(paste("Unrecognised parentFraction units for Metabolite:",
-                 MetaboliteData$parentFraction$Units))
+  # This check seems irrelevant: I've removed it
+  # if( MetaboliteData$parentFraction$Units != "arbitrary" ) {
+  #     stop(paste("Unrecognised parentFraction units for Metabolite:",
+  #                MetaboliteData$parentFraction$Units))
+  # }
+
+  # Checking the scaling between 0 and 1, or percentages
+  if( !all(MetaboliteData$Values$parentFraction >= 0 &
+          MetaboliteData$Values$parentFraction <= 1) ) {
+
+    # Not all between 0 and 1
+
+    ### If they're (probably) scaled between 0 and 100, no error
+    if( all(MetaboliteData$Values$parentFraction >= 0 &
+            MetaboliteData$Values$parentFraction <= 100) &
+        max(MetaboliteData$Values$parentFraction > 50) ) {
+
+      MetaboliteData$Values$parentFraction <- MetaboliteData$Values$parentFraction / 100
+
+      warning(paste0("It seems your parent fraction values are scaled between 0",
+                    " and 100. They have been rescaled between 0 and 1 by diving",
+                     " by 100. Please check whether this is correct."))
+    } else {
+
+      ### Error if they're not 0-1 or 0-100
+      stop("Parent fraction values should be scaled between 0 and 1.")
+
+    }
   }
 
 
