@@ -806,13 +806,16 @@ bd_extract_bpr <- function(blooddata,
 
   plasma <- blooddata$Data$Plasma$Values %>%
     dplyr::filter(!is.na(activity)) %>%
-    dplyr::arrange(time)
+    dplyr::arrange(time) %>%
+    dplyr::filter(!duplicated(time))
 
   blood <- bd_extract_blood(blooddata, startTime, stopTime, what = "pred")
 
 
   blood_discrete <- blood %>%
-    dplyr::filter(Method=="Discrete")
+    dplyr::filter(!is.na(activity)) %>%
+    dplyr::filter(Method=="Discrete") %>%
+    dplyr::filter(!duplicated(time))
 
   commonvalues <- intersect(plasma$time, blood_discrete$time)
 
@@ -1077,12 +1080,12 @@ bd_extract_aif <- function(blooddata,
   blood <- bd_extract_blood(blooddata, startTime, stopTime, what = "raw") %>%
     dplyr::filter(Method=="Discrete")
 
-  rawplasma <- dplyr::left_join(bpr, blood) %>%
+  rawplasma <- dplyr::left_join(bpr, blood, by="time") %>%
     dplyr::mutate(measplasma = activity * (1 / bpr)) %>%
     dplyr::select(time, measplasma, Method)
 
   ### Now the calculated raw plasma values are replaced with the measured ones.
-  aif <- dplyr::left_join(aif, rawplasma) %>%
+  aif <- dplyr::left_join(aif, rawplasma, by=c("time", "Method")) %>%
     dplyr::mutate(plasma_uncor = ifelse( is.na(measplasma),
                                          yes = plasma_uncor,
                                          no = measplasma)) %>%
