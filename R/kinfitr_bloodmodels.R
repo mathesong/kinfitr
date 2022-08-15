@@ -186,6 +186,7 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL,
 # #'                            Method = blood$Method)
 # #'
 # #' predict(blood_fit, newdata=list(time=1:10))
+#' @export
 predict.blood_splines <- function(object, newdata = NULL) {
   if (is.null(newdata)) {
     pred_before <- predict(object$before)
@@ -447,6 +448,8 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
 }
 
 
+#' Blood Model: Exponential
+#'
 #' Fit an exponential model to AIF data with the ability to model the peak. In
 #' other words, this model fits a single NLS model which describes the rise and
 #' the fall of the AIF. This approach is more flexible, but also more sensitive
@@ -1045,8 +1048,8 @@ blmod_triexp_model <- function(time, t0, peaktime, peakval, A, alpha,
   tcorr <- time - t0
   peaktime <- peaktime - t0
 
-  t_before <- tcorr[ which(tcorr <= 0) ]
-  t_after <- tcorr[ which(tcorr > 0) ]
+  t_before <- tcorr[ which(tcorr < 0) ]
+  t_after <- tcorr[ which(tcorr >= 0) ]
 
   t_beforepeak <- t_after[ which(t_after <= peaktime) ]
   t_afterpeak <- t_after[ which(t_after >  peaktime) ]
@@ -1070,9 +1073,26 @@ blmod_triexp_model <- function(time, t0, peaktime, peakval, A, alpha,
 
 }
 
-predict.blood_exp <- function(object, newdata = NULL) {
+#' @export
+predict.blood_exp <- function(object, newdata = NULL, ...) {
 
-  predict(object$fit, newdata = newdata)
+  if(is.null(newdata)) {
+    newdata <- list()
+    newdata$time = object$blood$time
+  }
+
+  pars <- object$par
+
+  blmod_triexp_model(time = newdata$time,
+                     t0 = pars$t0,
+                     peaktime = pars$peaktime,
+                     peakval = pars$peakval,
+                     A = pars$A,
+                     alpha = pars$alpha,
+                     B = pars$B,
+                     beta = pars$beta,
+                     C = pars$C,
+                     gamma = pars$gamma)
 
 }
 
@@ -1104,3 +1124,1200 @@ predict.blood_exp <- function(object, newdata = NULL) {
 #   return(pred)
 #
 # }
+
+
+
+#' Create starting parameters for an Feng blood model
+#'
+#' This function estimates reasonable starting parameters for the Feng blood
+#' models. I use the suggestions from Tonietto (2012).
+#'
+#' @param time The time of each measurement.
+#' @param activity The radioactivity of each measurement.
+#' @param expdecay_props What proportions of the decay should be used for
+#'   choosing starting parameters for the exponential decay. Defaults to 0
+#'   and 0.5, i.e. the latter two exponentials, B, C, beta, gamma are estimated
+#'   using halfway to the end of the decay, and the beginning to halfway through
+#'   the decay. The first parameters, A and alpha, are estimated from the ascent.
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @return A list of the starting parameters
+#' @export
+#'
+#' @references Tonietto, M. (2012). Methods and models for the characterization
+#' of arterial input function in dynamic PET studies. Master thesis.
+#'
+#' @examples
+#' blooddata <- pbr28$blooddata[[1]]
+#' blooddata <- bd_blood_dispcor(blooddata)
+#' aif <- bd_extract(blooddata, output = "AIF")
+#' start <- blmod_feng_startpars(aif$time,
+#'                            aif$aif)
+blmod_feng_startpars <- function(time, activity,
+                                 expdecay_props = c(0, 0.5)) {
+
+  startpars <- list()
+
+  blood <- blmod_tidyinput(time, activity, Method=NULL, weights = NULL)
+
+  # Peaktime
+  startpars$peaktime <- blood$time[which.max(blood$activity)]
+
+  # Peakval
+  startpars$peakval <- blood$activity[blood$time==startpars$peaktime]
+
+  # t0
+  bloodrise <- blood[blood$time <= startpars$peaktime, ]
+  rise_lm <- lm(activity ~ time, data=bloodrise)
+
+  rise_seg <- try(segmented::segmented(rise_lm, npsi=1), silent = T)
+
+  if( !any(class(rise_seg) == "try-error") ) {  # If success
+    if(is.numeric(rise_seg$psi[2])) {     # And if numeric
+      startpars$t0 <- rise_seg$psi[2]
+    } else {
+      startpars$t0 <- NA
+    }
+  } else {
+    startpars$t0 <- NA
+  }
+
+  #### Old Method
+  if( is.na(startpars$t0) ) {
+
+    rise_lm <- lm(activity ~ time, data=bloodrise, weights=activity)
+    rise_coef <- coef(rise_lm)
+    startpars$t0 <- as.numeric(-1*(rise_coef[1] / rise_coef[2]))
+
+    if(startpars$t0 < 0) { # This can happen if the peak is very dispersed
+      bloodrise <- bloodrise[blood$activity >= 0.1*startpars$peakval, ]
+      rise_lm <- lm(activity ~ time, data=bloodrise)
+      rise_coef <- coef(rise_lm)
+      startpars$t0 <- as.numeric(-1*(rise_coef[1]/rise_coef[2]))
+    }
+
+    if(startpars$t0 < 0) { # If still less than 0
+      startpars$t0 <- 0
+    }
+  }
+
+
+
+  # Decay
+  blood_decay <- blood[blood$time > startpars$peaktime,]
+  blood_decay$time <- blood_decay$time - startpars$peaktime
+
+  blood_risedecay <- blood
+  blood_risedecay$time <- blood_risedecay$time - startpars$peaktime
+
+
+  # Exponentials
+
+  ## Third Exponential
+
+  blood_exp_part3 <- dplyr::filter(blood_decay,
+                                   dplyr::between(time,
+                                                  expdecay_props[2]*max(time),
+                                                  max(time)) &
+                                     activity>0)
+
+  exp3_mod <- lm(log(abs(activity)) ~ time,
+                 data=blood_exp_part3)
+
+  exp3_coef <-  as.numeric(coef(exp3_mod))
+
+  C <- exp(exp3_coef[1])
+  gamma <- exp(log(abs(exp3_coef[2])))
+
+  startpars$C     <- C
+  startpars$gamma <- gamma
+
+  blood_decay$activity_2ex <- blood_decay$activity -
+    C*exp( -gamma * (blood_decay$time) )
+
+  blood_risedecay$activity_2ex <- blood_risedecay$activity -
+    C*exp( -gamma * (blood_risedecay$time) )
+
+  ## Second Exponential
+  blood_exp_part2 <- dplyr::filter(blood_decay,
+                                   dplyr::between(time,
+                                                  expdecay_props[1]*max(time),
+                                                  expdecay_props[2]*max(time)) &
+                                     activity_2ex>0)
+
+
+  exp2_mod <- lm(log(abs(activity_2ex)) ~ time,
+                 data=blood_exp_part2)
+
+  exp2_coef <-  as.numeric(coef(exp2_mod))
+
+  B <- exp(exp2_coef[1])
+  beta <- exp(log(abs(exp2_coef[2])))
+
+  startpars$B     <- B
+  startpars$beta  <- beta
+
+  blood_decay$activity_1ex <- blood_decay$activity_2ex -
+    B*exp( -beta * (blood_decay$time) )
+
+  blood_risedecay$activity_1ex <- blood_risedecay$activity_2ex -
+    B*exp( -beta * (blood_risedecay$time) )
+
+
+  ## First Exponential
+  # blood_exp_part1 <- dplyr::filter(blood_risedecay,
+  #                                  dplyr::between(time,
+  #                                                 0,
+  #                                                 startpars$peaktime) &
+  #                                    activity_1ex>0)
+
+  blood_exp_part1 <- bloodrise %>%
+    dplyr::filter(time > 0)
+
+  if( nrow(blood_exp_part1) > 3 ) {
+
+    risetime = startpars$peaktime - startpars$t0
+
+
+    tmp1 = - ( B + C ) / ( C*exp(risetime*beta) + exp(risetime*gamma) *
+                             (B - startpars$peakval*exp(risetime*beta) ) )
+
+    tmp2_exptop = C*exp(risetime*beta)*(-1+risetime*beta) + exp(risetime*gamma) *
+      ( B*(-1+risetime*gamma) - exp(risetime*beta)*startpars$peakval*(-1+risetime*(beta + gamma)) )
+    tmp2_expbot = C*exp(risetime*beta) + exp(risetime*gamma)*
+      (B - startpars$peakval*exp(risetime*beta))
+    tmp2 = exp( tmp2_exptop / tmp2_expbot )
+
+    tmp = tmp1 * tmp2
+
+    alpha1 = 1 / ( risetime*( C*exp(risetime*beta) + exp(risetime*gamma)*
+                                (B - startpars$peakval*exp(risetime*beta) ) ) )
+
+    alpha2.1 = (exp(risetime*gamma)) * (B - startpars$peakval*exp(risetime*beta) +
+                                          B*risetime*beta)
+    alpha2.2 = C*exp(risetime*beta)*(1+risetime*gamma)
+    alpha2.3 = C*exp(risetime*beta) + ( exp(risetime*gamma) *
+                                          (B - startpars$peakval*exp(risetime*beta)) )
+    alpha2.4 = LambertW::W(tmp)
+
+    alpha = alpha1 * ( alpha2.1 + alpha2.2 + (alpha2.3 * alpha2.4) )
+
+    A1 = B*(alpha - beta*exp(risetime*(alpha-beta)) ) +
+      C*( alpha - gamma*exp(risetime * (alpha-gamma) ) )
+    A2 = -1 + risetime*alpha
+    A = A1 / A2
+
+    startpars$A <- A
+    startpars$alpha <- alpha
+
+  } else {
+
+    startpars$A <- startpars$B
+    startpars$alpha <- startpars$beta
+
+    warning("not enough points left to define A and alpha: consider
+            revising the expdecay_props")
+  }
+
+  # return the list in correct order
+  out <- list(
+    t0 = startpars$t0,
+    peaktime = startpars$peaktime,
+    peakval = startpars$peakval,
+    A = startpars$A,
+    alpha = startpars$alpha,
+    B = startpars$B,
+    beta = startpars$beta,
+    C = startpars$C,
+    gamma = startpars$gamma
+  )
+
+  return(out)
+
+}
+
+
+
+#' Blood Model: Feng
+#'
+#' Fit a Feng model to AIF data. This model fits the conventional Feng model to
+#' AIF data. Note: this model is pretty terrible for just about all tracers
+#' except for FDG. The convolved Feng model, fengconv is usually much more
+#' effective.
+#'
+#'
+#' @param time The time of each measurement in seconds
+#' @param activity The radioactivity of each measurement
+#' @param Method Optional. The method of collection, i.e. "Discrete" or
+#'   "Continuous"
+#' @param weights Optional. Weights of each measurement.
+#' @param fit_t0 Should time point zero be fitted? If not, it is set to 0.
+#'   Default is TRUE.
+#' @param lower Optional. The lower limits of the fit. If left as NULL, they
+#'   will be given reasonable defaults (mostly 10\% of the starting parameters).
+#' @param upper Optional. The upper limits of the fit. If left as NULL, they
+#'   will be given reasonable defaults (mostly 150\% of the starting
+#'   parameters).
+#' @param start Optional. The starting parameters for the fit. If left as NULL,
+#'   they will be selected using \code{blmod_exp_startpars}.
+#' @param multstart_lower Optional. The lower limits of the starting parameters.
+#' @param multstart_upper Optional. The upper limits of the starting parameters.
+#' @param multstart_iter The number of fits to perform with different starting
+#'   parameters. If set to 1, then the starting parameters will be used for a
+#'   single fit.
+#' @param taper_weights Should the weights be tapered to gradually trade off
+#'   between the continuous and discrete samples after the peak?
+#' @param check_startpars Optional. Return only the starting parameters. Useful
+#'   for debugging fits which do not work.
+#' @param expdecay_props What proportions of the decay should be used for
+#'   choosing starting parameters for the exponential decay. Defaults to 0 and
+#'   0.5, i.e. the latter two exponentials, B, C, beta, gamma are estimated
+#'   using halfway to the end of the decay, and the beginning to halfway through
+#'   the decay. The first parameters, A and alpha, are estimated from the
+#'   ascent.
+#'
+#' @return A model fit including all of the individual parameters, fit details,
+#'   and model fit object of class blood_feng.
+#' @export
+#'
+#' @references Wang, Xinmin, and Dagan Feng. "A study on physiological parameter
+#'   estimation accuracy for tracer kinetic modeling with positron emission
+#'   tomography (pet)." 1992 American Control Conference. IEEE, 1992.
+#'   Feng, D., Z. Wang, and S. C. Huang. "Tracer plasma time-activity curves in
+#'   circulatory system for positron emission tomography kinetic modeling
+#'   studies." IFAC Proceedings Volumes 26.2 (1993): 175-178.
+#'
+#' @examples
+#' blooddata <- pbr28$blooddata[[1]]
+#' blooddata <- bd_blood_dispcor(blooddata)
+#' aif <- bd_extract(blooddata, output = "AIF")
+#' blood_fit <- blmod_feng(aif$time,
+#'                            aif$aif,
+#'                            Method = aif$Method, multstart_iter = 1)
+blmod_feng <- function(time, activity, Method = NULL,
+                      weights = NULL,
+                      fit_t0=TRUE,
+                      lower = NULL,
+                      upper = NULL,
+                      start = NULL,
+                      multstart_lower = NULL,
+                      multstart_upper = NULL,
+                      multstart_iter = 100,
+                      taper_weights = TRUE,
+                      check_startpars = FALSE,
+                      expdecay_props = c(1/60, 0.1)) {
+
+
+  # Tidy up
+  blood <- blmod_tidyinput(time, activity, Method, weights)
+
+
+  # Create starting parameters
+  ## Note: start contains actual starting parameters. Startvals useful for other
+  ## things even if starting parameters are defined.
+  startvals <- blmod_feng_startpars(time, activity,
+                                   expdecay_props)
+  if(is.null(start)) {
+    start <- startvals
+  }
+
+  # Fix weights
+  if( length(unique(blood$Method)) == 2 ) { # i.e. both cont and discrete
+    discrete_before_peak <- which(blood$Method=="Discrete" &
+                                    blood$time < startvals$peaktime)
+
+    blood$weights[discrete_before_peak] <- 0
+  }
+
+  if(taper_weights) {
+    blood$weights <- ifelse(blood$Method=="Continuous",
+                            yes = blood$weights * (1-blood$peakfrac),
+                            no = blood$weights * blood$peakfrac)
+  }
+
+
+  # Set up start, upper and lower parameter lists
+  if(is.null(lower)) {
+    lower <- purrr::map(startvals, ~(.x - abs(.x*0.5)))
+    lower$t0 <- 0
+    lower$peaktime <- startvals$t0
+
+    lower$A <- 0.1*startvals$A
+    lower$B <- 0.1*startvals$B
+    lower$C <- 0.1*startvals$C
+  }
+
+  if(is.null(upper)) {
+    upper <- purrr::map(startvals, ~(20*abs(.x)))
+    upper$t0 <- startvals$peaktime
+  }
+
+
+  lower$peaktime <- NULL
+  upper$peaktime <- NULL
+  start$peaktime <- NULL
+
+  lower$peakval <- NULL
+  upper$peakval <- NULL
+  start$peakval <- NULL
+
+  if (!fit_t0) {
+    lower$t0 <- NULL
+    upper$t0 <- NULL
+    start$t0 <- NULL
+  }
+
+  if(is.null(multstart_lower)) {
+    multstart_lower <- lower
+  }
+
+  if(is.null(multstart_upper)) {
+    multstart_upper <- upper
+  }
+
+  lower <- as.numeric(as.data.frame(lower))
+  upper <- as.numeric(as.data.frame(upper))
+
+  multstart_lower <- as.numeric(as.data.frame(multstart_lower))
+  multstart_upper <- as.numeric(as.data.frame(multstart_upper))
+
+
+  if(check_startpars) {
+    out <- list(start = start, startvals = startvals)
+    return(out)
+  }
+
+
+  # Set up the formula
+  formula <- paste("activity ~ blmod_feng_model(time, ",
+                   "t0", ifelse(fit_t0, "", "=0"),", ",
+                   "A, alpha, B, beta, C, gamma)",
+                   sep = "")
+
+
+  # Fit the model, with normal NLS or with multstart
+  if( multstart_iter == 1 ) {
+    modelout <- minpack.lm::nlsLM(as.formula(formula),
+                                  data = blood,
+                                  lower = lower,
+                                  upper = upper,
+                                  start = start,
+                                  weights = weights)
+  } else {
+
+    modelout_single <- try(minpack.lm::nlsLM(as.formula(formula),
+                                             data = blood,
+                                             lower = lower,
+                                             upper = upper,
+                                             start = start,
+                                             weights = weights))
+
+    if( !any(class(modelout_single) == "try-error") ) {  # If success
+      AIC_single <- AIC(modelout_single)
+    } else {
+      AIC_single <- Inf
+    }
+
+    multmodelout_multi <- nls.multstart::nls_multstart(
+      formula = as.formula(formula), modelweights = weights,
+      data = blood, iter = multstart_iter,
+      start_lower = multstart_lower, start_upper = multstart_upper,
+      supp_errors = "Y", lower = lower, upper = upper)
+
+    if( !is.null(multmodelout_multi) ) {  # If success
+      AIC_multi <- AIC(multmodelout_multi)
+    } else {
+      AIC_multi <- Inf
+    }
+
+    if( min( c(AIC_single, AIC_multi) ) == Inf ) {
+      stop("None of the model fits were able to converge")
+    } else {
+      if(AIC_multi < AIC_single) {
+        modelout <- multmodelout_multi
+      } else {
+        modelout <- modelout_single
+      }
+    }
+
+
+  }
+
+  # Prepare output
+  coefficients <- as.data.frame(as.list(coef(modelout)))
+
+
+  if (!fit_t0) {
+    coefficients$t0 <- 0
+  }
+
+  coefficients <- coefficients[order(names(coefficients))]
+
+  start <- as.data.frame(start)
+  upper <- as.data.frame(as.list(upper), col.names = names(start))
+  lower <- as.data.frame(as.list(lower), col.names = names(start))
+
+  fit_details <- as.data.frame(
+    list(
+      fit_t0 = fit_t0
+    ))
+
+  out <- list(
+    par = coefficients,
+    fit = modelout,
+    start = start,
+    lower = lower,
+    upper = upper,
+    fit_details = fit_details,
+    blood = blood
+  )
+
+  class(out) <- c("blood_feng", class(out))
+
+  return(out)
+
+}
+
+
+#' Feng model for fitting of arterial input functions
+#'
+#' This is the model itself for the Feng model of the AIF.
+#'
+#' @param time Time of each sample.
+#' @param t0 The delay time. This is the point at which the linear rise begins.
+#' @param A The multiplier of the first exponential.
+#' @param alpha The rate of the first exponential.
+#' @param B The multiplier of the second exponential.
+#' @param beta The rate of the second exponential.
+#' @param C The multiplier of the third exponential.
+#' @param gamma The rate of the third exponential.
+#'
+#' @return Model predictions
+#' @export
+#'
+#' @examples
+#' blmod_feng_model(1:1000, 30, 7, 0.02, 2, 0.005, 4.5, 0.0005)
+blmod_feng_model <- function(time, t0, A, alpha, B, beta, C, gamma) {
+
+  tcorr <- time - t0
+
+  t_before <- tcorr[ which(tcorr <= 0) ]
+  t_after <- tcorr[ which(tcorr > 0) ]
+
+  # Before t0
+  Cpl_0_t0 <- rep(0, length.out = length(t_before))
+
+  # After t0
+  term1 = ( A*t_after - B - C )*exp(-alpha*t_after)
+  term2 = B * exp(-beta*t_after)
+  term3 = C * exp(-gamma*t_after)
+
+  Cpl_t0_end = term1 + term2 + term3
+
+  out = c( Cpl_0_t0 , Cpl_t0_end )
+
+  return(out)
+}
+
+#' @export
+predict.blood_feng <- function(object, newdata = NULL) {
+
+  if(is.null(newdata)) {
+    newdata <- list()
+    newdata$time = object$blood$time
+  }
+
+  pars <- object$par
+
+  blmod_feng_model(time = newdata$time,
+                     t0 = pars$t0,
+                     A = pars$A,
+                     alpha = pars$alpha,
+                     B = pars$B,
+                     beta = pars$beta,
+                     C = pars$C,
+                     gamma = pars$gamma)
+
+}
+
+
+
+#' Blood Model: FengConv
+#'
+#' Fits a Feng model, convolved with an infusion injection to AIF data. This
+#' model is significantly more effective than the original Feng model in the
+#' vast majority of applications. The infusion duration can be a little
+#' bit tricky to fit. I recommend trying to find out the approximate duration of
+#' the injection and including this as a fixed parameter for most stable performance.
+#'
+#' @param time The time of each measurement in seconds
+#' @param activity The radioactivity of each measurement
+#' @param Method Optional. The method of collection, i.e. "Discrete" or
+#'   "Continuous"
+#' @param weights Optional. Weights of each measurement.
+#' @param fit_t0 Should time point zero be fitted? If not, it is set to 0.
+#'   Default is TRUE.
+#' @param lower Optional. The lower limits of the fit. If left as NULL, they
+#'   will be given reasonable defaults (mostly 10\% of the starting parameters).
+#' @param upper Optional. The upper limits of the fit. If left as NULL, they
+#'   will be given reasonable defaults (mostly 20x the starting parameters).
+#' @param start Optional. The starting parameters for the fit. If left as NULL,
+#'   they will be selected using \code{blmod_feng_startpars}.
+#' @param multstart_lower Optional. The lower limits of the starting parameters.
+#' @param multstart_upper Optional. The upper limits of the starting parameters.
+#' @param multstart_iter The number of fits to perform with different starting
+#'   parameters. If set to 1, then the starting parameters will be used for a
+#'   single fit.
+#' @param taper_weights Should the weights be tapered to gradually trade off
+#'   between the continuous and discrete samples after the peak?
+#' @param check_startpars Optional. Return only the starting parameters. Useful
+#'   for debugging fits which do not work.
+#' @param expdecay_props What proportions of the decay should be used for
+#'   choosing starting parameters for the exponential decay. Defaults to 0 and
+#'   0.5, i.e. the latter two exponentials, B, C, beta, gamma are estimated
+#'   using halfway to the end of the decay, and the beginning to halfway through
+#'   the decay. The first parameters, A and alpha, are estimated from the
+#'   ascent.
+#'
+#' @return A model fit including all of the individual parameters, fit details,
+#'   and model fit object of class blood_fengconv.
+#' @export
+#'
+#' @references Wong, Koon-Pong, Sung-Cheng Huang, and Michael J. Fulham.
+#'   "Evaluation of an input function model that incorporates the injection
+#'   schedule in FDG-PET studies." 2006 IEEE Nuclear Science Symposium
+#'   Conference Record. Vol. 4. IEEE, 2006. Tonietto, M. (2012). Methods and
+#'   models for the characterization of arterial input function in dynamic PET
+#'   studies. Master thesis.
+#'
+#'
+#' @examples
+#' blooddata <- pbr28$blooddata[[1]]
+#' blooddata <- bd_blood_dispcor(blooddata)
+#' aif <- bd_extract(blooddata, output = "AIF")
+#' blood_fit <- blmod_fengconv(aif$time,
+#'                            aif$aif,
+#'                            Method = aif$Method,
+#'                            multstart_iter = 1,
+#'                            inftime = 22)
+blmod_fengconv <- function(time, activity, inftime = NULL,
+                           Method = NULL,
+                           weights = NULL,
+                           fit_t0=TRUE,
+                           lower = NULL,
+                           upper = NULL,
+                           start = NULL,
+                           multstart_lower = NULL,
+                           multstart_upper = NULL,
+                           multstart_iter = 500,
+                           taper_weights = TRUE,
+                           check_startpars = FALSE,
+                           expdecay_props = c(0, 0.5)) {
+
+
+  # Tidy up
+  blood <- blmod_tidyinput(time, activity, Method, weights)
+
+
+  # Create starting parameters
+  ## Note: start contains actual starting parameters. Startvals useful for other
+  ## things even if starting parameters are defined.
+  startvals <- blmod_feng_startpars(time, activity,
+                                    expdecay_props)
+  if(is.null(start)) {
+    start <- startvals
+  }
+
+  # Fix weights
+  if( length(unique(blood$Method)) == 2 ) { # i.e. both cont and discrete
+    discrete_before_peak <- which(blood$Method=="Discrete" &
+                                    blood$time < startvals$peaktime)
+
+    blood$weights[discrete_before_peak] <- 0
+  }
+
+  if(taper_weights) {
+    blood$weights <- ifelse(blood$Method=="Continuous",
+                            yes = blood$weights * (1-blood$peakfrac),
+                            no = blood$weights * blood$peakfrac)
+  }
+
+
+  # Set up start, upper and lower parameter lists
+  if(is.null(lower)) {
+    lower <- purrr::map(startvals, ~(.x - abs(.x*0.1)))
+    lower$t0 <- 0
+    lower$peaktime <- startvals$t0
+
+    lower$A <- 0
+    lower$B <- 0
+    lower$C <- 0
+
+    lower$alpha <- 0
+    lower$beta <- 0
+    lower$gamma <- 0
+  }
+
+  if(is.null(upper)) {
+    upper <- purrr::map(startvals, ~(20*.x))
+    upper$t0 <- startvals$peaktime
+  }
+
+
+  lower$peaktime <- NULL
+  upper$peaktime <- NULL
+  start$peaktime <- NULL
+
+  lower$peakval <- NULL
+  upper$peakval <- NULL
+  start$peakval <- NULL
+
+  if (!fit_t0) {
+    lower$t0 <- NULL
+    upper$t0 <- NULL
+    start$t0 <- NULL
+  }
+
+  if (is.null(inftime)) {
+    start$ti <- 30
+    lower$ti <- 1
+    upper$ti <- 300
+  }
+
+  if(is.null(multstart_lower)) {
+    multstart_lower <- lower
+  }
+
+  if(is.null(multstart_upper)) {
+    multstart_upper <- upper
+  }
+
+  lower <- as.numeric(as.data.frame(lower))
+  upper <- as.numeric(as.data.frame(upper))
+
+  multstart_lower <- as.numeric(as.data.frame(multstart_lower))
+  multstart_upper <- as.numeric(as.data.frame(multstart_upper))
+
+
+  if(check_startpars) {
+    out <- list(start = start, startvals = startvals)
+    return(out)
+  }
+
+
+  # Set up the formula
+  formula <- paste("activity ~ blmod_fengconv_model(time, ",
+                   "t0", ifelse(fit_t0, "", "=0"),", ",
+                   "A, alpha, B, beta, C, gamma, ",
+                   "ti", ifelse(is.null(inftime), "", paste0("=", inftime)),")",
+                   sep = "")
+
+
+  # Fit the model, with normal NLS or with multstart
+  if( multstart_iter == 1 ) {
+    modelout <- minpack.lm::nlsLM(as.formula(formula),
+                                  data = blood,
+                                  lower = lower,
+                                  upper = upper,
+                                  start = start,
+                                  weights = weights)
+  } else {
+
+    modelout_single <- try(minpack.lm::nlsLM(as.formula(formula),
+                                             data = blood,
+                                             lower = lower,
+                                             upper = upper,
+                                             start = start,
+                                             weights = weights))
+
+    if( !any(class(modelout_single) == "try-error") ) {  # If success
+      AIC_single <- AIC(modelout_single)
+    } else {
+      AIC_single <- Inf
+    }
+
+    multmodelout_multi <- nls.multstart::nls_multstart(
+      formula = as.formula(formula), modelweights = weights,
+      data = blood, iter = multstart_iter,
+      start_lower = multstart_lower, start_upper = multstart_upper,
+      supp_errors = "Y", lower = lower, upper = upper,
+      convergence_count = FALSE)
+
+    if( !is.null(multmodelout_multi) ) {  # If success
+      AIC_multi <- AIC(multmodelout_multi)
+    } else {
+      AIC_multi <- Inf
+    }
+
+    if( min( c(AIC_single, AIC_multi) ) == Inf ) {
+      stop("None of the model fits were able to converge")
+    } else {
+      if(AIC_multi < AIC_single) {
+        modelout <- multmodelout_multi
+      } else {
+        modelout <- modelout_single
+      }
+    }
+
+
+  }
+
+  # Prepare output
+  coefficients <- as.data.frame(as.list(coef(modelout)))
+
+
+  if (!fit_t0) {
+    coefficients$t0 <- 0
+  }
+
+  if (!is.null(inftime)) {
+    coefficients$ti <- inftime
+  }
+
+  coefficients <- coefficients[order(names(coefficients))]
+
+  start <- as.data.frame(start)
+  upper <- as.data.frame(as.list(upper), col.names = names(start))
+  lower <- as.data.frame(as.list(lower), col.names = names(start))
+
+  fit_details <- as.data.frame(
+    list(
+      fit_t0 = fit_t0,
+      fit_inftime = is.null(inftime)
+    ))
+
+  out <- list(
+    par = coefficients,
+    fit = modelout,
+    start = start,
+    lower = lower,
+    upper = upper,
+    fit_details = fit_details,
+    blood = blood
+  )
+
+  class(out) <- c("blood_fengconv", class(out))
+
+  return(out)
+
+}
+
+#' Convolved Feng model for fitting of arterial input functions
+#'
+#' This is the model itself for the Fengconv model of the AIF with an extended
+#' injection.
+#'
+#' @param time Time of each sample.
+#' @param t0 The delay time. This is the point at which the linear rise begins.
+#' @param A The multiplier of the first exponential.
+#' @param alpha The rate of the first exponential.
+#' @param B The multiplier of the second exponential.
+#' @param beta The rate of the second exponential.
+#' @param C The multiplier of the third exponential.
+#' @param gamma The rate of the third exponential.
+#' @param ti The infusion time of the bolus.
+#'
+#' @return Model predictions
+#' @export
+#'
+#' @examples
+#' blmod_fengconv_model(1:1000, 30, 220, 0.4, 100, 0.05, 22, 0.003, 30)
+blmod_fengconv_model <- function(time, t0, A, alpha, B, beta, C, gamma, ti) {
+
+  # Integral
+  g <- function(time, A, alpha, B, beta, C, gamma) {
+    term1 <- ( (A - alpha*(B + C)) / alpha^2 ) * (1-exp(-alpha*time))
+    term2 <- (A / alpha) * time * exp(-alpha * time)
+    term3 <- (B / beta) * (1 - exp(-beta * time))
+    term4 <- (C / gamma) * (1 - exp(-gamma * time))
+
+    out <- term1 - term2 + term3 + term4
+    return(out)
+  }
+
+  tcorr <- time - t0
+
+  # Before and after t0
+  t_before <- tcorr[ which(tcorr <= 0) ]
+  t_after <- tcorr[ which(tcorr > 0) ]
+
+
+  # Before and after t0 + ti
+  t_middle <- t_after[which(t_after <= ti)]
+  t_end <- t_after[which(t_after > ti)]
+  t_end_corr <- t_end - ti
+
+  # Before t0
+  Cpl_0_t0 <- rep(0, length.out = length(t_before))
+
+  # After t0 but before t0+ti
+  Cpl_t0_t0ti <- g(t_middle,
+                   A, alpha, B, beta, C, gamma)
+
+
+  # After t0
+  Cpl_t0ti_end <- g(t_end,
+                    A, alpha, B, beta, C, gamma) -
+    g(t_end_corr,
+      A, alpha, B, beta, C, gamma)
+
+
+  out <- c(Cpl_0_t0, Cpl_t0_t0ti, Cpl_t0ti_end)
+
+  out <- out / ti
+
+  return(out)
+}
+
+
+#' @export
+predict.blood_fengconv <- function(object, newdata = NULL) {
+
+  if(is.null(newdata)) {
+    newdata <- list()
+    newdata$time = object$blood$time
+  }
+
+  pars <- object$par
+
+  blmod_fengconv_model(time = newdata$time,
+                   t0 = pars$t0,
+                   A = pars$A,
+                   alpha = pars$alpha,
+                   B = pars$B,
+                   beta = pars$beta,
+                   C = pars$C,
+                   gamma = pars$gamma,
+                   ti = pars$ti)
+
+}
+
+
+#' Blood Model: FengConv plus a rise term
+#'
+#' Fits a Feng model, convolved with an infusion injection, and then with an
+#' additional rise to an asymptote term, to AIF data. This model is a slight
+#' modification of the fengconv model which just allows the model to be a little
+#' bit more capable of catching a rising tail: the model was designed for
+#' bolus+infusion paradigms - however it should be stated that FengConv is
+#' usually pretty capable in these cases too. By bolus+infusion, I mean a bolus,
+#' injected as a short infusion, followed by a long infusion. The infusion
+#' duration can be a little bit tricky to fit. I recommend trying to find out
+#' the approximate duration of the injection and including this as a fixed
+#' parameter for most stable performance.
+#'
+#'
+#' @param time The time of each measurement in seconds
+#' @param activity The radioactivity of each measurement
+#' @param Method Optional. The method of collection, i.e. "Discrete" or
+#'   "Continuous"
+#' @param weights Optional. Weights of each measurement.
+#' @param fit_t0 Should time point zero be fitted? If not, it is set to 0.
+#'   Default is TRUE.
+#' @param lower Optional. The lower limits of the fit. If left as NULL, they
+#'   will be given reasonable defaults (mostly 50\% of the starting parameters).
+#' @param upper Optional. The upper limits of the fit. If left as NULL, they
+#'   will be given reasonable defaults (mostly 150\% of the starting
+#'   parameters).
+#' @param start Optional. The starting parameters for the fit. If left as NULL,
+#'   they will be selected using \code{blmod_exp_startpars}.
+#' @param multstart_lower Optional. The lower limits of the starting parameters.
+#' @param multstart_upper Optional. The upper limits of the starting parameters.
+#' @param multstart_iter The number of fits to perform with different starting
+#'   parameters. If set to 1, then the starting parameters will be used for a
+#'   single fit.
+#' @param taper_weights Should the weights be tapered to gradually trade off
+#'   between the continuous and discrete samples after the peak?
+#' @param check_startpars Optional. Return only the starting parameters. Useful
+#'   for debugging fits which do not work.
+#' @param expdecay_props What proportions of the decay should be used for
+#'   choosing starting parameters for the exponential decay. Defaults to 0 and
+#'   0.5, i.e. the latter two exponentials, B, C, beta, gamma are estimated
+#'   using halfway to the end of the decay, and the beginning to halfway through
+#'   the decay. The first parameters, A and alpha, are estimated from the
+#'   ascent.
+#'
+#' @return A model fit including all of the individual parameters, fit details,
+#'   and model fit object of class blood_fengconvplus.
+#' @export
+#'
+#' @examples
+#' blooddata <- pbr28$blooddata[[1]]
+#' blooddata <- bd_blood_dispcor(blooddata)
+#' aif <- bd_extract(blooddata, output = "AIF")
+#' blood_fit <- blmod_fengconvplus(aif$time,
+#'                            aif$aif,
+#'                            Method = aif$Method,
+#'                            multstart_iter = 1)
+blmod_fengconvplus <- function(time, activity, inftime = NULL,
+                           Method = NULL,
+                           weights = NULL,
+                           fit_t0=TRUE,
+                           lower = NULL,
+                           upper = NULL,
+                           start = NULL,
+                           multstart_lower = NULL,
+                           multstart_upper = NULL,
+                           multstart_iter = 500,
+                           taper_weights = TRUE,
+                           check_startpars = FALSE,
+                           expdecay_props = c(0, 0.5)) {
+
+
+  # Tidy up
+  blood <- blmod_tidyinput(time, activity, Method, weights)
+
+
+  # Create starting parameters
+  ## Note: start contains actual starting parameters. Startvals useful for other
+  ## things even if starting parameters are defined.
+  startvals <- blmod_feng_startpars(time, activity,
+                                    expdecay_props)
+  if(is.null(start)) {
+    start <- startvals
+  }
+
+  # Fix weights
+  if( length(unique(blood$Method)) == 2 ) { # i.e. both cont and discrete
+    discrete_before_peak <- which(blood$Method=="Discrete" &
+                                    blood$time < startvals$peaktime)
+
+    blood$weights[discrete_before_peak] <- 0
+  }
+
+  if(taper_weights) {
+    blood$weights <- ifelse(blood$Method=="Continuous",
+                            yes = blood$weights * (1-blood$peakfrac),
+                            no = blood$weights * blood$peakfrac)
+  }
+
+
+  # Set up start, upper and lower parameter lists
+  if(is.null(lower)) {
+    lower <- purrr::map(startvals, ~(.x - abs(.x*0.5)))
+    lower$t0 <- 0
+    lower$peaktime <- startvals$t0
+
+    lower$A <- 0
+    lower$B <- 0
+    lower$C <- 0
+
+    lower$alpha <- 0
+    lower$beta <- 0
+    lower$gamma <- 0
+
+    lower$asymptote <- 0
+    lower$slope <- 0
+  }
+
+  if(is.null(upper)) {
+    upper <- purrr::map(startvals, ~(20*.x))
+    upper$t0 <- startvals$peaktime
+
+    upper$asymptote <- 20*median(tail(activity, 3))
+    upper$slope <- 0.05
+  }
+
+
+  start$asymptote <- 0.5*median(tail(activity, 3))
+  start$slope <- 0.1
+
+  lower$peaktime <- NULL
+  upper$peaktime <- NULL
+  start$peaktime <- NULL
+
+  lower$peakval <- NULL
+  upper$peakval <- NULL
+  start$peakval <- NULL
+
+  if (!fit_t0) {
+    lower$t0 <- NULL
+    upper$t0 <- NULL
+    start$t0 <- NULL
+  }
+
+  if (is.null(inftime)) {
+    start$ti <- 30
+    lower$ti <- 1
+    upper$ti <- 300
+  }
+
+  if(is.null(multstart_lower)) {
+    multstart_lower <- lower
+  }
+
+  if(is.null(multstart_upper)) {
+    multstart_upper <- upper
+  }
+
+  lower <- as.numeric(as.data.frame(lower))
+  upper <- as.numeric(as.data.frame(upper))
+
+  multstart_lower <- as.numeric(as.data.frame(multstart_lower))
+  multstart_upper <- as.numeric(as.data.frame(multstart_upper))
+
+
+  if(check_startpars) {
+    out <- list(start = start, startvals = startvals)
+    return(out)
+  }
+
+
+  # Set up the formula
+  formula <- paste("activity ~ blmod_fengconvplus_model(time, ",
+                   "t0", ifelse(fit_t0, "", "=0"),", ",
+                   "A, alpha, B, beta, C, gamma, ",
+                   "ti", ifelse(is.null(inftime), "", paste0("=", inftime)),", ",
+                   "asymptote, slope",")",
+                   sep = "")
+
+
+  # Fit the model, with normal NLS or with multstart
+  if( multstart_iter == 1 ) {
+    modelout <- minpack.lm::nlsLM(as.formula(formula),
+                                  data = blood,
+                                  lower = lower,
+                                  upper = upper,
+                                  start = start,
+                                  weights = weights)
+  } else {
+
+    modelout_single <- try(minpack.lm::nlsLM(as.formula(formula),
+                                             data = blood,
+                                             lower = lower,
+                                             upper = upper,
+                                             start = start,
+                                             weights = weights))
+
+    if( !any(class(modelout_single) == "try-error") ) {  # If success
+      AIC_single <- AIC(modelout_single)
+    } else {
+      AIC_single <- Inf
+    }
+
+    multmodelout_multi <- nls.multstart::nls_multstart(
+      formula = as.formula(formula), modelweights = weights,
+      data = blood, iter = multstart_iter,
+      start_lower = multstart_lower, start_upper = multstart_upper,
+      supp_errors = "Y", lower = lower, upper = upper,
+      convergence_count = FALSE)
+
+    if( !is.null(multmodelout_multi) ) {  # If success
+      AIC_multi <- AIC(multmodelout_multi)
+    } else {
+      AIC_multi <- Inf
+    }
+
+    if( min( c(AIC_single, AIC_multi) ) == Inf ) {
+      stop("None of the model fits were able to converge")
+    } else {
+      if(AIC_multi < AIC_single) {
+        modelout <- multmodelout_multi
+      } else {
+        modelout <- modelout_single
+      }
+    }
+
+
+  }
+
+  # Prepare output
+  coefficients <- as.data.frame(as.list(coef(modelout)))
+
+
+  if (!fit_t0) {
+    coefficients$t0 <- 0
+  }
+
+  if (!is.null(inftime)) {
+    coefficients$ti <- inftime
+  }
+
+  coefficients <- coefficients[order(names(coefficients))]
+
+  start <- as.data.frame(start)
+  upper <- as.data.frame(as.list(upper), col.names = names(start))
+  lower <- as.data.frame(as.list(lower), col.names = names(start))
+
+  fit_details <- as.data.frame(
+    list(
+      fit_t0 = fit_t0,
+      fit_inftime = is.null(inftime)
+    ))
+
+  out <- list(
+    par = coefficients,
+    fit = modelout,
+    start = start,
+    lower = lower,
+    upper = upper,
+    fit_details = fit_details,
+    blood = blood
+  )
+
+  class(out) <- c("blood_fengconvplus", class(out))
+
+  return(out)
+
+}
+
+#' Convolved Feng model for fitting of arterial input functions with an additional rise term
+#'
+#' This is the model itself for the Fengconvplus model of the AIF with an extended
+#' injection and additional rising term.
+#'
+#' @param time Time of each sample.
+#' @param t0 The delay time. This is the point at which the linear rise begins.
+#' @param A The multiplier of the first exponential.
+#' @param alpha The rate of the first exponential.
+#' @param B The multiplier of the second exponential.
+#' @param beta The rate of the second exponential.
+#' @param C The multiplier of the third exponential.
+#' @param gamma The rate of the third exponential.
+#' @param ti The infusion time of the bolus.
+#' @param asymptote The value of the asymptote to which the rise rises.
+#' @param slope The slope of the rise term, i.e. the rate at which it rises.
+#'
+#' @return Model predictions
+#' @export
+#'
+#' @examples
+#' blmod_fengconvplus_model(1:1000, 30, 220, 0.4, 100, 0.05, 22, 0.003, 30, 40, 0.001)
+blmod_fengconvplus_model <- function(time, t0, A, alpha, B, beta, C, gamma, ti,
+                                     asymptote, slope) {
+
+  fengconv_out <- blmod_fengconv_model(time, t0, A, alpha, B, beta, C, gamma, ti)
+
+  risefunc <- ifelse(time > t0,
+                     yes=-asymptote + (2*asymptote)/(1 + exp(-slope*(time-t0))),
+                     no = 0)
+
+  out <- fengconv_out + risefunc
+
+  return(out)
+}
+
+#' @export
+predict.blood_fengconvplus <- function(object, newdata = NULL) {
+
+  if(is.null(newdata)) {
+    newdata <- list()
+    newdata$time = object$blood$time
+  }
+
+  pars <- object$par
+
+  blmod_fengconvplus_model(time = newdata$time,
+                       t0 = pars$t0,
+                       A = pars$A,
+                       alpha = pars$alpha,
+                       B = pars$B,
+                       beta = pars$beta,
+                       C = pars$C,
+                       gamma = pars$gamma,
+                       ti = pars$ti,
+                       asymptote = pars$asymptote,
+                       slope = pars$slope)
+
+}

@@ -284,6 +284,10 @@ test_that("addfitpars works", {
   expect_true(any(class(bdplot) == "ggplot"))
 })
 
+
+# Blood/AIF Model Tests ----------------------------------------------
+
+
 test_that("bloodsplines works", {
   blood <- bd_extract(blooddata, output = "Blood")
   blood_fit <- blmod_splines(blood$time,
@@ -420,6 +424,135 @@ test_that("exponential with start parameters works", {
 
   expect_true(any(class(bdplot) == "ggplot"))
 })
+
+test_that("Feng works", {
+
+  aif <- bd_extract(blooddata, output = "AIF")
+
+  blood_fit <- blmod_feng(aif$time,
+                          aif$aif,
+                          Method = aif$Method,
+                          multstart_iter = 1)
+
+  blooddata <- bd_addfit(blooddata,
+                         fit = blood_fit,
+                         modeltype = "AIF"
+  )
+
+  bdplot <- plot(blooddata)
+
+  expect_true(any(class(bdplot) == "ggplot"))
+})
+
+test_that("Feng works with startpars", {
+
+  aif <- bd_extract(blooddata, output = "AIF")
+
+  startpars <- blmod_feng_startpars(aif$time,
+                                   aif$aif)
+
+  blood_fit <- blmod_feng(aif$time,
+                         aif$aif,
+                         Method = aif$Method,
+                         multstart_iter = 1,
+                         start = startpars)
+
+  blooddata <- bd_addfit(blooddata,
+                         fit = blood_fit,
+                         modeltype = "AIF"
+  )
+
+  bdplot <- plot(blooddata)
+
+  expect_true(any(class(bdplot) == "ggplot"))
+})
+
+test_that("Fengconv works", {
+
+  aif <- bd_extract(blooddata, output = "AIF")
+
+  blood_fit <- blmod_fengconv(aif$time,
+                          aif$aif,
+                          Method = aif$Method,
+                          multstart_iter = 1)
+
+  blooddata <- bd_addfit(blooddata,
+                         fit = blood_fit,
+                         modeltype = "AIF"
+  )
+
+  bdplot <- plot(blooddata)
+
+  expect_true(any(class(bdplot) == "ggplot"))
+})
+
+test_that("Fengconv works with startpars", {
+
+  aif <- bd_extract(blooddata, output = "AIF")
+
+  startpars <- blmod_feng_startpars(aif$time,
+                                    aif$aif)
+
+  blood_fit <- blmod_fengconv(aif$time,
+                          aif$aif,
+                          Method = aif$Method,
+                          multstart_iter = 1,
+                          start = startpars)
+
+  blooddata <- bd_addfit(blooddata,
+                         fit = blood_fit,
+                         modeltype = "AIF"
+  )
+
+  bdplot <- plot(blooddata)
+
+  expect_true(any(class(bdplot) == "ggplot"))
+})
+
+test_that("Fengconvplus works", {
+
+  aif <- bd_extract(blooddata, output = "AIF")
+
+  blood_fit <- blmod_fengconvplus(aif$time,
+                              aif$aif,
+                              Method = aif$Method,
+                              inftime = 20,
+                              multstart_iter = 1)
+
+  blooddata <- bd_addfit(blooddata,
+                         fit = blood_fit,
+                         modeltype = "AIF"
+  )
+
+  bdplot <- plot(blooddata)
+
+  expect_true(any(class(bdplot) == "ggplot"))
+})
+
+test_that("Fengconv works with startpars", {
+
+  aif <- bd_extract(blooddata, output = "AIF")
+
+  startpars <- blmod_feng_startpars(aif$time,
+                                    aif$aif)
+
+  blood_fit <- blmod_fengconvplus(aif$time,
+                              aif$aif,
+                              Method = aif$Method,
+                              inftime = 20,
+                              multstart_iter = 1,
+                              start = startpars)
+
+  blooddata <- bd_addfit(blooddata,
+                         fit = blood_fit,
+                         modeltype = "AIF"
+  )
+
+  bdplot <- plot(blooddata)
+
+  expect_true(any(class(bdplot) == "ggplot"))
+})
+
 
 
 # Parent Fraction Model Tests ----------------------------------------------
