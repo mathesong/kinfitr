@@ -25,6 +25,7 @@ bids_parse_files <- function(studypath) {
 
   attributes <- dplyr::select(files, path_absolute=path, path=path_relative) %>%
     dplyr::mutate(extension  = fs::path_ext(path)) %>%
+    dplyr::filter(!stringr::str_detect(path, "^derivatives/")) %>%
     dplyr::mutate(attr  = purrr::map(path, bids_filename_attributes)) %>%
     tidyr::unnest(cols=all_of("attr")) %>%
     dplyr::mutate(extension = ifelse( extension=="gz" &
@@ -74,6 +75,10 @@ bids_parse_files <- function(studypath) {
                   !is.na(run) &
                   !is.na(rec))
 
+  # Remove completely empty columns
+  attributes_complete <- attributes_complete[,
+                            !colMeans(is.na(attributes_complete))==1]
+
   attributes_inherit <- attributes %>%
     dplyr::filter(extension=="json" || extension=="tsv") %>%
     dplyr::filter(is.na(sub) |
@@ -84,10 +89,17 @@ bids_parse_files <- function(studypath) {
                     is.na(rec))
 
 
+  # Note to future self: The idea with the inheritance here is to assign things
+  # which have multiple matches to the corresponding fields. So, blood data,
+  # for instance can be matched to multiple reconstruction types of the PET
+  # data. To accomplish this, I remove measurement and extension from the
+  # matching. However, I feel like the inheritance might have originally been
+  # for something else. If problems occur, check here.
+
   if(nrow(attributes_inherit) > 0) {
     ## https://stackoverflow.com/questions/50483890/dplyr-join-na-match-to-any
 
-    attributes_inherit <- #suppressMessages(
+    attributes_inherit <- suppressMessages(
       attributes_inherit %>%
         split(seq(nrow(.))) %>%
         purrr::map_dfr(
@@ -95,7 +107,9 @@ bids_parse_files <- function(studypath) {
               dplyr::inner_join(.,
                 dplyr::select(attributes_complete,
                                 -path_absolute,
-                                -path)))#)
+                                -path,
+                                -extension,
+                                -measurement))))
   }
 
   attributes <- dplyr::bind_rows(attributes_complete,
@@ -133,8 +147,8 @@ bids_parse_files <- function(studypath) {
 #'    "sub-01/ses-01/pet/sub-01_ses-01_recording-continuous_blood.json")
 bids_filename_attributes <- function(filename) {
 
-  attr <- stringr::str_match_all(filename, "([a-z0-9]*-[a-z0-9]*)[/_]")[[1]]
-  attr_val <- stringr::str_match(attr[,2], "([a-z0-9]*)-([a-z0-9]*)")
+  attr <- stringr::str_match_all(filename, "([a-z0-9]*-[a-zA-Z0-9]*)[/_]")[[1]]
+  attr_val <- stringr::str_match(attr[,2], "([a-z0-9]*)-([a-zA-Z0-9]*)")
   attr_vals <- tibble::tibble(
     attribute = attr_val[,2],
     value = attr_val[,3]
@@ -633,7 +647,7 @@ bids_parse_petinfo <- function(filedata) {
 #'
 #' @examples
 #' \dontrun{
-#' filedata <- bids_parse_files(studypath)
+#' studydata <- bids_parse_study(studypath)
 #' }
 bids_parse_study <- function(studypath) {
 
@@ -655,3 +669,25 @@ bids_parse_study <- function(studypath) {
   return(measurements)
 
 }
+
+
+# join_by_nonmissing <- function(tbl_complete, tbl_incomplete) {
+#
+#   tbl_incomp_sep <- tbl_incomplete %>%
+#     dplyr::mutate(idx = 1:dplyr::n()) %>%
+#     dplyr::group_by(idx) %>%
+#     tidyr::nest(matchdata=-idx) %>%
+#     dplyr::mutate(matchdata = purrr::map(matchdata,
+#                                          ~Filter(function(x) !all(is.na(x)),
+#                                                  .x)))
+#
+#   tbl_incomp_sep_joined <- suppressMessages( tbl_incomp_sep %>%
+#     dplyr::mutate(matchdata = purrr::map(matchdata,
+#                                          ~dplyr::left_join(.x, tbl_complete))) )
+#
+#   tbl_incomp_sep_joined %>%
+#     dplyr::ungroup() %>%
+#     dplyr::select(-idx) %>%
+#     tidyr::unnest(matchdata)
+# }
+
