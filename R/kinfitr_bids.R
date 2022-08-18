@@ -109,7 +109,8 @@ bids_parse_files <- function(studypath) {
                                 -path_absolute,
                                 -path,
                                 -extension,
-                                -measurement))))
+                                -measurement)))) %>%
+      dplyr::distinct()
   }
 
   attributes <- dplyr::bind_rows(attributes_complete,
