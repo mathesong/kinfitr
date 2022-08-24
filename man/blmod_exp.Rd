@@ -2,10 +2,7 @@
 % Please edit documentation in R/kinfitr_bloodmodels.R
 \name{blmod_exp}
 \alias{blmod_exp}
-\title{Fit an exponential model to AIF data with the ability to model the peak. In
-other words, this model fits a single NLS model which describes the rise and
-the fall of the AIF. This approach is more flexible, but also more sensitive
-to fitting failures.}
+\title{Blood Model: Exponential}
 \usage{
 blmod_exp(
   time,
@@ -96,11 +93,16 @@ A model fit including all of the individual parameters, fit details,
   and model fit object of class blood_exp.
 }
 \description{
+Fit an exponential model to AIF data with the ability to model the peak. In
+other words, this model fits a single NLS model which describes the rise and
+the fall of the AIF. This approach is more flexible, but also more sensitive
+to fitting failures.
+}
+\details{
 This model fits a bi- or tri-exponential model to AIF data. This model can be
 specified in a fairly large number of ways, depending primarily on the
 quality of the input data. Reasonably conservative defaults are provided.
-}
-\details{
+
 The model can fit the time zero point (\code{fit_t0}), otherwise the rise
 starts at time point zero. It can fit two or three exponentials to the curve
 after the peak (\code{fit_exp0}). When it comes to fitting the peak itself,

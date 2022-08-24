@@ -18,7 +18,7 @@ relevant information nested appropriately.
 }
 \examples{
 \dontrun{
-filedata <- bids_parse_files(studypath)
+studydata <- bids_parse_study(studypath)
 }
 }
 \author{
