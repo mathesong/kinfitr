@@ -427,7 +427,11 @@ bids_parse_blood <- function(filedata) {
     } else {
 
       ### Error if they're not 0-1 or 0-100
-      stop("Parent fraction values should be scaled between 0 and 1.")
+      warning(paste0("Parent fraction values should be scaled between 0 and 1.\n",
+                     "Anomalies detected in ", basename(json_blood_discrete), "\n",
+                     "Parent Fraction ranges from ",
+                     min(MetaboliteData$Values$parentFraction)," to ",
+                     max(MetaboliteData$Values$parentFraction)," .\n\n"))
 
     }
   }
