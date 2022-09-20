@@ -1647,12 +1647,18 @@ predict.blood_feng <- function(object, newdata = NULL) {
 #'
 #' Fits a Feng model, convolved with an infusion injection to AIF data. This
 #' model is significantly more effective than the original Feng model in the
-#' vast majority of applications. The infusion duration can be a little
-#' bit tricky to fit. I recommend trying to find out the approximate duration of
-#' the injection and including this as a fixed parameter for most stable performance.
+#' vast majority of applications. The infusion duration can be a little bit
+#' tricky to fit. I recommend trying to find out the approximate duration of the
+#' injection and including this as a fixed parameter for most stable
+#' performance.
 #'
 #' @param time The time of each measurement in seconds
 #' @param activity The radioactivity of each measurement
+#' @param inftime The infusion time during which the tracer is administered. It
+#'   is recommended to provide this value if known. Leaving this argument empty
+#'   will result in the inftime being fitted. Alternatively, two values can be
+#'   specified, e.g. inftime=c(25, 35) to fit the infusion time with specified
+#'   upper and lower limits if the known infusion time is approximate.
 #' @param Method Optional. The method of collection, i.e. "Discrete" or
 #'   "Continuous"
 #' @param weights Optional. Weights of each measurement.
@@ -1746,7 +1752,7 @@ blmod_fengconv <- function(time, activity, inftime = NULL,
 
   # Set up start, upper and lower parameter lists
   if(is.null(lower)) {
-    lower <- purrr::map(startvals, ~(.x - abs(.x*0.1)))
+    lower <- purrr::map(startvals, ~(.x - abs(.x*0.05)))
     lower$t0 <- 0
     lower$peaktime <- startvals$t0
 
@@ -1760,7 +1766,7 @@ blmod_fengconv <- function(time, activity, inftime = NULL,
   }
 
   if(is.null(upper)) {
-    upper <- purrr::map(startvals, ~(20*.x))
+    upper <- purrr::map(startvals, ~(100*.x))
     upper$t0 <- startvals$peaktime
   }
 
@@ -1780,9 +1786,32 @@ blmod_fengconv <- function(time, activity, inftime = NULL,
   }
 
   if (is.null(inftime)) {
-    start$ti <- 30
-    lower$ti <- 1
-    upper$ti <- 300
+
+    if(max(blood$time) > 300) {
+
+      # Assuming seconds
+      start$ti <- 30
+      lower$ti <- 0
+      upper$ti <- 300
+
+    } else {
+
+      # Assuming minutes
+      start$ti <- 0.5
+      lower$ti <- 0
+      upper$ti <- 5
+
+    }
+  }
+
+  if(length(inftime == 2)) {
+
+    lower$ti <- min(inftime)
+    upper$ti <- max(inftime)
+    start$ti <- mean(inftime)
+
+    inftime <- NULL
+
   }
 
   if(is.null(multstart_lower)) {
@@ -1821,7 +1850,8 @@ blmod_fengconv <- function(time, activity, inftime = NULL,
                                   lower = lower,
                                   upper = upper,
                                   start = start,
-                                  weights = weights)
+                                  weights = weights,
+                                  control  = minpack.lm::nls.lm.control(maxiter = 200))
   } else {
 
     modelout_single <- try(minpack.lm::nlsLM(as.formula(formula),
@@ -1829,7 +1859,9 @@ blmod_fengconv <- function(time, activity, inftime = NULL,
                                              lower = lower,
                                              upper = upper,
                                              start = start,
-                                             weights = weights))
+                                             weights = weights,
+                                             control  = minpack.lm::nls.lm.control(
+                                               maxiter = 200)))
 
     if( !any(class(modelout_single) == "try-error") ) {  # If success
       AIC_single <- AIC(modelout_single)
@@ -1841,8 +1873,11 @@ blmod_fengconv <- function(time, activity, inftime = NULL,
       formula = as.formula(formula), modelweights = weights,
       data = blood, iter = multstart_iter,
       start_lower = multstart_lower, start_upper = multstart_upper,
-      supp_errors = "Y", lower = lower, upper = upper,
-      convergence_count = FALSE)
+      supp_errors = "Y",
+      lower = lower, upper = upper,
+      convergence_count = FALSE,
+      control  = minpack.lm::nls.lm.control(
+        maxiter = 200))
 
     if( !is.null(multmodelout_multi) ) {  # If success
       AIC_multi <- AIC(multmodelout_multi)
@@ -2010,6 +2045,11 @@ predict.blood_fengconv <- function(object, newdata = NULL) {
 #'
 #' @param time The time of each measurement in seconds
 #' @param activity The radioactivity of each measurement
+#' @param inftime The infusion time during which the tracer is administered. It
+#'   is recommended to provide this value if known. Leaving this argument empty
+#'   will result in the inftime being fitted. Alternatively, two values can be
+#'   specified, e.g. inftime=c(25, 35) to fit the infusion time with specified
+#'   upper and lower limits if the known infusion time is approximate.
 #' @param Method Optional. The method of collection, i.e. "Discrete" or
 #'   "Continuous"
 #' @param weights Optional. Weights of each measurement.
@@ -2112,7 +2152,7 @@ blmod_fengconvplus <- function(time, activity, inftime = NULL,
   }
 
   if(is.null(upper)) {
-    upper <- purrr::map(startvals, ~(20*.x))
+    upper <- purrr::map(startvals, ~(100*.x))
     upper$t0 <- startvals$peaktime
 
     upper$asymptote <- 20*median(tail(activity, 3))
@@ -2141,6 +2181,16 @@ blmod_fengconvplus <- function(time, activity, inftime = NULL,
     start$ti <- 30
     lower$ti <- 1
     upper$ti <- 300
+  }
+
+  if(length(inftime == 2)) {
+
+    lower$ti <- min(inftime)
+    upper$ti <- max(inftime)
+    start$ti <- mean(inftime)
+
+    inftime <- NULL
+
   }
 
   if(is.null(multstart_lower)) {
@@ -2180,7 +2230,8 @@ blmod_fengconvplus <- function(time, activity, inftime = NULL,
                                   lower = lower,
                                   upper = upper,
                                   start = start,
-                                  weights = weights)
+                                  weights = weights,
+                                  control  = minpack.lm::nls.lm.control(maxiter = 200))
   } else {
 
     modelout_single <- try(minpack.lm::nlsLM(as.formula(formula),
@@ -2188,7 +2239,9 @@ blmod_fengconvplus <- function(time, activity, inftime = NULL,
                                              lower = lower,
                                              upper = upper,
                                              start = start,
-                                             weights = weights))
+                                             weights = weights,
+                                             control  = minpack.lm::nls.lm.control(
+                                               maxiter = 200)))
 
     if( !any(class(modelout_single) == "try-error") ) {  # If success
       AIC_single <- AIC(modelout_single)
@@ -2201,7 +2254,9 @@ blmod_fengconvplus <- function(time, activity, inftime = NULL,
       data = blood, iter = multstart_iter,
       start_lower = multstart_lower, start_upper = multstart_upper,
       supp_errors = "Y", lower = lower, upper = upper,
-      convergence_count = FALSE)
+      convergence_count = FALSE,
+      control  = minpack.lm::nls.lm.control(
+        maxiter = 200))
 
     if( !is.null(multmodelout_multi) ) {  # If success
       AIC_multi <- AIC(multmodelout_multi)

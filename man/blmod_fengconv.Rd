@@ -27,6 +27,12 @@ blmod_fengconv(
 
 \item{activity}{The radioactivity of each measurement}
 
+\item{inftime}{The infusion time during which the tracer is administered. It
+is recommended to provide this value if known. Leaving this argument empty
+will result in the inftime being fitted. Alternatively, two values can be
+specified, e.g. inftime=c(25, 35) to fit the infusion time with specified
+upper and lower limits if the known infusion time is approximate.}
+
 \item{Method}{Optional. The method of collection, i.e. "Discrete" or
 "Continuous"}
 
@@ -72,9 +78,10 @@ A model fit including all of the individual parameters, fit details,
 \description{
 Fits a Feng model, convolved with an infusion injection to AIF data. This
 model is significantly more effective than the original Feng model in the
-vast majority of applications. The infusion duration can be a little
-bit tricky to fit. I recommend trying to find out the approximate duration of
-the injection and including this as a fixed parameter for most stable performance.
+vast majority of applications. The infusion duration can be a little bit
+tricky to fit. I recommend trying to find out the approximate duration of the
+injection and including this as a fixed parameter for most stable
+performance.
 }
 \examples{
 blooddata <- pbr28$blooddata[[1]]

@@ -27,6 +27,12 @@ blmod_fengconvplus(
 
 \item{activity}{The radioactivity of each measurement}
 
+\item{inftime}{The infusion time during which the tracer is administered. It
+is recommended to provide this value if known. Leaving this argument empty
+will result in the inftime being fitted. Alternatively, two values can be
+specified, e.g. inftime=c(25, 35) to fit the infusion time with specified
+upper and lower limits if the known infusion time is approximate.}
+
 \item{Method}{Optional. The method of collection, i.e. "Discrete" or
 "Continuous"}
 
