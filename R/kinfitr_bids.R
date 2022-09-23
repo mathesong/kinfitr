@@ -376,14 +376,16 @@ bids_parse_blood <- function(filedata) {
   DBloodData$Values <- blood_discrete
   DBloodData <- c(DBloodData, blood_discrete_desc)
 
-  CBloodData <- json_blood_cont[grep("WholeBlood", names(json_blood_cont))]
-  names(CBloodData) <- gsub("WholeBlood", "", names(CBloodData))
+
   if( length(json_blood_cont) > 0 ) {
+    CBloodData <- jsondat_blood_cont[grep("WholeBlood", names(jsondat_blood_cont))]
+    names(CBloodData) <- gsub("WholeBlood", "", names(CBloodData))
+
     CBloodData$Values <- blood_cont
     CBloodData <- c(CBloodData, blood_cont_desc)
     CBloodData$Avail = TRUE
   } else {
-    CBloodData <- as.list(CBloodData)
+    CBloodData <- list()
     CBloodData$Avail = FALSE
   }
 
