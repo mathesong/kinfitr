@@ -465,7 +465,8 @@ bd_addfitted <- function(blooddata, time, predicted,
     "AIF"
   ))
 
-  fitted <- tibble::tibble(time = time, predicted = predicted)
+  fitted <- tibble::tibble(time = time,
+                           predicted = as.numeric(predicted) )
 
   blooddata$Models[[modeltype]] <- list(Method = "fitted", Data = fitted)
 
