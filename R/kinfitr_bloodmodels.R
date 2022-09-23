@@ -298,10 +298,10 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
   blood <- blmod_tidyinput(time, activity, Method=NULL, weights = NULL)
 
   # Peaktime
-  startpars$peaktime <- blood$time[which.max(blood$activity)]
+  startpars$peaktime <- blood$time[which.max(blood$activity)][1]
 
   # Peakval
-  startpars$peakval <- blood$activity[blood$time==startpars$peaktime]
+  startpars$peakval <- blood$activity[blood$time==startpars$peaktime][1]
 
   # t0
   bloodrise <- blood[blood$time <= startpars$peaktime, ]
@@ -1162,10 +1162,10 @@ blmod_feng_startpars <- function(time, activity,
   blood <- blmod_tidyinput(time, activity, Method=NULL, weights = NULL)
 
   # Peaktime
-  startpars$peaktime <- blood$time[which.max(blood$activity)]
+  startpars$peaktime <- blood$time[which.max(blood$activity)][1]
 
   # Peakval
-  startpars$peakval <- blood$activity[blood$time==startpars$peaktime]
+  startpars$peakval <- blood$activity[blood$time==startpars$peaktime][1]
 
   # t0
   bloodrise <- blood[blood$time <= startpars$peaktime, ]
