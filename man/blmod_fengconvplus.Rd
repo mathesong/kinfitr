@@ -89,11 +89,13 @@ the approximate duration of the injection and including this as a fixed
 parameter for most stable performance.
 }
 \examples{
+\dontrun{
 blooddata <- pbr28$blooddata[[1]]
 blooddata <- bd_blood_dispcor(blooddata)
 aif <- bd_extract(blooddata, output = "AIF")
 blood_fit <- blmod_fengconvplus(aif$time,
                            aif$aif,
                            Method = aif$Method,
-                           multstart_iter = 1)
+                           multstart_iter = 100)
+}
 }

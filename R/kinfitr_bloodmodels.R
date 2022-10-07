@@ -103,7 +103,7 @@ blmod_tidyinput <- function(time, activity, Method = NULL, weights = NULL) {
 #'                            blood$activity,
 #'                            Method = blood$Method)
 blmod_splines <- function(time, activity, Method = NULL, weights = NULL,
-                          bs_before="cr", bs_after_c="ad", bs_after_d="cr",
+                          bs_before="cr", bs_after_c="cr", bs_after_d="cr",
                           k_before=-1, k_after_c=-1, k_after_d=-1) {
 
   blood <- blmod_tidyinput(time, activity, Method, weights)
@@ -114,6 +114,14 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL,
   before_peak$time [ nrow(before_peak) ] <-
     before_peak$time [ nrow(before_peak) ] - 0.001 # predict until nearly there
 
+  # Check knots
+  if( nrow(before_peak) < 12 ) {
+    if(k_before == -1 || k_before > (nrow(before_peak) - 2)) {
+      warning("k_before reduced on account of few pre-peak samples")
+      k_before <- nrow(before_peak) - 2
+    }
+  }
+
   after_peak <- dplyr::filter(blood, time >= peaktime)
 
   if ("Continuous" %in% Method) {
@@ -121,31 +129,59 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL,
     after_peak_d <- dplyr::filter(after_peak, Method == "Discrete")
     after_peak_c <- dplyr::filter(after_peak, Method == "Continuous")
 
+
+    # Check knots
+    if( nrow(after_peak_d) < 12 ) {
+      if(k_after_d == -1 || k_after_d > (nrow(after_peak_d) - 2)) {
+        warning("k_after_d reduced on account of few post-peak discrete samples")
+        k_after_d <- nrow(after_peak_d) - 2
+      }
+    }
+
+    if( nrow(after_peak_c) < 12 ) {
+      if(k_after_c == -1 || k_after_c > (nrow(after_peak_c) - 2)) {
+        warning("k_after_c reduced on account of few post-peak continuous samples")
+        k_after_c <- nrow(after_peak_c) - 2
+      }
+    }
+
+    # Fit
     before <- mgcv::gam(activity ~ s(time, bs = bs_before, k=k_before),
                         weights = weights,
                         data = before_peak)
 
-    after_d <- mgcv::gam(activity ~ s(time, bs = bs_after_d, k=k_after_d),
+    after_d <- mgcv::gam(activity ~ s(log(time), bs = bs_after_d, k=k_after_d),
                          weights = weights,
                          data = after_peak_d)
 
-    after_c <- mgcv::gam(activity ~ s(time, bs = bs_after_c, k=k_after_c),
+    after_c <- mgcv::gam(activity ~ s(log(time), bs = bs_after_c, k=k_after_c),
                          weights = weights,
                          data = after_peak_c)
 
     start_overlap <- min(after_peak_d$time)
     stop_overlap <- max(after_peak_c$time)
+
+
   } else { # i.e. no Continuous
 
+    # Check knots
+    if( nrow(after_peak) < 12 ) {
+      if(k_after_d == -1 || k_after_d > (nrow(after_peak) - 2)) {
+        warning("k_after_d reduced on account of few post-peak samples")
+        k_after_d <- nrow(after_peak) - 2
+      }
+    }
+
+    # Fit
     before <- mgcv::gam(activity ~ s(time, bs = bs_before, k=k_before),
                         weights = weights,
                         data = before_peak)
 
-    after_d <- mgcv::gam(activity ~ s(time, bs = bs_after_d, k=k_after_d),
+    after_d <- mgcv::gam(activity ~ s(log(time), bs = bs_after_d, k=k_after_d),
                          weights = weights,
                          data = after_peak)
 
-    after_c <- mgcv::gam(activity ~ s(time, bs = bs_after_d, k=k_after_d),
+    after_c <- mgcv::gam(activity ~ s(log(time), bs = bs_after_d, k=k_after_d),
                          weights = weights,
                          data = after_peak)
 
@@ -189,18 +225,18 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL,
 #' @export
 predict.blood_splines <- function(object, newdata = NULL) {
   if (is.null(newdata)) {
-    pred_before <- predict(object$before)
+    pred_before <- as.numeric(predict(object$before))
     pred_x_before <- object$before$model$time
 
     # Remove our extra point before the peak
     pred_before <- pred_before[-length(pred_before)]
     pred_x_before <- pred_x_before[-length(pred_x_before)]
 
-    pred_after_d <- predict(object$after_d)
-    pred_x_after_d <- object$after_d$model$time
+    pred_after_d <- as.numeric(predict(object$after_d))
+    pred_x_after_d <- exp(object$after_d$model$`log(time)`)
 
-    pred_after_c <- predict(object$after_c)
-    pred_x_after_c <- object$after_c$model$time
+    pred_after_c <- as.numeric(predict(object$after_c))
+    pred_x_after_c <- exp(object$after_c$model$`log(time)`)
 
     pred_x_after <- unique(c(pred_x_after_d, pred_x_after_c))
     pred_x_after <- pred_x_after[order(pred_x_after)]
@@ -208,9 +244,13 @@ predict.blood_splines <- function(object, newdata = NULL) {
     newdata <- list(time = c(pred_x_before, pred_x_after))
   }
 
-  pred_before <- predict(object$before, newdata = newdata)
-  pred_after_d <- predict(object$after_d, newdata = newdata)
-  pred_after_c <- predict(object$after_c, newdata = newdata)
+  newdata_nozero <- newdata
+  newdata_nozero$time <- ifelse(newdata_nozero$time < 0.00001,
+                                yes = 0.00001, no = newdata_nozero$time)
+
+  pred_before <-  as.numeric(predict(object$before, newdata = newdata))
+  pred_after_d <- as.numeric(predict(object$after_d, newdata = newdata_nozero))
+  pred_after_c <- as.numeric(predict(object$after_c, newdata = newdata_nozero))
 
   pred_before <- tibble::tibble(time = newdata$time,
                                 activity = pred_before)
@@ -305,6 +345,11 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
 
   # t0
   bloodrise <- blood[blood$time <= startpars$peaktime, ]
+
+  if( nrow(bloodrise) < 2 ) {
+    stop("There are an insufficient number of data points in the AIF curve prior to the peak to fit this model.")
+  }
+
   rise_lm <- lm(activity ~ time, data=bloodrise)
 
   rise_seg <- try(segmented::segmented(rise_lm, npsi=1), silent = T)
@@ -2083,13 +2128,15 @@ predict.blood_fengconv <- function(object, newdata = NULL) {
 #' @export
 #'
 #' @examples
+#' \dontrun{
 #' blooddata <- pbr28$blooddata[[1]]
 #' blooddata <- bd_blood_dispcor(blooddata)
 #' aif <- bd_extract(blooddata, output = "AIF")
 #' blood_fit <- blmod_fengconvplus(aif$time,
 #'                            aif$aif,
 #'                            Method = aif$Method,
-#'                            multstart_iter = 1)
+#'                            multstart_iter = 100)
+#' }
 blmod_fengconvplus <- function(time, activity, inftime = NULL,
                            Method = NULL,
                            weights = NULL,

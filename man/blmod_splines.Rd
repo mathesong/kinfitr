@@ -10,7 +10,7 @@ blmod_splines(
   Method = NULL,
   weights = NULL,
   bs_before = "cr",
-  bs_after_c = "ad",
+  bs_after_c = "cr",
   bs_after_d = "cr",
   k_before = -1,
   k_after_c = -1,
