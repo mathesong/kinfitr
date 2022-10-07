@@ -830,6 +830,16 @@ bd_extract_bpr <- function(blooddata,
 
   bpr <- tibble::tibble(time = commonvalues, bpr = bprvec)
 
+  # Remove massive outliers
+  bpr_median <- median(bpr$bpr)
+  bpr_mad <- mad(bpr$bpr)
+  bpr_min <- bpr_median - 100*bpr_mad
+  bpr_max <- bpr_median + 100*bpr_mad
+
+  if( any(bpr$bpr > bpr_max) || any(bpr$bpr < bpr_min) ) {
+    warning("BPR outlier(s) excluded: >100*MAD")
+  }
+
   if (what == "raw") {
     return(bpr)
   }
