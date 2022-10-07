@@ -26,6 +26,9 @@ bids_parse_files <- function(studypath) {
   attributes <- dplyr::select(files, path_absolute=path, path=path_relative) %>%
     dplyr::mutate(extension  = fs::path_ext(path)) %>%
     dplyr::filter(!stringr::str_detect(path, "^derivatives/")) %>%
+    dplyr::filter(!stringr::str_detect(path, "^code/")) %>%
+    dplyr::filter(!stringr::str_detect(path, "^phenotype/")) %>%
+    dplyr::filter(!stringr::str_detect(path, "^sourcedata/")) %>%
     dplyr::mutate(attr  = purrr::map(path, bids_filename_attributes)) %>%
     tidyr::unnest(cols=all_of("attr")) %>%
     dplyr::mutate(extension = ifelse( extension=="gz" &
