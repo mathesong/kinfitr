@@ -23,6 +23,31 @@ plot.kinfit <- function(x, ...) {
   plot_kinfit(x, ...)
 }
 
+#' Predict Blood Model Values
+#'
+#' Method to predict values from blood models
+#'
+#' @param object The output object of the model fitting procedure.
+#' @param ... Additional optional arguments.
+#'
+#' @details This function uses the \code{class(model)} name to call the correct function to plot the model fit.
+#'
+#' @examples
+#' blooddata <- pbr28$blooddata[[1]]
+#' blooddata <- bd_blood_dispcor(blooddata)
+#' blood <- bd_extract(blooddata, output = "Blood")
+#' blood_fit <- blmod_splines(blood$time,
+#'                            blood$activity,
+#'                            Method = blood$Method)
+#'
+#' predict(blood_fit)
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @export
+predict.blmod <- function(object, ...) {
+  predict_blmod(object, ...)
+}
+
 
 #' Plot interpolated blood
 #'
@@ -67,4 +92,3 @@ plot.interpblood <- function(x, ...) {
 plot.blooddata <- function(x, ...) {
   plot_blooddata(x, ...)
 }
-

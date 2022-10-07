@@ -198,32 +198,32 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL,
     stop_overlap = stop_overlap
   )
 
-  class(out) <- c("blood_splines", class(out))
+  class(out) <- c("blood_splines", "blmod", class(out))
 
   return(out)
 }
 
 
-# #' Predict method for blood splines
-# #'
-# #' Predicts values for new times for blood splines fits.
-# #'
-# #' @param object Blood splines fit.
-# #' @param newdata A new data list, including times to be predicted for.
-# #'
-# #' @return Model predictions
-# #' @export
-# #'
-# #' @examples
-# #' blooddata <- pbr28$blooddata[[1]]
-# #' blood <- bd_extract(blooddata, output = "Blood")
-# #' blood_fit <- blmod_splines(blood$time,
-# #'                            blood$activity,
-# #'                            Method = blood$Method)
-# #'
-# #' predict(blood_fit, newdata=list(time=1:10))
+#' Predicted values for blood splines
+#'
+#' Predicts values for new times for blood splines fits.
+#'
+#' @param object Blood splines fit.
+#' @param newdata A new data list, including times to be predicted for.
+#'
+#' @return Model predictions
 #' @export
-predict.blood_splines <- function(object, newdata = NULL) {
+#'
+#' @examples
+#' blooddata <- pbr28$blooddata[[1]]
+#' blood <- bd_extract(blooddata, output = "Blood")
+#' blood_fit <- blmod_splines(blood$time,
+#'                            blood$activity,
+#'                            Method = blood$Method)
+#'
+#' predict_blood_splines(blood_fit, newdata=list(time=1:10))
+#' @export
+predict_blood_splines <- function(object, newdata = NULL) {
   if (is.null(newdata)) {
     pred_before <- as.numeric(predict(object$before))
     pred_x_before <- object$before$model$time
@@ -242,6 +242,10 @@ predict.blood_splines <- function(object, newdata = NULL) {
     pred_x_after <- pred_x_after[order(pred_x_after)]
 
     newdata <- list(time = c(pred_x_before, pred_x_after))
+
+#     warning("Without the newdata argument, this function predicts only for all
+#             unique values of time. If there are duplicated time values (e.g.
+#             manual and continuous), there will be fewer predicted values than times.")
   }
 
   newdata_nozero <- newdata
@@ -804,7 +808,7 @@ blmod_exp <- function(time, activity, Method = NULL,
     blood = blood
   )
 
-  class(out) <- c("blood_exp", class(out))
+  class(out) <- c("blood_exp", "blmod", class(out))
 
   return(out)
 
@@ -1118,8 +1122,25 @@ blmod_triexp_model <- function(time, t0, peaktime, peakval, A, alpha,
 
 }
 
+#' Predicted values for tri-exponential fits
+#'
+#' Predicts values for new times for tri-exponential blood fits.
+#'
+#' @param object Tri-exponential fit.
+#' @param newdata A new data list, including times to be predicted for.
+#'
+#' @return Model predictions
 #' @export
-predict.blood_exp <- function(object, newdata = NULL, ...) {
+#'
+#' @examples
+#' blooddata <- pbr28$blooddata[[1]]
+#' blood <- bd_extract(blooddata, output = "AIF")
+#' blood_fit <- blmod_exp(blood$time,
+#'                            blood$aif,
+#'                            Method = blood$Method)
+#'
+#' predict_blood_exp(blood_fit, newdata=list(time=1:10))
+predict_blood_exp <- function(object, newdata = NULL) {
 
   if(is.null(newdata)) {
     newdata <- list()
@@ -1618,7 +1639,7 @@ blmod_feng <- function(time, activity, Method = NULL,
     blood = blood
   )
 
-  class(out) <- c("blood_feng", class(out))
+  class(out) <- c("blood_feng", "blmod", class(out))
 
   return(out)
 
@@ -1665,8 +1686,25 @@ blmod_feng_model <- function(time, t0, A, alpha, B, beta, C, gamma) {
   return(out)
 }
 
+#' Predicted values for Feng fits
+#'
+#' Predicts values for new times for Feng blood fits.
+#'
+#' @param object Feng fit.
+#' @param newdata A new data list, including times to be predicted for.
+#'
+#' @return Model predictions
 #' @export
-predict.blood_feng <- function(object, newdata = NULL) {
+#'
+#' @examples
+#' blooddata <- pbr28$blooddata[[1]]
+#' blood <- bd_extract(blooddata, output = "AIF")
+#' blood_fit <- blmod_feng(blood$time,
+#'                            blood$aif,
+#'                            Method = blood$Method)
+#'
+#' predict_blood_feng(blood_fit, newdata=list(time=1:10))
+predict_blood_feng <- function(object, newdata = NULL) {
 
   if(is.null(newdata)) {
     newdata <- list()
@@ -1977,7 +2015,7 @@ blmod_fengconv <- function(time, activity, inftime = NULL,
     blood = blood
   )
 
-  class(out) <- c("blood_fengconv", class(out))
+  class(out) <- c("blood_fengconv", "blmod", class(out))
 
   return(out)
 
@@ -2051,8 +2089,27 @@ blmod_fengconv_model <- function(time, t0, A, alpha, B, beta, C, gamma, ti) {
 }
 
 
+#' Predicted values for Fengconv fits
+#'
+#' Predicts values for new times for Fengconv blood fits.
+#'
+#' @param object Fengconv fit.
+#' @param newdata A new data list, including times to be predicted for.
+#'
+#' @return Model predictions
 #' @export
-predict.blood_fengconv <- function(object, newdata = NULL) {
+#'
+#' @examples
+#' \dontrun{
+#' blooddata <- pbr28$blooddata[[1]]
+#' blood <- bd_extract(blooddata, output = "AIF")
+#' blood_fit <- blmod_fengconv(blood$time,
+#'                            blood$aif,
+#'                            Method = blood$Method)
+#'
+#' predict_blood_fengconv(blood_fit, newdata=list(time=1:10))
+#' }
+predict_blood_fengconv <- function(object, newdata = NULL) {
 
   if(is.null(newdata)) {
     newdata <- list()
@@ -2358,7 +2415,7 @@ blmod_fengconvplus <- function(time, activity, inftime = NULL,
     blood = blood
   )
 
-  class(out) <- c("blood_fengconvplus", class(out))
+  class(out) <- c("blood_fengconvplus", "blmod", class(out))
 
   return(out)
 
@@ -2400,8 +2457,27 @@ blmod_fengconvplus_model <- function(time, t0, A, alpha, B, beta, C, gamma, ti,
   return(out)
 }
 
+#' Predicted values for Fengconvplus fits
+#'
+#' Predicts values for new times for Fengconvplus blood fits.
+#'
+#' @param object Fengconvplus fit.
+#' @param newdata A new data list, including times to be predicted for.
+#'
+#' @return Model predictions
 #' @export
-predict.blood_fengconvplus <- function(object, newdata = NULL) {
+#'
+#' @examples
+#' \dontrun{
+#' blooddata <- pbr28$blooddata[[1]]
+#' blood <- bd_extract(blooddata, output = "AIF")
+#' blood_fit <- blmod_fengconvplus(blood$time,
+#'                            blood$aif,
+#'                            Method = blood$Method)
+#'
+#' predict_blood_fengconvplus(blood_fit, newdata=list(time=1:10))
+#' }
+predict_blood_fengconvplus <- function(object, newdata = NULL) {
 
   if(is.null(newdata)) {
     newdata <- list()

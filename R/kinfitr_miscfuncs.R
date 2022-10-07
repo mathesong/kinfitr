@@ -728,3 +728,62 @@ get_units_radioactivity <- function(x) {
   list(rad=rad, vol=vol)
 
 }
+
+
+#' Predict Blood Model Values: Generic Function
+#'
+#' Function to predict values from blood models
+#'
+#' @param modelout The output object of the model fitting procedure.
+#' @param ... Additional optional arguments.
+#'
+#' @return The predicted values
+#'
+#' @details This function uses the \code{class(model)} name to call the correct function to plot the model fit.
+#'
+#' @examples
+#'
+#' blooddata <- pbr28$blooddata[[1]]
+#' blooddata <- bd_blood_dispcor(blooddata)
+#' blood <- bd_extract(blooddata, output = "Blood")
+#' blood_fit <- blmod_splines(blood$time,
+#'                            blood$activity,
+#'                            Method = blood$Method)
+#'
+#' predict_blmod(blood_fit)
+#'
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @export
+predict_blmod <- function(modelout, ...) {
+  modelname <- class(modelout)[1]
+  input_list <- as.list(substitute(list(...)))
+
+  out <- do.call(what = paste0("predict_", modelname), args = list(modelout, ...))
+
+  as.numeric(out)
+
+}
+
+
+
+#' Extract coefficients
+#'
+#' Function to extract the coefficients from kinfit objects
+#'
+#' @param x The output object of the model fitting procedure.
+#' @param ... Additional optional arguments.
+#'
+#' @examples
+#' \dontrun{
+#' loganout <- Loganplot(t_tac, tac, input, 10, weights)
+#' coef(loganout)
+#' }
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+coef_kinfit <- function(x, ...) {
+  out <- x$par
+  return(out)
+}
+
