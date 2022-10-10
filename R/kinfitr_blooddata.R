@@ -837,7 +837,11 @@ bd_extract_bpr <- function(blooddata,
   bpr_max <- bpr_median + 100*bpr_mad
 
   if( any(bpr$bpr > bpr_max) || any(bpr$bpr < bpr_min) ) {
+
     warning("BPR outlier(s) excluded: >100*MAD")
+
+    bpr <- dplyr::filter(bpr, bpr < bpr_max)
+    bpr <- dplyr::filter(bpr, bpr > bpr_min)
   }
 
   if (what == "raw") {
