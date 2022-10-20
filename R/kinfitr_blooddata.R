@@ -2147,7 +2147,6 @@ plot_blooddata <- function(blooddata,
          It appears that you are using a blooddata object created using an
          older version of kinfitr, based on an older version of the PET BIDS
          standard. The blooddata object has been updated for this function.
-
          Ideally, please create your blooddata objects afresh from the raw data.
          Otherwise, please use the update_blooddata_bids() command to keep only
          the bare essentials.")
@@ -2191,8 +2190,8 @@ plot_blooddata <- function(blooddata,
   measured <- dplyr::bind_rows(list(pf, bpr, blood, aif))
   measured <- dplyr::arrange(measured, Outcome, Time)
   measured <- dplyr::mutate(measured,
-    Time = Time / 60,
-    dotsize = ifelse(Measurement == "Continuous", 1, 2)
+                            Time = Time / 60,
+                            dotsize = ifelse(Measurement == "Continuous", 1, 2)
   )
 
 

@@ -329,19 +329,6 @@ bids_parse_blood <- function(filedata) {
       plasma_desc$activity$Description)
   }
 
-  ### No metabolite, but blood/plasma: metab=1
-  if( !jsondat_blood_discrete$MetaboliteAvail &
-      (jsondat_blood_discrete$WholeBloodAvail | jsondat_blood_discrete$PlasmaAvail) ) {
-
-    pf <- dplyr::select(tsvdat_blood_discrete, time,
-                            parentFraction = 1)
-
-    pf_desc <- list(jsondat_blood_discrete[c("time")])
-    pf_desc$parentFraction <- list(Description =
-                            "All set to 1 because no metabolite data available",
-                            Units = "arbitrary")
-  }
-
   ### No whole blood, only plasma: use plasma as blood
   if( jsondat_blood_discrete$PlasmaAvail & !jsondat_blood_discrete$WholeBloodAvail ) {
 
@@ -355,8 +342,19 @@ bids_parse_blood <- function(filedata) {
     blood_discrete_desc$activity$Description <- paste(
       "Plasma used as no whole blood available.",
       blood_discrete_desc$activity$Description)
+  }
 
+  ### No metabolite, but blood/plasma: metab=1
+  if( !jsondat_blood_discrete$MetaboliteAvail &
+      (jsondat_blood_discrete$WholeBloodAvail | jsondat_blood_discrete$PlasmaAvail) ) {
 
+    pf <- dplyr::select(tsvdat_blood_discrete, time) %>%
+      dplyr::mutate(parentFraction = 1)
+
+    pf_desc <- list(time = jsondat_blood_discrete$time)
+    pf_desc$parentFraction <- list(Description =
+                                     "All set to 1 because no metabolite data available",
+                                   Units = "arbitrary")
   }
 
 
