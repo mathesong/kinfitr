@@ -828,7 +828,8 @@ bd_extract_bpr <- function(blooddata,
   }
 
 
-  bpr <- tibble::tibble(time = commonvalues, bpr = bprvec)
+  bpr <- tibble::tibble(time = commonvalues, bpr = bprvec) %>%
+    dplyr::filter(!is.infinite(bpr))
 
   # # Remove massive outliers
   # bpr_median <- median(bpr$bpr)
