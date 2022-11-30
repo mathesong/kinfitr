@@ -59,10 +59,16 @@ blmod_tidyinput <- function(time, activity, Method = NULL, weights = NULL) {
   if("Continuous" %in% blood$Method) {
     cont_samples <- dplyr::filter(blood, Method=="Continuous")
     end_cont <- cont_samples$time[which.max(cont_samples$time)]
-    peakfrac <- (blood$time - peaktime) / (end_cont - peaktime)
-    peakfrac[peakfrac < 0] <- 0
-    peakfrac[peakfrac > 1] <- 1
-    blood$peakfrac <- peakfrac
+
+    if(end_cont > peaktime) {
+      peakfrac <- (blood$time - peaktime) / (end_cont - peaktime)
+      peakfrac[peakfrac < 0] <- 0
+      peakfrac[peakfrac > 1] <- 1
+      blood$peakfrac <- peakfrac
+    } else {
+      blood$peakfrac <- ifelse(blood$time < peaktime,
+                               yes = 0, no=1)
+    }
   } else {
     blood$peakfrac <- 1
   }
@@ -360,7 +366,18 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
 
   if( !any(class(rise_seg) == "try-error") ) {  # If success
     if(is.numeric(rise_seg$psi[2])) {     # And if numeric
-      startpars$t0 <- rise_seg$psi[2]
+
+      suppressWarnings(
+        interppred <- pracma::interp1(x = bloodrise$time,
+                                      y = bloodrise$activity,
+                                      xi = rise_seg$psi[2])
+      )
+
+      if(interppred < 0.2 * startpars$peakval) { # And if < 20% of peakval
+        startpars$t0 <- rise_seg$psi[2]
+      } else {
+        startpars$t0 <- NA
+      }
     } else {
       startpars$t0 <- NA
     }
@@ -621,7 +638,7 @@ blmod_exp <- function(time, activity, Method = NULL,
 
   # Set up start, upper and lower parameter lists
   if(is.null(lower)) {
-    lower <- purrr::map(startvals, ~(.x - abs(.x*0.5)))
+    lower <- purrr::map(startvals, ~(.x - abs(.x*0.8)))
     lower$t0 <- 0
     lower$peaktime <- startvals$t0
 
@@ -631,7 +648,7 @@ blmod_exp <- function(time, activity, Method = NULL,
   }
 
   if(is.null(upper)) {
-    upper <- purrr::map(startvals, ~(.x + abs(.x*0.5)))
+    upper <- purrr::map(startvals, ~(.x + abs(.x*2)))
     upper$t0 <- startvals$peaktime
   }
 
@@ -1241,7 +1258,18 @@ blmod_feng_startpars <- function(time, activity,
 
   if( !any(class(rise_seg) == "try-error") ) {  # If success
     if(is.numeric(rise_seg$psi[2])) {     # And if numeric
-      startpars$t0 <- rise_seg$psi[2]
+
+      suppressWarnings(
+          interppred <- pracma::interp1(x = bloodrise$time,
+                                    y = bloodrise$activity,
+                                    xi = rise_seg$psi[2])
+      )
+
+      if(interppred < 0.2 * startpars$peakval) { # And if < 20% of peakval
+        startpars$t0 <- rise_seg$psi[2]
+      } else {
+        startpars$t0 <- NA
+      }
     } else {
       startpars$t0 <- NA
     }
@@ -1267,6 +1295,10 @@ blmod_feng_startpars <- function(time, activity,
       startpars$t0 <- 0
     }
   }
+
+    if(startpars$t0 < 0) { # If still less than 0
+      startpars$t0 <- 0
+    }
 
 
 
