@@ -16,6 +16,10 @@
 #'   measurement in minutes.
 #' @param parentfrac Numeric vector of the radioactivity concentration in each
 #'   plasma measurement.
+#' @param t_aif Optional. Numeric vector of times for each modelled AIF
+#'   value in minutes.
+#' @param aif Optional. Numeric vector of the radioactivity concentration
+#'    for each modelled AIF value.
 #' @param interpPoints The number of points to interpolate into.
 #'
 #'
@@ -56,7 +60,11 @@
 #'
 #' @export
 
-blood_interp <- function(t_blood, blood, t_plasma, plasma, t_parentfrac, parentfrac, interpPoints = 6000) {
+blood_interp <- function(t_blood, blood,
+                         t_plasma = NULL, plasma = NULL,
+                         t_parentfrac = NULL, parentfrac = 1,
+                         t_aif = NULL, aif = NULL,
+                         interpPoints = 6000) {
   if (max(t_blood) > 300 || max(t_plasma) > 300 || max(t_parentfrac) > 300) {
     warning("
             ***********************************************************************
@@ -65,6 +73,22 @@ blood_interp <- function(t_blood, blood, t_plasma, plasma, t_parentfrac, parentf
             This can cause wrong/weird results, and should be avoided. Ignore this
             warning if you just have really long measurements (over 300 minutes).
             ***********************************************************************")
+  }
+
+  if(is.null(t_plasma)) {
+    t_plasma <- t_blood
+  }
+
+  if(is.null(t_parentfrac)) {
+    t_parentfrac <- t_blood
+  }
+
+  if(is.null(t_aif)) {
+    t_aif <- t_blood
+  }
+
+  if(is.null(plasma)) {
+    plasma <- blood
   }
 
   blooddf <- data.frame(Time = t_blood, Value = blood, Measure = "Blood")
@@ -103,13 +127,29 @@ blood_interp <- function(t_blood, blood, t_plasma, plasma, t_parentfrac, parentf
       )
   )
 
-  input <- tibble::tibble(
-    Time = interptime,
-    Blood = interpcurves$Blood,
-    Plasma = interpcurves$Plasma,
-    ParentFraction = interpcurves$ParentFrac,
-    AIF = interpcurves$Plasma * interpcurves$ParentFrac
-  )
+  if(is.null(aif)) {
+
+    input <- tibble::tibble(
+      Time = interptime,
+      Blood = interpcurves$Blood,
+      Plasma = interpcurves$Plasma,
+      ParentFraction = interpcurves$ParentFrac,
+      AIF = interpcurves$Plasma * interpcurves$ParentFrac
+    )
+  } else {
+
+    input <- tibble::tibble(
+      Time = interptime,
+      Blood = interpcurves$Blood,
+      Plasma = interpcurves$Plasma,
+      ParentFraction = interpcurves$ParentFrac,
+    )
+
+    input$AIF <- pracma::interp1(t_aif,
+                                 aif,
+                                 interptime,
+                                 method="linear")
+  }
 
   class(input) <- c("interpblood", class(input))
 

@@ -7,10 +7,12 @@
 blood_interp(
   t_blood,
   blood,
-  t_plasma,
-  plasma,
-  t_parentfrac,
-  parentfrac,
+  t_plasma = NULL,
+  plasma = NULL,
+  t_parentfrac = NULL,
+  parentfrac = 1,
+  t_aif = NULL,
+  aif = NULL,
   interpPoints = 6000
 )
 }
@@ -31,6 +33,12 @@ measurement in minutes.}
 
 \item{parentfrac}{Numeric vector of the radioactivity concentration in each
 plasma measurement.}
+
+\item{t_aif}{Optional. Numeric vector of times for each modelled AIF
+value in minutes.}
+
+\item{aif}{Optional. Numeric vector of the radioactivity concentration
+for each modelled AIF value.}
 
 \item{interpPoints}{The number of points to interpolate into.}
 }
