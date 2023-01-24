@@ -417,8 +417,26 @@ plot_1tcmfit <- function(onetcmout, roiname = NULL) {
     )
   ))
 
+  # Correct for TAC shifting
+  if( onetcmout$inpshift_fitted ) {
+    mod_tac_start <- head(onetcmout$fit$m$getEnv()$t_tac)[-1]
+    dat_tac_start <- head(onetcmout$tacs$Time)[-1]
+    diffs <- dat_tac_start - mod_tac_start
+
+    equal_diffs <- abs(max(diffs) - min(diffs)) < 10e-3
+
+    if(equal_diffs) {
+      tacshift <- mean(diffs)
+    } else {
+      tacshift <- 0
+      warning("Cannot infer whether TAC was shifted. Fit line might be misaligned in time.")
+    }
+  } else {
+    tacshift <- 0
+  }
+
   fitdf <- data.frame(
-    Time = onetcmout$input$Time,
+    Time = onetcmout$input$Time + tacshift,
     Radioactivity = i_fit,
     Weights = 1, Region = paste0(roiname, ".Fitted")
   )
