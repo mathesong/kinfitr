@@ -13,7 +13,7 @@ bloodstream_import_inputfunctions(blstream_folder)
 The BIDS attributes and kinfitr input objects
 }
 \description{
-Imports input function data from bloodstream for a BIDS dataset.
+Imports input function data from bloodstream for a BIDS dataset, and converts all the units to minutes and kBq.
 }
 \examples{
 \dontrun{
