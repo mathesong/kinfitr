@@ -75,26 +75,26 @@ weights_create <- function(t_start, t_end, tac,
 
   # pmaxes here to prevent denominators sending weights to infinity
   calcweights <- dplyr::case_when(
-    method == 1 ~ durations / pmax(tac_uncor, 0.01*max(tac_uncor)),
+    method == 1 ~ durations / pmax(tac_uncor, 0.01*max(tac_uncor), na.rm=TRUE),
     method == 2 ~ sqrt(durations*tac_uncor),
-    method == 3 ~ sqrt(durations) / pmax(tac, 0.01*max(tac)),
+    method == 3 ~ sqrt(durations) / pmax(tac, 0.01*max(tac), na.rm=TRUE),
     method == 4 ~ sqrt(durations),
     method == 5 ~ durations * exp( (-1*log(2)) / hl ),
-    method == 6 ~ durations / pmax(tac, 0.01*max(tac)),
+    method == 6 ~ durations / pmax(tac, 0.01*max(tac, na.rm=TRUE), na.rm=TRUE),
     method == 7 ~ durations,
-    method == 8 ~ durations^2 / pmax(tac_uncor, 0.01*max(tac_uncor)),
+    method == 8 ~ durations^2 / pmax(tac_uncor, 0.01*max(tac_uncor, na.rm=TRUE), na.rm=TRUE),
     # method == 9 ~ (durations^2 / pmax(tac*durations, 0.01*max(tac*durations))) * corrections^2
-    method == 9 ~ (durations^2 / pmax(tac, 0.01*max(tac)) * durations) * corrections^2
+    method == 9 ~ (durations^2 / pmax(tac, 0.01*max(tac), na.rm=TRUE) * durations) * corrections^2
   )
 
   # Fixing before checking
   calcweights[durations==0] <- 0
 
   # Check to make sure things don't go horribly wrong
-  maxweight  <- max(calcweights)
+  maxweight  <- max(calcweights, na.rm=TRUE)
   maxweights <- tail(calcweights[order(calcweights)], weight_checkn)
 
-  if( min(maxweights) < 0.5*maxweight ) {
+  if( min(maxweights, na.rm=TRUE) < 0.5*maxweight ) {
     maxweight <- median(maxweights)
   }
 
@@ -109,7 +109,7 @@ weights_create <- function(t_start, t_end, tac,
     t_tac <- t_start + 0.5*(t_end - t_start)
 
     # Find the maximum TAC weight
-    t_weightpeak <- t_tac[tail(which(calcweights==max(calcweights)), 1)]
+    t_weightpeak <- t_tac[tail(which(calcweights==max(calcweights, na.rm=TRUE)), 1)]
 
     # Assign times a fraction of the peaktime
     t_peakfrac <- t_tac / t_weightpeak
@@ -122,7 +122,7 @@ weights_create <- function(t_start, t_end, tac,
 
   if( any(calcweights < minweights) ) {
 
-    min_calcweight <- min(calcweights[durations!=0])
+    min_calcweight <- min(calcweights[durations!=0], na.rm=TRUE)
 
     # scale 0 - 1
     calcweights <- calcweights - min_calcweight / (1- min_calcweight)
