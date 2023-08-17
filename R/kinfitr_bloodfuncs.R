@@ -605,7 +605,7 @@ plot_input <- function(input) {
 #'
 #' blood_dispcor(time, activity, tau, 1)
 blood_dispcor <- function(time, activity, tau, timedelta = NULL,
-                          keep_interpolated = T, smooth_iterations = 0) {
+                          keep_interpolated = F, smooth_iterations = 0) {
   if (is.null(timedelta)) {
     diffs <- diff(head(time, 20))
     deltas <- sort(table(diffs), decreasing = TRUE)
@@ -636,7 +636,7 @@ blood_dispcor <- function(time, activity, tau, timedelta = NULL,
                           activity = activity_out)
   } else {
 
-    activity_out <- pracma::interp1(x = time_out,
+    activity_out <- interpends(x = time_out,
                                y = activity_out,
                                xi = time)
 

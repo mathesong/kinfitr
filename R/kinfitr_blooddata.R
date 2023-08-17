@@ -1878,24 +1878,6 @@ bd_getdata <- function(blooddata,
   }
 }
 
-interpends <- function(x, y, xi, method = "linear", yzero = NULL) {
-  if (is.null(yzero)) { # start point
-    yzero <- head(y, 1)
-  }
-
-  if (head(xi, 1) < head(x, 1)) {
-    x <- c(head(xi, 1), x)
-    y <- c(yzero, y)
-  }
-
-  if (tail(xi, 1) > tail(x, 1)) {
-    x <- c(x, tail(xi, 1))
-    y <- c(y, tail(y, 1))
-  }
-
-  pracma::interp1(x, y, xi, method)
-}
-
 
 #' Update an old blooddata object to the new structure
 #'
@@ -2214,7 +2196,7 @@ plot_blooddata <- function(blooddata,
     scale_shape_manual(values = shapes) +
     scale_size(range = c(1, 2.5)) +
     geom_line(
-      data = pred, size = 0.8, colour = "grey46",
+      data = pred, linewidth = 0.8, colour = "grey46",
       aes(group = Outcome), alpha = 0.5
     ) +
     geom_line(data = pred) +

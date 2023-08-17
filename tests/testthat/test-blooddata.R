@@ -679,7 +679,7 @@ test_that("dispcor with different intervals works", {
   time <- time[-c(15, 17, 19)]
   activity <- activity[-c(15, 17, 19)]
 
-  out <- blood_dispcor(time, activity, tau)
+  out <- blood_dispcor(time, activity, tau, keep_interpolated = T)
 
   expect_true(nrow(out)==20)
 })

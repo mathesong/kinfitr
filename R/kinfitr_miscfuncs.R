@@ -787,3 +787,21 @@ coef_kinfit <- function(x, ...) {
   return(out)
 }
 
+interpends <- function(x, y, xi, method = "linear", yzero = NULL) {
+  if (is.null(yzero)) { # start point
+    yzero <- head(y, 1)
+  }
+
+  if (head(xi, 1) < head(x, 1)) {
+    x <- c(head(xi, 1), x)
+    y <- c(yzero, y)
+  }
+
+  if (tail(xi, 1) > tail(x, 1)) {
+    x <- c(x, tail(xi, 1))
+    y <- c(y, tail(y, 1))
+  }
+
+  pracma::interp1(x, y, xi, method)
+}
+
