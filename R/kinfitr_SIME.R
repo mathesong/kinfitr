@@ -363,7 +363,7 @@ plot_SIMEfit <- function(SIMEout) {
 
   outplot <- ggplot(roifits, aes(x = Vnd, y = RSSw)) +
     geom_point(aes(colour = Region, shape=Exclude)) +
-    geom_line(data = fitvals, aes(x = Vnd, y = RSSw), size = 1) +
+    geom_line(data = fitvals, aes(x = Vnd, y = RSSw), linewidth = 1) +
     geom_vline(xintercept = SIMEout$par$Vnd, linetype = "dashed") +
     xlab(expression(V[ND])) +
     scale_y_log10(

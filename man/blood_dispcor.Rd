@@ -9,7 +9,7 @@ blood_dispcor(
   activity,
   tau,
   timedelta = NULL,
-  keep_interpolated = T,
+  keep_interpolated = F,
   smooth_iterations = 0
 )
 }

@@ -89,7 +89,8 @@ bids_parse_files <- function(studypath) {
                     is.na(task) |
                     is.na(acq) |
                     is.na(run) |
-                    is.na(rec))
+                    is.na(rec)) %>%
+    dplyr::select(dplyr::where(~!all(is.na(.x)))) # remove totally empty
 
 
   # Note to future self: The idea with the inheritance here is to assign things
