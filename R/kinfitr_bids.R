@@ -16,7 +16,7 @@
 #' }
 bids_parse_files <- function(studypath) {
 
-  extensions= paste(c('*.nii.gz', "*.tsv", "*.json"), collapse="|")
+  extensions = paste(c('*.nii.gz', "*.tsv", "*.json"), collapse="|")
 
   files <- fs::dir_info(studypath, recurse = T, type = "file",
                         glob = extensions)
@@ -48,12 +48,17 @@ bids_parse_files <- function(studypath) {
     attributes$task <- "rest"
   }
 
+  if(!("trc" %in% colnames(attributes))) {
+    attributes$trc <- "trc"
+  }
+
+  # This seems to have actually been removed: this should be deprecated!
   if(!("acq" %in% colnames(attributes))) {
     attributes$acq <- "acq"
   }
 
   if(!("run" %in% colnames(attributes))) {
-    attributes$run <- 1
+    attributes$run <- "01"
   }
 
   if(!("rec" %in% colnames(attributes))) {
@@ -69,63 +74,125 @@ bids_parse_files <- function(studypath) {
   # Here I split the files off where information isn't provided to apply to
   # multiple files by inheritance
 
-  attributes_complete <- attributes %>%
-    dplyr::filter(extension=="json" || extension=="tsv") %>%
-    dplyr::filter(!is.na(sub) &
-                  !is.na(ses) &
-                  !is.na(task) &
-                  !is.na(acq) &
-                  !is.na(run) &
-                  !is.na(rec))
 
-  # Remove completely empty columns
-  attributes_complete <- attributes_complete[,
-                            !colMeans(is.na(attributes_complete))==1]
+  attributes_ultra <- tidyr::expand_grid(
+    sub = unique(na.omit(attributes$sub)),
+    ses = unique(na.omit(attributes$ses)),
+    task = unique(na.omit(attributes$task)),
+    trc = unique(na.omit(attributes$trc)),
+    acq = unique(na.omit(attributes$acq)),
+    run = unique(na.omit(attributes$run)),
+    rec = unique(na.omit(attributes$rec))
+  )
 
-  attributes_inherit <- attributes %>%
-    dplyr::filter(extension=="json" || extension=="tsv") %>%
-    dplyr::filter(is.na(sub) |
-                    is.na(ses) |
-                    is.na(task) |
-                    is.na(acq) |
-                    is.na(run) |
-                    is.na(rec)) %>%
-    dplyr::select(dplyr::where(~!all(is.na(.x)))) # remove totally empty
+  attributes_completed <- suppressMessages(
+    attributes %>%
+      split(seq(nrow(.))) %>%
+      purrr::map(., ~.x %>%
+                   dplyr::select(dplyr::where(~!all(is.na(.x)))) %>%
+                   dplyr::inner_join(attributes_ultra)) %>%
+      dplyr::bind_rows() %>%
+      dplyr::distinct())
+
+  # attributes_complete <- attributes %>%
+  #   dplyr::filter(extension=="json" | extension=="tsv" | extension=="nii.gz" ) %>%
+  #   dplyr::filter(!is.na(sub) &
+  #                 !is.na(ses) &
+  #                 !is.na(task) &
+  #                 !is.na(trc) &
+  #                 !is.na(acq) &
+  #                 !is.na(run) &
+  #                 !is.na(rec)) %>%
+  #   dplyr::select(dplyr::where(~!all(is.na(.x)))) # remove totally empty
+  #
+  # attributes_inherit <- attributes %>%
+  #   dplyr::filter(extension=="json" | extension=="tsv" | extension=="nii.gz" ) %>%
+  #   dplyr::filter(is.na(sub) |
+  #                 is.na(ses) |
+  #                 is.na(task) |
+  #                 is.na(trc) |
+  #                 is.na(acq) |
+  #                 is.na(run) |
+  #                 is.na(rec))
+  #
+  #
+  # # Sometimes, the attributes are incompletely provided for the PET images,
+  # # resulting in the PET files ending up in attributes_inherit. So this completes
+  # # their attributes, and brings them back to attributes_complete
+  #
+  # if(nrow(attributes_inherit) > 0) {
+  #
+  #   attributes_inherit <- attributes_inherit %>%
+  #     dplyr::mutate(attr_ic_id = 1:dplyr::n())  # create identifier column
+  #
+  #   attributes_incompletepet <- attributes_inherit %>%
+  #     dplyr::filter(measurement=="pet") %>%
+  #     dplyr::filter(extension=="json" | extension=="tsv" | extension=="nii.gz") %>%
+  #     dplyr::mutate(
+  #       ses = bids_complete_attribute(ses, "ses", "01"),
+  #       task = bids_complete_attribute(task, "task", "rest"),
+  #       trc = bids_complete_attribute(trc, "trc", "trc"),
+  #       acq = bids_complete_attribute(acq, "acq", "acq"),
+  #       run = bids_complete_attribute(run, "run", "01"),
+  #       rec = bids_complete_attribute(rec, "rec", "rec")
+  #     ) %>%
+  #     dplyr::select(dplyr::where(~!all(is.na(.x)))) # remove totally empty
+  #
+  #   attributes_inherit <- suppressMessages(
+  #     attributes_inherit %>%
+  #       dplyr::anti_join(attributes_incompletepet %>%
+  #                          dplyr::select(attr_ic_id))) %>%
+  #     dplyr::select(dplyr::where(~!all(is.na(.x)))) %>%  # remove totally empty
+  #     dplyr::select(-attr_ic_id)
+  #
+  #   attributes_incompletepet <- attributes_incompletepet %>%
+  #     dplyr::select(-attr_ic_id)
+  #
+  #   attributes_complete <- attributes_complete %>%
+  #     dplyr::bind_rows(attributes_incompletepet)
+  #
+  # }
+  #
+  # # Note to future self: The idea with the inheritance here is to assign things
+  # # which have multiple matches to the corresponding fields. So, blood data,
+  # # for instance can be matched to multiple reconstruction types of the PET
+  # # data. To accomplish this, I remove measurement and extension from the
+  # # matching. However, I feel like the inheritance might have originally been
+  # # for something else. If problems occur, check here.
+  #
+  # if(nrow(attributes_inherit) > 0) {
+  #   ## https://stackoverflow.com/questions/50483890/dplyr-join-na-match-to-any
+  #
+  #   attributes_inherit_completed <- suppressMessages(
+  #     attributes_inherit %>%
+  #       split(seq(nrow(.))) %>%
+  #       purrr::map_dfr(
+  #         ~purrr::modify_if(.,is.na,~NULL) %>%
+  #             dplyr::inner_join(.,
+  #               dplyr::select(attributes_complete,
+  #                               -path_absolute,
+  #                               -path,
+  #                               -extension,
+  #                               -measurement)))) %>%
+  #     dplyr::distinct()
+  #
+  #   attributes <- dplyr::bind_rows(attributes_complete,
+  #                                  attributes_inherit_completed)
+  #
+  # } else {
+  #
+  #   attributes <- attributes_complete
+  #
+  # }
+  #
 
 
-  # Note to future self: The idea with the inheritance here is to assign things
-  # which have multiple matches to the corresponding fields. So, blood data,
-  # for instance can be matched to multiple reconstruction types of the PET
-  # data. To accomplish this, I remove measurement and extension from the
-  # matching. However, I feel like the inheritance might have originally been
-  # for something else. If problems occur, check here.
-
-  if(nrow(attributes_inherit) > 0) {
-    ## https://stackoverflow.com/questions/50483890/dplyr-join-na-match-to-any
-
-    attributes_inherit <- suppressMessages(
-      attributes_inherit %>%
-        split(seq(nrow(.))) %>%
-        purrr::map_dfr(
-          ~purrr::modify_if(.,is.na,~NULL) %>%
-              dplyr::inner_join(.,
-                dplyr::select(attributes_complete,
-                                -path_absolute,
-                                -path,
-                                -extension,
-                                -measurement)))) %>%
-      dplyr::distinct()
-  }
-
-  attributes <- dplyr::bind_rows(attributes_complete,
-                                   attributes_inherit)
 
 
 
 
-
-  measurements <- attributes %>%
-    dplyr::group_by(sub, ses, task, acq, run, rec) %>%
+  measurements <- attributes_completed %>%
+    dplyr::group_by(sub, ses, task, acq, trc, run, rec) %>%
     tidyr::nest() %>%
     dplyr::rename(filedata = data) %>%
     dplyr::ungroup()
@@ -136,6 +203,25 @@ bids_parse_files <- function(studypath) {
 
 
 }
+
+# bids_complete_attribute <- function(attr_vec, attr_name, attr_replacement) {
+#
+#   if( sum( is.na(attr_vec)) > 0 ) {
+#
+#     warning(paste0(
+#       "The ", attr_name, " attribute is incomplete, and has been automatically ",
+#       "completed for some PET measurements missing this attribute. ",
+#       "It has been replaced with \"", attr_replacement, "\". ",
+#       "Please check that this does not conflict with anything."
+#     ))
+#
+#     attr_vec[is.na(attr_vec)] <- attr_replacement
+#   }
+#
+#   return(attr_vec)
+#
+# }
+
 
 #' Extract BIDS attributes from filenames and file paths
 #'
