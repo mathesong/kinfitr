@@ -421,6 +421,10 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
                                                   max(time)) &
                                      activity>0)
 
+  if( nrow(blood_exp_part3) < 2 ) {
+    blood_exp_part3 <- tail(blood_decay, 2)
+  }
+
   exp3_mod <- lm(log(abs(activity)) ~ time,
                  data=blood_exp_part3)
 
@@ -1319,6 +1323,10 @@ blmod_feng_startpars <- function(time, activity,
                                                   expdecay_props[2]*max(time),
                                                   max(time)) &
                                      activity>0)
+
+  if( nrow(blood_exp_part3) < 2 ) {
+    blood_exp_part3 <- tail(blood_decay, 2)
+  }
 
   exp3_mod <- lm(log(abs(activity)) ~ time,
                  data=blood_exp_part3)
