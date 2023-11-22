@@ -2178,6 +2178,30 @@ plot_blooddata <- function(blooddata,
   )
 
 
+  # Check for BPR outside the plot
+
+  if( mean(input$`Blood-Plasma Ratio` > 1.2, na.rm = T) > 0.5 ) {
+
+    measured <- measured %>%
+      dplyr::mutate( Value = ifelse(Outcome=="Blood-Plasma Ratio",
+                                    yes = 1 / Value,
+                                    no = Value),
+                     Outcome = ifelse(Outcome=="Blood-Plasma Ratio",
+                                      yes = "Plasma-Blood Ratio\n( = 1/BPR )",
+                                      no  = Outcome))
+
+    pred <- pred %>%
+      dplyr::mutate( Value = ifelse(Outcome=="Blood-Plasma Ratio",
+                                    yes = 1 / Value,
+                                    no = Value),
+                     Outcome = ifelse(Outcome=="Blood-Plasma Ratio",
+                                      yes = "Plasma-Blood Ratio\n( = 1/BPR )",
+                                      no  = Outcome))
+
+    bpr$Value <- 1 / bpr$Value
+  }
+
+
   # Plot
 
   plotmax <- min(c(1.2, max(bpr$Value, na.rm = T)))
