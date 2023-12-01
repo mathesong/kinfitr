@@ -1,6 +1,5 @@
 
-[![Travis build
-status](https://travis-ci.org/mathesong/kinfitr.svg?branch=master)](https://travis-ci.org/mathesong/kinfitr)
+[![R-CMD-check](https://github.com/mathesong/kinfitr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/mathesong/kinfitr/actions/workflows/R-CMD-check.yaml)
 [![Coverage
 Status](https://img.shields.io/codecov/c/github/mathesong/kinfitr/master.svg)](https://codecov.io/github/mathesong/kinfitr?branch=master)
 [![Launch Rstudio
