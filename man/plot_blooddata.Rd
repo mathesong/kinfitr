@@ -9,7 +9,8 @@ plot_blooddata(
   startTime = 0,
   stopTime = NULL,
   interpPoints = 6000,
-  colours = c("#ff321b", "#1bff7e", "#501bff", "#ffa81b")
+  colours = c("#ff321b", "#1bff7e", "#501bff", "#ffa81b"),
+  select_line = NULL
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ plot_blooddata(
 \item{interpPoints}{The number of points to interpolate over between the start and stop times.}
 
 \item{colours}{The colours for the plot.}
+
+\item{select_line}{Plot only one of the measurement lines without the others.}
 }
 \value{
 A ggplot2 object

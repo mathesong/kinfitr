@@ -2100,6 +2100,7 @@ bd_blood_dispcor <- function(blooddata, timedelta = NULL,
 #' @param stopTime The end time for the interpolation. Defaults to the maximum measured time.
 #' @param interpPoints The number of points to interpolate over between the start and stop times.
 #' @param colours The colours for the plot.
+#' @param select_line Plot only one of the measurement lines without the others.
 #'
 #' @return A ggplot2 object
 #' @export
@@ -2121,7 +2122,8 @@ plot_blooddata <- function(blooddata,
                              "#1bff7e",
                              "#501bff",
                              "#ffa81b"
-                           )) {
+                           ),
+                           select_line = NULL) {
 
 
   if( is.null(blooddata$Data$Plasma$Avail) ) { # old blooddata
@@ -2215,17 +2217,71 @@ plot_blooddata <- function(blooddata,
     shapes = c(1, 16)
   }
 
-  ggplot(data = measured, aes(x = Time, y = Value, colour = Outcome)) +
-    geom_point(aes(shape = Measurement, size = dotsize)) +
-    scale_shape_manual(values = shapes) +
-    scale_size(range = c(1, 2.5)) +
-    geom_line(
-      data = pred, linewidth = 0.8, colour = "grey46",
-      aes(group = Outcome), alpha = 0.5
-    ) +
-    geom_line(data = pred) +
-    guides(size = "none") +
-    coord_cartesian(ylim = c(0, plotmax))
+  if(is.null(select_line)) {
+
+    ggplot(data = measured, aes(x = Time, y = Value, colour = Outcome)) +
+      geom_point(aes(shape = Measurement, size = dotsize)) +
+      scale_shape_manual(values = shapes) +
+      scale_size(range = c(1, 2.5)) +
+      geom_line(
+        data = pred, linewidth = 0.8, colour = "grey46",
+        aes(group = Outcome), alpha = 0.5
+      ) +
+      geom_line(data = pred) +
+      guides(size = "none") +
+      coord_cartesian(ylim = c(0, plotmax))
+
+  } else{
+
+    # Plot only one line
+
+    if(select_line == "Blood") {
+      measured <- measured %>%
+        dplyr::filter(Outcome=="Blood")
+
+      pred <- pred %>%
+        dplyr::filter(Outcome=="Blood")
+    }
+
+    if(select_line == "BPR") {
+      measured <- measured %>%
+        dplyr::filter(stringr::str_detect(Outcome, " Ratio"))
+
+      pred <- pred %>%
+        dplyr::filter(stringr::str_detect(Outcome, " Ratio"))
+    }
+
+    if(select_line == "parentFraction") {
+      measured <- measured %>%
+        dplyr::filter(Outcome == "Parent Fraction")
+
+      pred <- pred %>%
+        dplyr::filter(Outcome == "Parent Fraction")
+    }
+
+    if(select_line == "AIF") {
+      measured <- measured %>%
+        dplyr::filter(Outcome == "AIF")
+
+      pred <- pred %>%
+        dplyr::filter(Outcome == "AIF")
+    }
+
+    ggplot(data = measured, aes(x = Time, y = Value)) +
+      geom_point(aes(shape = Measurement, size = dotsize)) +
+      scale_shape_manual(values = shapes) +
+      scale_size(range = c(1, 2.5)) +
+      geom_line(
+        data = pred, linewidth = 0.8, colour = "grey46",
+        aes(group = Outcome), alpha = 0.5
+      ) +
+      geom_line(data = pred) +
+      guides(size = "none") +
+      coord_cartesian(ylim = c(0, plotmax))
+
+  }
+
+
 }
 
 
