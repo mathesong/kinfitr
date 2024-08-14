@@ -85,9 +85,10 @@ values and upper and lower bounds for parameters.}
 }
 \value{
 A list with a data frame of the fitted parameters \code{out$par},
-  their percentage standard errors \code{out$par.se}, the model fit object
-  \code{out$fit}, the model weights \code{out$weights}, and a dataframe
-  containing the TACs both of the data and the fitted values \code{out$tacs}.
+  their percentage standard errors (scaled so that 1 represents 100\%)
+  \code{out$par.se}, the model fit object \code{out$fit}, the model weights
+  \code{out$weights}, and a dataframe containing the TACs both of the data
+  and the fitted values \code{out$tacs}.
 }
 \description{
 Function to fit the SRTM model of Lammertsma and Hume (1996) to data.

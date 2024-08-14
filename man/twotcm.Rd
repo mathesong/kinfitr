@@ -74,7 +74,7 @@ stability.}
 \item{K1.lower}{Optional. Lower bound for the fitting of K1. Default is
 0.0001.}
 
-\item{K1.upper}{Optional. Upper bound for the fitting of K1. Default is 0.5.}
+\item{K1.upper}{Optional. Upper bound for the fitting of K1. Default is 1.}
 
 \item{k2.start}{Optional. Starting parameter for fitting of k2. Default is
 0.1.}
@@ -135,12 +135,13 @@ values and upper and lower bounds for parameters.}
 }
 \value{
 A list with a data frame of the fitted parameters \code{out$par},
-  their percentage standard errors \code{out$par.se}, the model fit object
-  \code{out$fit}, a dataframe containing the TACs both of the data and the
-  fitted values \code{out$tacs}, the blood input data frame after time
-  shifting \code{input}, a vector of the weights \code{out$weights}, a
-  logical of whether the inpshift was fitted \code{inpshift_fitted} and a
-  logical of whether the vB was fitted \code{vB}.
+  their percentage standard errors (scaled so that 1 represents 100\%)
+  \code{out$par.se}, the model fit object \code{out$fit}, a dataframe
+  containing the TACs both of the data and the fitted values \code{out$tacs},
+  the blood input data frame after time shifting \code{input}, a vector of
+  the weights \code{out$weights}, a logical of whether the inpshift was
+  fitted \code{inpshift_fitted} and a logical of whether the vB was fitted
+  \code{vB}.
 }
 \description{
 Function to fit the Two Tissue Compartment Model to data. An irreversible

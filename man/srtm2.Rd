@@ -39,9 +39,9 @@ added.}
 tissue for each frame. We include zero at time zero: if not included, it is
 added.}
 
-\item{k2prime}{Optional. If empty, then the model will fit a value of k2prime.
-If specified, the model will be fitted with this parameter set (i.e. as a
-2 parameter model).}
+\item{k2prime}{Optional. If empty, then the model will fit a value of
+k2prime. If specified, the model will be fitted with this parameter set
+(i.e. as a 2 parameter model).}
 
 \item{weights}{Optional. Numeric vector of the weights assigned to each frame
 in the fitting. We include zero at time zero: if not included, it is added.
@@ -57,12 +57,14 @@ stability.}
 
 \item{R1.upper}{Optional. Upper bound for the fitting of R1. Default is 10.}
 
-\item{k2prime.start}{Optional. Starting parameter for fitting of k2prime. Default is
-0.1.}
+\item{k2prime.start}{Optional. Starting parameter for fitting of k2prime.
+Default is 0.1.}
 
-\item{k2prime.lower}{Optional. Lower bound for the fitting of k2prime. Default is 0.001.}
+\item{k2prime.lower}{Optional. Lower bound for the fitting of k2prime.
+Default is 0.001.}
 
-\item{k2prime.upper}{Optional. Upper bound for the fitting of k2prime. Default is 1.}
+\item{k2prime.upper}{Optional. Upper bound for the fitting of k2prime.
+Default is 1.}
 
 \item{bp.start}{Optional. Starting parameter for fitting of bp. Default is
 1.5.}
@@ -90,12 +92,17 @@ values and upper and lower bounds for parameters.}
 }
 \value{
 A list with a data frame of the fitted parameters \code{out$par},
-  their percentage standard errors \code{out$par.se}, the model fit object
-  \code{out$fit}, the model weights \code{out$weights}, and a dataframe
-  containing the TACs both of the data and the fitted values \code{out$tacs}.
+  their percentage standard errors (scaled so that 1 represents 100\%)
+  \code{out$par.se}, the model fit object \code{out$fit}, the model weights
+  \code{out$weights}, and a dataframe containing the TACs both of the data
+  and the fitted values \code{out$tacs}.
 }
 \description{
-Function to fit the SRTM2 model of Wu and Carson (2002) to data.
+Function to fit the SRTM2 model of Wu and Carson (2002) to data. Note that
+without setting the k2prime, the model is effectively equivalent to a
+conventional SRTM model. This configuration is allowed for estimating an
+appropriate k2prime value, but without re-fitting with a specified k2prime
+value, the model is not really SRTM2.
 }
 \examples{
 
@@ -106,13 +113,16 @@ reftac <- simref$tacs[[2]]$Reference
 roitac <- simref$tacs[[2]]$ROI1
 weights <- simref$tacs[[2]]$Weights
 
-fit_fitk2prime <- srtm2(t_tac, reftac, roitac)
 fit_setk2prime <- srtm2(t_tac, reftac, roitac, k2prime=0.1)
+
+# Note: this is not really SRTM2 because the k2prime is not specified
+fitk2prime <- srtm2(t_tac, reftac, roitac)
+
 }
 \references{
-Wu Y, Carson RE. Noise reduction in the simplified reference tissue
-  model for neuroreceptor functional imaging. J Cereb Blood Flow Metab.
-  2002;22:1440-1452.
+Wu Y, Carson RE. Noise reduction in the simplified reference
+  tissue model for neuroreceptor functional imaging. J Cereb Blood Flow
+  Metab. 2002;22:1440-1452.
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}

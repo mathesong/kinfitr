@@ -10,6 +10,9 @@ input <- pbr28$input[[meas]]
 weights <- pbr28$tacs[[meas]]$Weights
 inpshift <- 0.1438066
 
+tacdf <- dplyr::select(pbr28$tacs[[1]], FC:CBL)
+Vndgrid <- seq(from = 0, to = 2, by = 0.5)
+
 set.seed(42)
 
 # 1TCM
@@ -329,9 +332,6 @@ test_that("2TCM1k with fitted delay & multstart works", {
 })
 
 # SIME
-
-tacdf <- dplyr::select(pbr28$tacs[[1]], FC:CBL)
-Vndgrid <- seq(from = 0, to = 2, by = 0.5)
 
 test_that("SIME works", {
   SIMEout <- SIME(t_tac, tacdf, input, Vndgrid,
