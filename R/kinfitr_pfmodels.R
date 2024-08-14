@@ -754,7 +754,8 @@ metab_gamma <- function(time, parentFraction,
     multstart_upper <- as.numeric(as.data.frame(multstart_upper))
   }
 
-  fit <- nls.multstart::nls_multstart(as.formula(formula),
+  fit <- suppressWarnings(
+    nls.multstart::nls_multstart(as.formula(formula),
                                data = pf,
                                lower = lower,
                                upper = upper,
@@ -762,7 +763,7 @@ metab_gamma <- function(time, parentFraction,
                                start_upper = multstart_upper,
                                iter = multstart_iter,
                                supp_errors = "Y"
-  )
+  ))
 
   # Check for parameters hitting limits
 
