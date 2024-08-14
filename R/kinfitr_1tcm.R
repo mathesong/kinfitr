@@ -31,7 +31,7 @@
 #'   0.1.
 #' @param K1.lower Optional. Lower bound for the fitting of K1. Default is
 #'   0.0001.
-#' @param K1.upper Optional. Upper bound for the fitting of K1. Default is 0.5.
+#' @param K1.upper Optional. Upper bound for the fitting of K1. Default is 1.
 #' @param k2.start Optional. Starting parameter for fitting of k2. Default is
 #'   0.1.
 #' @param k2.lower Optional. Lower bound for the fitting of k2. Default is
@@ -63,12 +63,13 @@
 #'
 #'
 #' @return A list with a data frame of the fitted parameters \code{out$par},
-#'   their percentage standard errors \code{out$par.se}, the model fit object
-#'   \code{out$fit}, a dataframe containing the TACs both of the data and the
-#'   fitted values \code{out$tacs}, the blood input data frame after time
-#'   shifting \code{input}, a vector of the weights \code{out$weights}, a
-#'   logical of whether the inpshift was fitted \code{inpshift_fitted} and a
-#'   logical of whether the vB was fitted \code{vB}.
+#'   their percentage standard errors (scaled so that 1 represents 100\%)
+#'   \code{out$par.se}, the model fit object \code{out$fit}, a dataframe
+#'   containing the TACs both of the data and the fitted values \code{out$tacs},
+#'   the blood input data frame after time shifting \code{input}, a vector of
+#'   the weights \code{out$weights}, a logical of whether the inpshift was
+#'   fitted \code{inpshift_fitted} and a logical of whether the vB was fitted
+#'   \code{vB}.
 #'
 #' @examples
 #'
@@ -92,7 +93,7 @@
 
 onetcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL,
                    frameStartEnd = NULL,
-                   K1.start = 0.1, K1.lower = 0.0001, K1.upper = 0.5,
+                   K1.start = 0.1, K1.lower = 0.0001, K1.upper = 1,
                    k2.start = 0.1, k2.lower = 0.0001, k2.upper = 0.5,
                    inpshift.start = 0, inpshift.lower = -0.5, inpshift.upper = 0.5,
                    vB.start = 0.05, vB.lower = 0.01, vB.upper = 0.1,
@@ -112,15 +113,6 @@ onetcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL
   lower <- c(K1 = K1.lower, k2 = k2.lower, inpshift = inpshift.lower, vB = vB.lower)
   upper <- c(K1 = K1.upper, k2 = k2.upper, inpshift = inpshift.upper, vB = vB.upper)
 
-  vB_fitted <- T
-  if (!is.null(vB)) {
-    vB_fitted <- F
-
-    start[which(names(start) == "vB")] <- vB
-    lower[which(names(lower) == "vB")] <- vB
-    upper[which(names(upper) == "vB")] <- vB
-  }
-
   multstart_pars <- fix_multstartpars(
     start, lower, upper, multstart_iter,
     multstart_lower, multstart_upper
@@ -128,10 +120,18 @@ onetcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL
   multstart_upper <- multstart_pars$multstart_upper
   multstart_lower <- multstart_pars$multstart_lower
 
+  # Sort out whether vB is to be fitted
+  vB_fitted <- T
+  if (!is.null(vB)) {
+    vB_fitted <- F
 
-
-
-
+    par_keepindex <- names(start) != "vB"
+    start <- start[par_keepindex]
+    lower <- lower[par_keepindex]
+    upper <- upper[par_keepindex]
+    multstart_lower <- multstart_lower[par_keepindex]
+    multstart_upper <- multstart_upper[par_keepindex]
+  }
 
   # Solution - Delay Already Fitted
 
@@ -156,9 +156,15 @@ onetcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL
     modeldata$tac <- newvals$tac
     modeldata$input <- newvals$input
 
+    formula <- paste(
+      "tac ~ onetcm_model(t_tac, input, K1, k2, vB",
+      ifelse( vB_fitted, yes = "", no = paste0("=", vB)),
+      ")", sep=""
+    )
+
     if (prod(multstart_iter) == 1) { # i.e. don't use multstart
       output <- minpack.lm::nlsLM(
-        tac ~ onetcm_model(t_tac, input, K1, k2, vB),
+        as.formula(formula),
         data = modeldata, start = start,
         lower = lower, upper = upper,
         weights = weights,
@@ -167,7 +173,7 @@ onetcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL
       )
     } else {
       output <- nls.multstart::nls_multstart(
-        tac ~ onetcm_model(t_tac, input, K1, k2, vB),
+        as.formula(formula),
         data = modeldata,
         supp_errors = "Y",
         start_lower = multstart_lower,
@@ -183,9 +189,15 @@ onetcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL
   if (is.null(inpshift)) {
     inpshift_fitted <- T
 
+    formula <- paste(
+      "tac ~ onetcm_fitDelay_model(t_tac, input, K1, k2, inpshift, vB",
+      ifelse( vB_fitted, yes = "", no = paste0("=", vB)),
+      ")", sep=""
+    )
+
     if (prod(multstart_iter) == 1) {
       output <- minpack.lm::nlsLM(
-        tac ~ onetcm_fitDelay_model(t_tac, input, K1, k2, inpshift, vB),
+        as.formula(formula),
         data = modeldata, start = start,
         lower = lower, upper = upper,
         weights = weights,
@@ -194,7 +206,7 @@ onetcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL
       )
     } else {
       output <- nls.multstart::nls_multstart(
-        tac ~ onetcm_fitDelay_model(t_tac, input, K1, k2, inpshift, vB),
+        as.formula(formula),
         data = modeldata,
         supp_errors = "Y",
         start_lower = multstart_lower,
@@ -242,6 +254,7 @@ onetcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL
   par <- as.data.frame(as.list(coef(output)))
 
   if (inpshift_fitted == F) par$inpshift <- inpshift
+  if (vB_fitted == F)       par$vB <- vB
 
   par.se <- par
   par.se[1,] <- purrr::map_dbl(names(par), ~ get_se(output, .x))

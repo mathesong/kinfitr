@@ -32,7 +32,7 @@
 #'   0.1.
 #' @param K1.lower Optional. Lower bound for the fitting of K1. Default is
 #'   0.0001.
-#' @param K1.upper Optional. Upper bound for the fitting of K1. Default is 0.5.
+#' @param K1.upper Optional. Upper bound for the fitting of K1. Default is 1.
 #' @param k2.start Optional. Starting parameter for fitting of k2. Default is
 #'   0.1.
 #' @param k2.lower Optional. Lower bound for the fitting of k2. Default is
@@ -73,12 +73,13 @@
 #'   values and upper and lower bounds for parameters.
 #'
 #' @return A list with a data frame of the fitted parameters \code{out$par},
-#'   their percentage standard errors \code{out$par.se}, the model fit object
-#'   \code{out$fit}, a dataframe containing the TACs both of the data and the
-#'   fitted values \code{out$tacs}, the blood input data frame after time
-#'   shifting \code{input}, a vector of the weights \code{out$weights}, a
-#'   logical of whether the inpshift was fitted \code{inpshift_fitted} and a
-#'   logical of whether the vB was fitted \code{vB}.
+#'   their percentage standard errors (scaled so that 1 represents 100\%)
+#'   \code{out$par.se}, the model fit object \code{out$fit}, a dataframe
+#'   containing the TACs both of the data and the fitted values \code{out$tacs},
+#'   the blood input data frame after time shifting \code{input}, a vector of
+#'   the weights \code{out$weights}, a logical of whether the inpshift was
+#'   fitted \code{inpshift_fitted} and a logical of whether the vB was fitted
+#'   \code{vB}.
 #'
 #' @examples
 #' data(pbr28)
@@ -136,21 +137,25 @@ twotcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL
     inpshift = inpshift.upper, vB = vB.upper
   )
 
-  vB_fitted <- T
-  if (!is.null(vB)) {
-    vB_fitted <- F
-
-    start[which(names(start) == "vB")] <- vB
-    lower[which(names(lower) == "vB")] <- vB
-    upper[which(names(upper) == "vB")] <- vB
-  }
-
   multstart_pars <- fix_multstartpars(
     start, lower, upper, multstart_iter,
     multstart_lower, multstart_upper
   )
   multstart_upper <- multstart_pars$multstart_upper
   multstart_lower <- multstart_pars$multstart_lower
+
+  # Sort out whether vB is to be fitted
+  vB_fitted <- T
+  if (!is.null(vB)) {
+    vB_fitted <- F
+
+    par_keepindex <- names(start) != "vB"
+    start <- start[par_keepindex]
+    lower <- lower[par_keepindex]
+    upper <- upper[par_keepindex]
+    multstart_lower <- multstart_lower[par_keepindex]
+    multstart_upper <- multstart_upper[par_keepindex]
+  }
 
 
   # Solution - Delay Already Fitted
@@ -175,6 +180,12 @@ twotcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL
     modeldata$t_tac <- newvals$t_tac
     modeldata$tac <- newvals$tac
     modeldata$input <- newvals$input
+
+    formula <- paste(
+      "tac ~ twotcm_model(t_tac, input, K1, k2, k3, k4, vB",
+      ifelse( vB_fitted, yes = "", no = paste0("=", vB)),
+      ")", sep=""
+    )
 
     if (prod(multstart_iter) == 1) {
       output <- minpack.lm::nlsLM(
@@ -201,6 +212,12 @@ twotcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL
 
   if (is.null(inpshift)) {
     inpshift_fitted <- T
+
+    formula <- paste(
+      "tac ~ twotcm_fitDelay_model(t_tac, input, K1, k2, k3, k4, inpshift, vB",
+      ifelse( vB_fitted, yes = "", no = paste0("=", vB)),
+      ")", sep=""
+    )
 
     if (prod(multstart_iter) == 1) {
       output <- minpack.lm::nlsLM(
@@ -259,14 +276,23 @@ twotcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL
   par <- as.data.frame(as.list(coef(output)))
 
   if (inpshift_fitted == F) par$inpshift <- inpshift
+  if (vB_fitted == F)       par$vB <- vB
 
   par.se <- par
   par.se[1,] <- purrr::map_dbl(names(par), ~ get_se(output, .x))
   names(par.se) <- paste0(names(par.se), ".se")
 
   par$Vt <- (par$K1 / par$k2) * (1 + par$k3 / par$k4)
-
   par.se$Vt.se <- get_se(output, "(K1/k2) * (1+(k3/k4))")
+
+  par$Vnd <- (par$K1 / par$k2)
+  par.se$Vnd.se <- get_se(output, "(K1/k2)")
+
+  par$BPp <- (par$K1 / par$k2) * (par$k3 / par$k4)
+  par.se$BPp.se <- get_se(output, "(K1/k2)*(k3/k4)")
+
+  par$BPnd <- (par$k3 / par$k4)
+  par.se$BPnd.se <- get_se(output, "(k3/k4)")
 
 
 
