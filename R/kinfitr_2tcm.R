@@ -1,8 +1,6 @@
 #' Two Tissue Compartment Model
 #'
-#' Function to fit the Two Tissue Compartment Model to data. An irreversible
-#' model can also be specified by setting the starting value, upper and lower
-#' bounds of k4 to 0.
+#' Function to fit the Two Tissue Compartment Model to data.
 #'
 #' @param t_tac Numeric vector of times for each frame in minutes. We use the
 #'   time halfway through the frame as well as a zero. If a time zero frame is
@@ -189,7 +187,7 @@ twotcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL
 
     if (prod(multstart_iter) == 1) {
       output <- minpack.lm::nlsLM(
-        tac ~ twotcm_model(t_tac, input, K1, k2, k3, k4, vB),
+        as.formula(formula),
         data = modeldata,
         start = start, lower = lower, upper = upper,
         weights = weights, control = minpack.lm::nls.lm.control(maxiter = 200),
@@ -197,7 +195,7 @@ twotcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL
       )
     } else {
       output <- nls.multstart::nls_multstart(
-        tac ~ twotcm_model(t_tac, input, K1, k2, k3, k4, vB),
+        as.formula(formula),
         data = modeldata,
         supp_errors = "Y",
         start_lower = multstart_lower,
@@ -221,7 +219,7 @@ twotcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL
 
     if (prod(multstart_iter) == 1) {
       output <- minpack.lm::nlsLM(
-        tac ~ twotcm_fitDelay_model(t_tac, input, K1, k2, k3, k4, inpshift, vB),
+        as.formula(formula),
         data = modeldata,
         start = start, lower = lower, upper = upper,
         weights = weights, control = minpack.lm::nls.lm.control(maxiter = 200),
@@ -229,7 +227,7 @@ twotcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL
       )
     } else {
       output <- nls.multstart::nls_multstart(
-        tac ~ twotcm_fitDelay_model(t_tac, input, K1, k2, k3, k4, inpshift, vB),
+        as.formula(formula),
         data = modeldata,
         supp_errors = "Y",
         start_lower = multstart_lower,

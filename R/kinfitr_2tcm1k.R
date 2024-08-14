@@ -201,7 +201,7 @@ twotcm1k <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NU
 
     if (prod(multstart_iter) == 1) {
       output <- minpack.lm::nlsLM(
-        tac ~ twotcm1k_model(t_tac, input, K1, k2, k3, k4, Kb, vB),
+        as.formula(formula),
         data = modeldata,
         start = start, lower = lower, upper = upper,
         weights = weights, control = minpack.lm::nls.lm.control(maxiter = 200),
@@ -209,7 +209,7 @@ twotcm1k <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NU
       )
     } else {
       output <- nls.multstart::nls_multstart(
-        tac ~ twotcm1k_model(t_tac, input, K1, k2, k3, k4, Kb, vB),
+        as.formula(formula),
         data = modeldata,
         supp_errors = "Y",
         start_lower = multstart_lower,
