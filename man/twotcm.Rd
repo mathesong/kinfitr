@@ -14,7 +14,7 @@ twotcm(
   frameStartEnd = NULL,
   K1.start = 0.1,
   K1.lower = 1e-04,
-  K1.upper = 0.5,
+  K1.upper = 1,
   k2.start = 0.1,
   k2.lower = 1e-04,
   k2.upper = 0.5,
