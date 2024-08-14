@@ -490,41 +490,15 @@ plot_inptac_timings <- function(t_tac, tac, input, inpshift, zoomTime = 5) {
 #' @export
 
 plot_inptac_fit <- function(fitout, roiname = NULL, zoomTime = 5) {
-  if (is.null(roiname)) {
-    roiname <- "ROI"
-  }
 
   if (!("input" %in% names(fitout))) {
     stop("No input object found in fit output")
   }
 
-  measureddf <- data.frame(
-    Time = fitout$tacs$Time,
-    Radioactivity = fitout$tacs$Target,
-    Region = paste0(roiname, ".Measured")
-  )
+  plot(fitout, roiname=roiname) +
+    coord_cartesian(xlim = c(0,zoomTime),
+                    ylim = c(0, max(fitout$tacs$Target) * 1.5))
 
-  inputdf <- data.frame(
-    Time = fitout$input$Time,
-    Radioactivity = fitout$input$Plasma * fitout$input$ParentFraction,
-    Region = "AIF"
-  )
-
-  plotdf <- rbind(inputdf, measureddf)
-
-  plotdf$Region <- forcats::fct_inorder(factor(plotdf$Region))
-
-  myColors <- RColorBrewer::brewer.pal(3, "Set1")
-  names(myColors) <- levels(plotdf$Region)
-  colScale <- scale_colour_manual(name = "Region", values = myColors)
-
-  outplot <- ggplot(plotdf, aes(x = Time, y = Radioactivity, colour = Region)) + colScale +
-    geom_point(data = subset(plotdf, plotdf$Region == paste0(roiname, ".Measured")), aes(shape = "a")) +
-    geom_line() +
-    guides(shape = FALSE, color = guide_legend(order = 1)) +
-    coord_cartesian(ylim = c(0, max(measureddf$Radioactivity) * 1.5), xlim = c(0, zoomTime))
-
-  return(outplot)
 }
 
 
