@@ -1,6 +1,10 @@
 #' Simplified Reference Tissue Model 2
 #'
-#' Function to fit the SRTM2 model of Wu and Carson (2002) to data.
+#' Function to fit the SRTM2 model of Wu and Carson (2002) to data. Note that
+#' without setting the k2prime, the model is effectively equivalent to a
+#' conventional SRTM model. This configuration is allowed for estimating an
+#' appropriate k2prime value, but without re-fitting with a specified k2prime
+#' value, the model is not really SRTM2.
 #'
 #' @param t_tac Numeric vector of times for each frame in minutes. We use the
 #'   time halfway through the frame as well as a zero. If a time zero frame is
@@ -11,9 +15,9 @@
 #' @param roitac Numeric vector of radioactivity concentrations in the target
 #'   tissue for each frame. We include zero at time zero: if not included, it is
 #'   added.
-#' @param k2prime Optional. If empty, then the model will fit a value of k2prime.
-#'   If specified, the model will be fitted with this parameter set (i.e. as a
-#'   2 parameter model).
+#' @param k2prime Optional. If empty, then the model will fit a value of
+#'   k2prime. If specified, the model will be fitted with this parameter set
+#'   (i.e. as a 2 parameter model).
 #' @param weights Optional. Numeric vector of the weights assigned to each frame
 #'   in the fitting. We include zero at time zero: if not included, it is added.
 #'   If not specified, uniform weights will be used.
@@ -23,10 +27,12 @@
 #' @param R1.start Optional. Starting parameter for fitting of R1. Default is 1.
 #' @param R1.lower Optional. Lower bound for the fitting of R1. Default is 0.
 #' @param R1.upper Optional. Upper bound for the fitting of R1. Default is 10.
-#' @param k2prime.start Optional. Starting parameter for fitting of k2prime. Default is
-#'   0.1.
-#' @param k2prime.lower Optional. Lower bound for the fitting of k2prime. Default is 0.001.
-#' @param k2prime.upper Optional. Upper bound for the fitting of k2prime. Default is 1.
+#' @param k2prime.start Optional. Starting parameter for fitting of k2prime.
+#'   Default is 0.1.
+#' @param k2prime.lower Optional. Lower bound for the fitting of k2prime.
+#'   Default is 0.001.
+#' @param k2prime.upper Optional. Upper bound for the fitting of k2prime.
+#'   Default is 1.
 #' @param bp.start Optional. Starting parameter for fitting of bp. Default is
 #'   1.5.
 #' @param bp.lower Optional. Lower bound for the fitting of bp. Default is -10.
@@ -46,9 +52,10 @@
 #'   values and upper and lower bounds for parameters.
 #'
 #' @return A list with a data frame of the fitted parameters \code{out$par},
-#'   their percentage standard errors \code{out$par.se}, the model fit object
-#'   \code{out$fit}, the model weights \code{out$weights}, and a dataframe
-#'   containing the TACs both of the data and the fitted values \code{out$tacs}.
+#'   their percentage standard errors (scaled so that 1 represents 100\%)
+#'   \code{out$par.se}, the model fit object \code{out$fit}, the model weights
+#'   \code{out$weights}, and a dataframe containing the TACs both of the data
+#'   and the fitted values \code{out$tacs}.
 #'
 #' @examples
 #'
@@ -59,13 +66,16 @@
 #' roitac <- simref$tacs[[2]]$ROI1
 #' weights <- simref$tacs[[2]]$Weights
 #'
-#' fit_fitk2prime <- srtm2(t_tac, reftac, roitac)
 #' fit_setk2prime <- srtm2(t_tac, reftac, roitac, k2prime=0.1)
+#'
+#' # Note: this is not really SRTM2 because the k2prime is not specified
+#' fitk2prime <- srtm2(t_tac, reftac, roitac)
+#'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
-#' @references Wu Y, Carson RE. Noise reduction in the simplified reference tissue
-#'   model for neuroreceptor functional imaging. J Cereb Blood Flow Metab.
-#'   2002;22:1440-1452.
+#' @references Wu Y, Carson RE. Noise reduction in the simplified reference
+#'   tissue model for neuroreceptor functional imaging. J Cereb Blood Flow
+#'   Metab. 2002;22:1440-1452.
 #'
 #'
 #'
@@ -92,6 +102,13 @@ srtm2 <- function(t_tac, reftac, roitac, k2prime=NULL, weights = NULL, frameStar
     start <- c(R1 = R1.start, k2prime = k2prime.start, bp = bp.start)
     lower <- c(R1 = R1.lower, k2prime = k2prime.lower, bp = bp.lower)
     upper <- c(R1 = R1.upper, k2prime = k2prime.upper, bp = bp.upper)
+
+    rlang::inform("Note: Without specifying a k2prime value for SRTM2, it is effectively
+            equivalent to the conventional SRTM model. This can be useful for
+            selecting an appropriate k2prime value, but without re-fitting the
+            model with a specified k2prime value, the model is not really SRTM2.",
+            .frequency = "once", .frequency_id = "srtm2_message")
+
   } else {
 
     if(length(k2prime) > 1) {
