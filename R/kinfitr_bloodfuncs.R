@@ -212,7 +212,7 @@ shift_timings <- function(t_tac, tac, input, inpshift, shifttac = T) {
   }
 
   if (min(input$Time) > 0) {
-    input <- rbind(c(0, 0, 0, 1), input)
+    input <- rbind(c(0, 0, 0, 1, 0), input)
   }
 
   if (min(tacdf$Time) < 0) {
@@ -236,7 +236,7 @@ shift_timings <- function(t_tac, tac, input, inpshift, shifttac = T) {
 
   if (min(input$Time) > 0) {
     # input$Time[1] <- 0
-    input <- rbind(c(0, 0, 0, 1), input)
+    input <- rbind(c(0, 0, 0, 1, 0), input)
   }
 
   if (max(input$Time) > max(tacdf$Time)) {
@@ -346,7 +346,7 @@ shift_timings_df <- function(t_tac, tacsdf, input, inpshift, shifttac = T) {
   }
 
   if (min(input$Time) > 0) {
-    input <- rbind(c(0, 0, 0, 1), input)
+    input <- rbind(c(0, 0, 0, 1, 0), input)
   }
 
   if (max(input$Time) > max(tacdf$Time)) {
@@ -354,7 +354,7 @@ shift_timings_df <- function(t_tac, tacsdf, input, inpshift, shifttac = T) {
     input <- input[1:last_n, ]
     input$Time[last_n] <- max(tacdf$Time)
   } else if (max(input$Time) < max(tacdf$Time)) {
-    input <- rbind(input, c(max(tacdf$Time), as.numeric(tail(input, 1)[2:4])))
+    input <- rbind(input, c(max(tacdf$Time), as.numeric(tail(input, 1)[-1])))
   }
 
 
