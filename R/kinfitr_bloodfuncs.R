@@ -657,3 +657,66 @@ blood_smooth <- function(time, activity, iterations = 1) {
 
   tibble::tibble(time = time, activity = activity)
 }
+
+#' Create Weights for Modelling Whole Blood and AIF Data
+#'
+#' @param time The time of each measurement.
+#' @param activity The radioactivity of each measurement.
+#' @param Method Optional. The method of collection, i.e. "Discrete" or
+#'   "Continuous".
+#' @param Method_weights Should the weights be divided by discrete and
+#'   continuous samples equally (i.e. with more continuous samples, the
+#'   continuous samples each get less weight). Default is TRUE.
+#' @param taper_weights Should the weights be tapered to gradually trade off
+#'   between the continuous and discrete samples after the peak?
+#' @param weightscheme Which weighting scheme should be used before
+#'   accommodating Method_divide and taper_weights? 1 represents a uniform
+#'   weighting before accommodating Method_divide and taper_weights. 2
+#'   represents time/AIF as used by Columbia PET Centre. Default is 2.
+#'
+#' @return A vector of model weights
+#' @export
+#'
+#' @examples
+#' blooddata <- pbr28$blooddata[[1]]
+#' aif <- bd_extract(blooddata, output = "AIF")
+#' blood_weights_create(aif$time, aif$aif, aif$Method)
+blood_weights_create <- function(time, activity,
+                                 Method = NULL,
+                                 Method_weights = TRUE,
+                                 taper_weights = TRUE,
+                                 weightscheme=2) {
+
+  if(!Method_weights) Method <- NULL
+
+  blood <- blmod_tidyinput(time, activity, Method, weights=NULL)
+
+  peak_index <- which(activity==max(activity))
+  peaktime <- time[peak_index]
+
+  # Remove pre-peak discrete
+  if( length(unique(blood$Method)) == 2 ) { # i.e. both cont and discrete
+    discrete_before_peak <- which(blood$Method=="Discrete" &
+                                    blood$time < peaktime)
+
+    blood$weights[discrete_before_peak] <- 0
+  }
+
+  if(taper_weights) {
+    blood$weights <- ifelse(blood$Method=="Continuous",
+                            yes = blood$weights * (1-blood$peakfrac),
+                            no = blood$weights * blood$peakfrac)
+  }
+
+  # Set a minimum value to prevent extreme weights
+  blood$activity[blood$activity < max(blood$activity / 1e4)] <-  max(blood$activity / 1e4)
+
+  basicweights <- dplyr::case_when(
+    weightscheme==1 ~ 1,
+    weightscheme==2 ~ blood$time / blood$activity,
+  )
+
+  out <- basicweights * blood$weights
+
+  return(out)
+}

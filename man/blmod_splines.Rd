@@ -9,6 +9,9 @@ blmod_splines(
   activity,
   Method = NULL,
   weights = NULL,
+  Method_weights = TRUE,
+  taper_weights = TRUE,
+  weightscheme = 2,
   bs_before = "cr",
   bs_after_c = "cr",
   bs_after_d = "cr",
@@ -22,27 +25,49 @@ blmod_splines(
 
 \item{activity}{The radioactivity of each measurement}
 
-\item{Method}{Optional. The method of collection, i.e. "Discrete" or "Continuous"}
+\item{Method}{Optional. The method of collection, i.e. "Discrete" or
+"Continuous"}
 
 \item{weights}{Optional. Weights of each measurement.}
 
-\item{bs_before}{Optional. Defines the basis function for the points before the peak.}
+\item{Method_weights}{If no weights provided, should the weights be divided
+by discrete and continuous samples equally (i.e. with more continuous
+samples, the continuous samples each get less weight). Default is TRUE.}
 
-\item{bs_after_c}{Optional. Defines the basis function for the continuous points after the peak.}
+\item{taper_weights}{If no weights provided, should the weights be tapered to
+gradually trade off between the continuous and discrete samples after the
+peak?}
 
-\item{bs_after_d}{Optional. Defines the basis function for the discrete points after the peak.}
+\item{weightscheme}{If no weights provided, which weighting scheme should be
+used before accommodating Method_divide and taper_weights? 1 represents a
+uniform weighting before accommodating Method_divide and taper_weights. 2
+represents time/AIF as used by Columbia PET Centre. Default is 2.}
 
-\item{k_before}{Optional. Defines the dimension of the basis for the points before the peak.}
+\item{bs_before}{Optional. Defines the basis function for the points before
+the peak.}
 
-\item{k_after_c}{Optional. Defines the dimension of the basis for the continuous points after the peak.}
+\item{bs_after_c}{Optional. Defines the basis function for the continuous
+points after the peak.}
 
-\item{k_after_d}{Optional. Defines the dimension of the basis for the discrete points after the peak.}
+\item{bs_after_d}{Optional. Defines the basis function for the discrete
+points after the peak.}
+
+\item{k_before}{Optional. Defines the dimension of the basis for the points
+before the peak.}
+
+\item{k_after_c}{Optional. Defines the dimension of the basis for the
+continuous points after the peak.}
+
+\item{k_after_d}{Optional. Defines the dimension of the basis for the
+discrete points after the peak.}
 }
 \value{
-A model fit including all of the individual models of class blood_splines.
+A model fit including all of the individual models of class
+  blood_splines.
 }
 \description{
-Fits two or three (if both discrete and continuous) splines to blood or AIF data to smooth it
+Fits two or three (if both discrete and continuous) splines to blood or AIF
+data to smooth it
 }
 \examples{
 blooddata <- pbr28$blooddata[[1]]

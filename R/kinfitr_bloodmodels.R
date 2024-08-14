@@ -85,20 +85,39 @@ blmod_tidyinput <- function(time, activity, Method = NULL, weights = NULL) {
 
 #' Blood Model: Splines
 #'
-#' Fits two or three (if both discrete and continuous) splines to blood or AIF data to smooth it
+#' Fits two or three (if both discrete and continuous) splines to blood or AIF
+#' data to smooth it
 #'
 #' @param time The time of each measurement in seconds
 #' @param activity The radioactivity of each measurement
-#' @param Method Optional. The method of collection, i.e. "Discrete" or "Continuous"
+#' @param Method Optional. The method of collection, i.e. "Discrete" or
+#'   "Continuous"
 #' @param weights Optional. Weights of each measurement.
-#' @param bs_before Optional. Defines the basis function for the points before the peak.
-#' @param bs_after_c Optional. Defines the basis function for the continuous points after the peak.
-#' @param bs_after_d Optional. Defines the basis function for the discrete points after the peak.
-#' @param k_before Optional. Defines the dimension of the basis for the points before the peak.
-#' @param k_after_c Optional. Defines the dimension of the basis for the continuous points after the peak.
-#' @param k_after_d Optional. Defines the dimension of the basis for the discrete points after the peak.
+#' @param Method_weights If no weights provided, should the weights be divided
+#'   by discrete and continuous samples equally (i.e. with more continuous
+#'   samples, the continuous samples each get less weight). Default is TRUE.
+#' @param taper_weights If no weights provided, should the weights be tapered to
+#'   gradually trade off between the continuous and discrete samples after the
+#'   peak?
+#' @param weightscheme If no weights provided, which weighting scheme should be
+#'   used before accommodating Method_divide and taper_weights? 1 represents a
+#'   uniform weighting before accommodating Method_divide and taper_weights. 2
+#'   represents time/AIF as used by Columbia PET Centre. Default is 2.
+#' @param bs_before Optional. Defines the basis function for the points before
+#'   the peak.
+#' @param bs_after_c Optional. Defines the basis function for the continuous
+#'   points after the peak.
+#' @param bs_after_d Optional. Defines the basis function for the discrete
+#'   points after the peak.
+#' @param k_before Optional. Defines the dimension of the basis for the points
+#'   before the peak.
+#' @param k_after_c Optional. Defines the dimension of the basis for the
+#'   continuous points after the peak.
+#' @param k_after_d Optional. Defines the dimension of the basis for the
+#'   discrete points after the peak.
 #'
-#' @return A model fit including all of the individual models of class blood_splines.
+#' @return A model fit including all of the individual models of class
+#'   blood_splines.
 #' @export
 #'
 #' @examples
@@ -109,10 +128,20 @@ blmod_tidyinput <- function(time, activity, Method = NULL, weights = NULL) {
 #'                            blood$activity,
 #'                            Method = blood$Method)
 blmod_splines <- function(time, activity, Method = NULL, weights = NULL,
+                          Method_weights = TRUE,
+                          taper_weights = TRUE,
+                          weightscheme=2,
                           bs_before="cr", bs_after_c="cr", bs_after_d="cr",
                           k_before=-1, k_after_c=-1, k_after_d=-1) {
 
   blood <- blmod_tidyinput(time, activity, Method, weights)
+
+  if(is.null(weights)) {
+    blood$weights <- blood_weights_create(blood$time, blood$activity, blood$Method,
+                                          Method_weights = Method_weights,
+                                          taper_weights = taper_weights,
+                                          weightscheme = weightscheme)
+  }
 
   peaktime <- blood$time[blood$activity == max(blood$activity)]
 
@@ -201,7 +230,8 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL,
     after_c = after_c,
     peaktime = peaktime,
     start_overlap = start_overlap,
-    stop_overlap = stop_overlap
+    stop_overlap = stop_overlap,
+    time = blood$time
   )
 
   class(out) <- c("blood_splines", "blmod", class(out))
@@ -230,6 +260,7 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL,
 #' predict_blood_splines(blood_fit, newdata=list(time=1:10))
 #' @export
 predict_blood_splines <- function(object, newdata = NULL) {
+
   if (is.null(newdata)) {
     pred_before <- as.numeric(predict(object$before))
     pred_x_before <- object$before$model$time
@@ -575,8 +606,16 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
 #' @param multstart_iter The number of fits to perform with different starting
 #'   parameters. If set to 1, then the starting parameters will be used for a
 #'   single fit.
-#' @param taper_weights Should the weights be tapered to gradually trade off
-#'   between the continuous and discrete samples after the peak?
+#' @param Method_weights If no weights provided, should the weights be divided
+#'   by discrete and continuous samples equally (i.e. with more continuous
+#'   samples, the continuous samples each get less weight). Default is TRUE.
+#' @param taper_weights If no weights provided, should the weights be tapered to
+#'   gradually trade off between the continuous and discrete samples after the
+#'   peak?
+#' @param weightscheme If no weights provided, which weighting scheme should be
+#'   used before accommodating Method_divide and taper_weights? 1 represents a
+#'   uniform weighting before accommodating Method_divide and taper_weights. 2
+#'   represents time/AIF as used by Columbia PET Centre. Default is 2.
 #' @param check_startpars Optional. Return only the starting parameters. Useful
 #'   for debugging fits which do not work.
 #' @param expdecay_props What proportions of the decay should be used for
@@ -606,13 +645,22 @@ blmod_exp <- function(time, activity, Method = NULL,
                          multstart_lower = NULL,
                          multstart_upper = NULL,
                          multstart_iter = 100,
+                         Method_weights = TRUE,
                          taper_weights = TRUE,
+                         weightscheme=2,
                          check_startpars = FALSE,
                          expdecay_props = c(1/60, 0.1)) {
 
 
   # Tidy up
   blood <- blmod_tidyinput(time, activity, Method, weights)
+
+  if(is.null(weights)) {
+    blood$weights <- blood_weights_create(blood$time, blood$activity, blood$Method,
+                                          Method_weights = Method_weights,
+                                          taper_weights = taper_weights,
+                                          weightscheme = weightscheme)
+  }
 
 
   # Create starting parameters
@@ -623,20 +671,6 @@ blmod_exp <- function(time, activity, Method = NULL,
                                    expdecay_props)
   if(is.null(start)) {
     start <- startvals
-  }
-
-  # Fix weights
-  if( length(unique(blood$Method)) == 2 ) { # i.e. both cont and discrete
-    discrete_before_peak <- which(blood$Method=="Discrete" &
-                                    blood$time < startvals$peaktime)
-
-    blood$weights[discrete_before_peak] <- 0
-  }
-
-  if(taper_weights) {
-    blood$weights <- ifelse(blood$Method=="Continuous",
-                            yes = blood$weights * (1-blood$peakfrac),
-                            no = blood$weights * blood$peakfrac)
   }
 
 
@@ -1472,8 +1506,16 @@ blmod_feng_startpars <- function(time, activity,
 #' @param multstart_iter The number of fits to perform with different starting
 #'   parameters. If set to 1, then the starting parameters will be used for a
 #'   single fit.
-#' @param taper_weights Should the weights be tapered to gradually trade off
-#'   between the continuous and discrete samples after the peak?
+#' @param Method_weights If no weights provided, should the weights be divided
+#'   by discrete and continuous samples equally (i.e. with more continuous
+#'   samples, the continuous samples each get less weight). Default is TRUE.
+#' @param taper_weights If no weights provided, should the weights be tapered to
+#'   gradually trade off between the continuous and discrete samples after the
+#'   peak?
+#' @param weightscheme If no weights provided, which weighting scheme should be
+#'   used before accommodating Method_divide and taper_weights? 1 represents a
+#'   uniform weighting before accommodating Method_divide and taper_weights. 2
+#'   represents time/AIF as used by Columbia PET Centre. Default is 2.
 #' @param check_startpars Optional. Return only the starting parameters. Useful
 #'   for debugging fits which do not work.
 #' @param expdecay_props What proportions of the decay should be used for
@@ -1510,13 +1552,22 @@ blmod_feng <- function(time, activity, Method = NULL,
                       multstart_lower = NULL,
                       multstart_upper = NULL,
                       multstart_iter = 100,
+                      Method_weights = TRUE,
                       taper_weights = TRUE,
+                      weightscheme=2,
                       check_startpars = FALSE,
                       expdecay_props = c(1/60, 0.1)) {
 
 
   # Tidy up
   blood <- blmod_tidyinput(time, activity, Method, weights)
+
+  if(is.null(weights)) {
+    blood$weights <- blood_weights_create(blood$time, blood$activity, blood$Method,
+                                          Method_weights = Method_weights,
+                                          taper_weights = taper_weights,
+                                          weightscheme = weightscheme)
+  }
 
 
   # Create starting parameters
@@ -1526,20 +1577,6 @@ blmod_feng <- function(time, activity, Method = NULL,
                                    expdecay_props)
   if(is.null(start)) {
     start <- startvals
-  }
-
-  # Fix weights
-  if( length(unique(blood$Method)) == 2 ) { # i.e. both cont and discrete
-    discrete_before_peak <- which(blood$Method=="Discrete" &
-                                    blood$time < startvals$peaktime)
-
-    blood$weights[discrete_before_peak] <- 0
-  }
-
-  if(taper_weights) {
-    blood$weights <- ifelse(blood$Method=="Continuous",
-                            yes = blood$weights * (1-blood$peakfrac),
-                            no = blood$weights * blood$peakfrac)
   }
 
 
@@ -1798,8 +1835,16 @@ predict_blood_feng <- function(object, newdata = NULL) {
 #' @param multstart_iter The number of fits to perform with different starting
 #'   parameters. If set to 1, then the starting parameters will be used for a
 #'   single fit.
-#' @param taper_weights Should the weights be tapered to gradually trade off
-#'   between the continuous and discrete samples after the peak?
+#' @param Method_weights If no weights provided, should the weights be divided
+#'   by discrete and continuous samples equally (i.e. with more continuous
+#'   samples, the continuous samples each get less weight). Default is TRUE.
+#' @param taper_weights If no weights provided, should the weights be tapered to
+#'   gradually trade off between the continuous and discrete samples after the
+#'   peak?
+#' @param weightscheme If no weights provided, which weighting scheme should be
+#'   used before accommodating Method_divide and taper_weights? 1 represents a
+#'   uniform weighting before accommodating Method_divide and taper_weights. 2
+#'   represents time/AIF as used by Columbia PET Centre. Default is 2.
 #' @param check_startpars Optional. Return only the starting parameters. Useful
 #'   for debugging fits which do not work.
 #' @param expdecay_props What proportions of the decay should be used for
@@ -1840,7 +1885,9 @@ blmod_fengconv <- function(time, activity, inftime = NULL,
                            multstart_lower = NULL,
                            multstart_upper = NULL,
                            multstart_iter = 500,
+                           Method_weights = TRUE,
                            taper_weights = TRUE,
+                           weightscheme=2,
                            check_startpars = FALSE,
                            expdecay_props = c(0, 0.5)) {
 
@@ -1848,6 +1895,12 @@ blmod_fengconv <- function(time, activity, inftime = NULL,
   # Tidy up
   blood <- blmod_tidyinput(time, activity, Method, weights)
 
+  if(is.null(weights)) {
+    blood$weights <- blood_weights_create(blood$time, blood$activity, blood$Method,
+                                    Method_weights = Method_weights,
+                                    taper_weights = taper_weights,
+                                    weightscheme = weightscheme)
+  }
 
   # Create starting parameters
   ## Note: start contains actual starting parameters. Startvals useful for other
@@ -1856,20 +1909,6 @@ blmod_fengconv <- function(time, activity, inftime = NULL,
                                     expdecay_props)
   if(is.null(start)) {
     start <- startvals
-  }
-
-  # Fix weights
-  if( length(unique(blood$Method)) == 2 ) { # i.e. both cont and discrete
-    discrete_before_peak <- which(blood$Method=="Discrete" &
-                                    blood$time < startvals$peaktime)
-
-    blood$weights[discrete_before_peak] <- 0
-  }
-
-  if(taper_weights) {
-    blood$weights <- ifelse(blood$Method=="Continuous",
-                            yes = blood$weights * (1-blood$peakfrac),
-                            no = blood$weights * blood$peakfrac)
   }
 
 
@@ -2209,8 +2248,16 @@ predict_blood_fengconv <- function(object, newdata = NULL) {
 #' @param multstart_iter The number of fits to perform with different starting
 #'   parameters. If set to 1, then the starting parameters will be used for a
 #'   single fit.
-#' @param taper_weights Should the weights be tapered to gradually trade off
-#'   between the continuous and discrete samples after the peak?
+#' @param Method_weights If no weights provided, should the weights be divided
+#'   by discrete and continuous samples equally (i.e. with more continuous
+#'   samples, the continuous samples each get less weight). Default is TRUE.
+#' @param taper_weights If no weights provided, should the weights be tapered to
+#'   gradually trade off between the continuous and discrete samples after the
+#'   peak?
+#' @param weightscheme If no weights provided, which weighting scheme should be
+#'   used before accommodating Method_divide and taper_weights? 1 represents a
+#'   uniform weighting before accommodating Method_divide and taper_weights. 2
+#'   represents time/AIF as used by Columbia PET Centre. Default is 2.
 #' @param check_startpars Optional. Return only the starting parameters. Useful
 #'   for debugging fits which do not work.
 #' @param expdecay_props What proportions of the decay should be used for
@@ -2244,13 +2291,22 @@ blmod_fengconvplus <- function(time, activity, inftime = NULL,
                            multstart_lower = NULL,
                            multstart_upper = NULL,
                            multstart_iter = 500,
+                           Method_weights = TRUE,
                            taper_weights = TRUE,
+                           weightscheme=2,
                            check_startpars = FALSE,
                            expdecay_props = c(0, 0.5)) {
 
 
   # Tidy up
   blood <- blmod_tidyinput(time, activity, Method, weights)
+
+  if(is.null(weights)) {
+    blood$weights <- blood_weights_create(blood$time, blood$activity, blood$Method,
+                                          Method_weights = Method_weights,
+                                          taper_weights = taper_weights,
+                                          weightscheme = weightscheme)
+  }
 
 
   # Create starting parameters
@@ -2260,20 +2316,6 @@ blmod_fengconvplus <- function(time, activity, inftime = NULL,
                                     expdecay_props)
   if(is.null(start)) {
     start <- startvals
-  }
-
-  # Fix weights
-  if( length(unique(blood$Method)) == 2 ) { # i.e. both cont and discrete
-    discrete_before_peak <- which(blood$Method=="Discrete" &
-                                    blood$time < startvals$peaktime)
-
-    blood$weights[discrete_before_peak] <- 0
-  }
-
-  if(taper_weights) {
-    blood$weights <- ifelse(blood$Method=="Continuous",
-                            yes = blood$weights * (1-blood$peakfrac),
-                            no = blood$weights * blood$peakfrac)
   }
 
 

@@ -21,7 +21,9 @@ blmod_exp(
   multstart_lower = NULL,
   multstart_upper = NULL,
   multstart_iter = 100,
+  Method_weights = TRUE,
   taper_weights = TRUE,
+  weightscheme = 2,
   check_startpars = FALSE,
   expdecay_props = c(1/60, 0.1)
 )
@@ -77,8 +79,18 @@ they will be selected using \code{blmod_exp_startpars}.}
 parameters. If set to 1, then the starting parameters will be used for a
 single fit.}
 
-\item{taper_weights}{Should the weights be tapered to gradually trade off
-between the continuous and discrete samples after the peak?}
+\item{Method_weights}{If no weights provided, should the weights be divided
+by discrete and continuous samples equally (i.e. with more continuous
+samples, the continuous samples each get less weight). Default is TRUE.}
+
+\item{taper_weights}{If no weights provided, should the weights be tapered to
+gradually trade off between the continuous and discrete samples after the
+peak?}
+
+\item{weightscheme}{If no weights provided, which weighting scheme should be
+used before accommodating Method_divide and taper_weights? 1 represents a
+uniform weighting before accommodating Method_divide and taper_weights. 2
+represents time/AIF as used by Columbia PET Centre. Default is 2.}
 
 \item{check_startpars}{Optional. Return only the starting parameters. Useful
 for debugging fits which do not work.}
