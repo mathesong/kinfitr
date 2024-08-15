@@ -272,8 +272,15 @@ Patlak_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL,
   medroi_fit <- Patlakplot(t_tac, medroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
   highroi_fit <- Patlakplot(t_tac, highroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
 
-  xlabel <- "Integ(C_Plasma) / C_Plasma"
-  ylabel <- "C_Tissue / C_Plasma"
+  #xlabel <- "Integ(C_Plasma) / C_Plasma"
+  #ylabel <- "C_Tissue / C_Plasma"
+
+  xlabel <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
+                             "C", phantom()[{ paste("Plasma") }],"(t)", " / ",
+                             "C", phantom()[{ paste("Plasma") }],"(t)"))
+
+  ylabel <- expression(paste("C", phantom()[{ paste("Tissue") }],"(t)", " / ",
+                             "C", phantom()[{ paste("Plasma") }],"(t)"))
 
   low_xlimits <- c(0, tail(lowroi_fit$fitvals$Patlak_Plasma, 1))
   med_xlimits <- c(0, tail(medroi_fit$fitvals$Patlak_Plasma, 1))
@@ -310,7 +317,7 @@ Patlak_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL,
 
   xlabel <- "Number of Included Frames"
   ylab_r2 <- expression(R^2)
-  ylab_mp <- "Maximum Percentage Variance"
+  ylab_mp <- "Maximum Percentage Deviation"
 
 
   # R Squared plots

@@ -203,6 +203,14 @@ refPatlak_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename = N
   patlak_xlab <- "Integ(C_Ref) / C_Ref"
   patlak_ylab <- "C_Tissue / C_Ref"
 
+  patlak_ylab <- expression(paste("C", phantom()[{ paste("Target") }],"(t)", " / ",
+                                  "C", phantom()[{ paste("Ref") }],"(t)"))
+
+  patlak_xlab <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
+                             "C", phantom()[{ paste("Ref") }],"(t)", " / ",
+                             "C", phantom()[{ paste("Ref") }],"(t)"))
+
+
   low_linplot <- qplot(lowroi_fit$fitvals$Patlak_Ref, lowroi_fit$fitvals$Patlak_ROI) + ggtitle("Low") + xlab(patlak_xlab) + ylab(patlak_ylab)
   med_linplot <- qplot(medroi_fit$fitvals$Patlak_Ref, medroi_fit$fitvals$Patlak_ROI) + ggtitle("Medium") + xlab(patlak_xlab) + ylab(patlak_ylab)
   high_linplot <- qplot(highroi_fit$fitvals$Patlak_Ref, highroi_fit$fitvals$Patlak_ROI) + ggtitle("High") + xlab(patlak_xlab) + ylab(patlak_ylab)
@@ -234,7 +242,7 @@ refPatlak_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename = N
 
   xlabel <- "Number of Included Frames"
   ylab_r2 <- expression(R^2)
-  ylab_mp <- "Maximum Percentage Variance"
+  ylab_mp <- "Maximum Percentage Deviation"
 
 
   # R Squared plots

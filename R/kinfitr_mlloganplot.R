@@ -265,7 +265,7 @@ mlLogan_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL
 
   xlabel <- "Fitted Values"
   ylabel <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
-                       "C", phantom()[{ paste("Tissue") }]))
+                       "C", phantom()[{ paste("Tissue") }],"(t)"))
 
   low_linplot <- qplot(lowroi_fit$fitvals$Fitted, lowroi_fit$fitvals$Term1_DV) + ggtitle("Low") + xlab(xlabel) + ylab(ylabel)
   med_linplot <- qplot(medroi_fit$fitvals$Fitted, medroi_fit$fitvals$Term1_DV) + ggtitle("Medium") + xlab(xlabel) + ylab(ylabel)
@@ -298,7 +298,7 @@ mlLogan_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL
 
   xlabel <- "Number of Included Frames"
   ylab_r2 <- expression(R^2)
-  ylab_mp <- "Maximum Percentage Variance"
+  ylab_mp <- "Maximum Percentage Deviation"
 
 
   # R Squared plots

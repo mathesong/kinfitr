@@ -198,8 +198,17 @@ refLogan_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, file
   medroi_fit <- refLogan(t_tac, reftac, medroi, k2prime, length(reftac), frameStartEnd = frameStartEnd)
   highroi_fit <- refLogan(t_tac, reftac, highroi, k2prime, length(reftac), frameStartEnd = frameStartEnd)
 
-  logan_xlab <- "[Integ(C_Ref)+C_Ref/k2prime] / C_Tissue"
-  logan_ylab <- "Integ(C_Tissue) / C_Tissue"
+  # logan_xlab <- "[Integ(C_Ref)+C_Ref/k2prime] / C_Tissue"
+  # logan_ylab <- "Integ(C_Tissue) / C_Tissue"
+
+  logan_xlab <- expression(paste("(", "", integral(, paste("0"), paste("", "t")),
+                             "C", phantom()[{ paste("Ref") }],"(t)", " + ",
+                             "C", phantom()[{ paste("Ref") }],"(t)","/k",phantom()[{ paste("2") }],"\' ) / ",
+                             "C", phantom()[{ paste("Target") }],"(t)"))
+
+  logan_ylab <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
+                                 "C", phantom()[{ paste("Tissue") }],"(t)", " / ",
+                                 "C", phantom()[{ paste("Tissue") }],"(t)"))
 
   low_linplot <- qplot(lowroi_fit$fitvals$Logan_Ref, lowroi_fit$fitvals$Logan_ROI) + ggtitle("Low") + xlab(logan_xlab) + ylab(logan_ylab)
   med_linplot <- qplot(medroi_fit$fitvals$Logan_Ref, medroi_fit$fitvals$Logan_ROI) + ggtitle("Medium") + xlab(logan_xlab) + ylab(logan_ylab)
@@ -232,7 +241,7 @@ refLogan_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, file
 
   xlabel <- "Number of Included Frames"
   ylab_r2 <- expression(R^2)
-  ylab_mp <- "Maximum Percentage Variance"
+  ylab_mp <- "Maximum Percentage Deviation"
 
 
   # R Squared plots

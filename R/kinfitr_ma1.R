@@ -311,7 +311,7 @@ ma1_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, in
 
   xlabel <- "Number of Included Frames"
   ylab_r2 <- expression(R^2)
-  ylab_mp <- "Maximum Percentage Variance"
+  ylab_mp <- "Maximum Percentage Deviation"
 
 
   # R Squared plots
