@@ -968,6 +968,12 @@ bd_extract_pf <- function(blooddata,
     return(pf)
   }
 
+  # For pred and interp, we want interpolation to start at 1 at time 0
+  if(!(0 %in% pf$time)) {
+    pf <- rbind(c(0,1),
+                pf)
+  }
+
   blood <- bd_extract_bpr(blooddata, startTime, stopTime, what = "pred")
 
   ## Interp
