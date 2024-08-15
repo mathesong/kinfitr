@@ -608,14 +608,6 @@ test_that("invgamma function works", {
 
 })
 
-test_that("invgamma function works", {
-
-  fit <- metab_invgamma(pf$time, pf$parentFraction)
-
-  expect_true(any(class(fit) == "nls"))
-
-})
-
 # test_that("exp_sep works", {
 #
 #   aif <- bd_extract(blooddata, output = "AIF")

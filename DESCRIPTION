@@ -38,7 +38,8 @@ Imports:
     fs,
     stringr,
     segmented,
-    LambertW
+    LambertW,
+    rlang
 Suggests:
     knitr,
     devtools,
