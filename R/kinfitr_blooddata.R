@@ -786,10 +786,11 @@ bd_extract_blood <- function(blooddata,
 
 
 bd_extract_bpr <- function(blooddata,
-                            what = c("raw", "pred", "interp"),
-                             startTime = 0,
-                             stopTime = NULL,
-                             interpPoints = 6000) {
+                           what = c("raw", "pred", "interp"),
+                           startTime = 0,
+                           stopTime = NULL,
+                           interpPoints = 6000,
+                           bpr_peakfrac_cutoff = 0.001) {
 
   # Housekeeping
   what <- match.arg(what, c("raw", "pred", "interp"))
@@ -808,7 +809,8 @@ bd_extract_bpr <- function(blooddata,
   plasma <- blooddata$Data$Plasma$Values %>%
     dplyr::filter(!is.na(activity)) %>%
     dplyr::arrange(time) %>%
-    dplyr::filter(!duplicated(time))
+    dplyr::filter(!duplicated(time)) %>%
+    dplyr::filter(activity > (bpr_peakfrac_cutoff*max(activity)))
 
   blood <- bd_extract_blood(blooddata, startTime, stopTime, what = "pred")
 
@@ -816,7 +818,8 @@ bd_extract_bpr <- function(blooddata,
   blood_discrete <- blood %>%
     dplyr::filter(!is.na(activity)) %>%
     dplyr::filter(Method=="Discrete") %>%
-    dplyr::filter(!duplicated(time))
+    dplyr::filter(!duplicated(time)) %>%
+    dplyr::filter(activity > (bpr_peakfrac_cutoff*max(activity)))
 
   commonvalues <- intersect(plasma$time, blood_discrete$time)
 
@@ -1322,6 +1325,10 @@ bd_create_input <- function(blooddata,
 #'   unaltered data for modelling, the "pred" data is the predicted data at the
 #'   times of the original samples for assessing correspondence, and the
 #'   "interp" values are the values interpolated through the interptimes.
+#' @param bpr_peakfrac_cutoff What is the lowest permissible value of the blood
+#'   or plasma curves as a fraction of the peak that should be included in the
+#'   raw BPR extraction for modelling. This is to avoid ratios which tend
+#'   towards 0 or Inf at early time points when blood and plasma are very low.
 #'
 #' @return A tibble with the relevant data
 #' @export
@@ -1337,7 +1344,8 @@ bd_extract <- function(blooddata,
                        startTime = 0,
                        stopTime = NULL,
                        interpPoints = 6000,
-                       what = c("raw", "pred", "interp")) {
+                       what = c("raw", "pred", "interp"),
+                       bpr_peakfrac_cutoff = 0.001) {
 
   # Housekeeping
   tidied <- bd_tidy_times(blooddata,
@@ -1357,7 +1365,7 @@ bd_extract <- function(blooddata,
                             what = what)
   } else if(output=="BPR") {
     out <- bd_extract_bpr(blooddata, startTime,stopTime,interpPoints,
-                            what = what)
+                            what = what, bpr_peakfrac_cutoff)
   } else if(output=="parentFraction") {
     out <- bd_extract_pf(blooddata, startTime,stopTime,interpPoints,
                             what = what)

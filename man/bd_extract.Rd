@@ -10,7 +10,8 @@ bd_extract(
   startTime = 0,
   stopTime = NULL,
   interpPoints = 6000,
-  what = c("raw", "pred", "interp")
+  what = c("raw", "pred", "interp"),
+  bpr_peakfrac_cutoff = 0.001
 )
 }
 \arguments{
@@ -33,6 +34,11 @@ start and stop times. Defaults to 6000.}
 unaltered data for modelling, the "pred" data is the predicted data at the
 times of the original samples for assessing correspondence, and the
 "interp" values are the values interpolated through the interptimes.}
+
+\item{bpr_peakfrac_cutoff}{What is the lowest permissible value of the blood
+or plasma curves as a fraction of the peak that should be included in the
+raw BPR extraction for modelling. This is to avoid ratios which tend
+towards 0 or Inf at early time points when blood and plasma are very low.}
 }
 \value{
 A tibble with the relevant data
