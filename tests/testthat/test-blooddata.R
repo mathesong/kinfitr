@@ -698,3 +698,42 @@ test_that("dispcor with different intervals works with orig times", {
   expect_true(nrow(out)==17)
 })
 
+# Missing blood measurements and BPR--------------------------------------------
+
+blooddata_pl <- blooddata
+
+blooddata_pl$Data$Blood$Discrete$Values <- blooddata_pl$Data$Blood$Discrete$Values[sample(1:18, 5),]
+
+test_that("plotting blooddata with missing blood samples works", {
+  bdplot <- plot(blooddata_pl)
+  expect_true(any(class(bdplot) == "ggplot"))
+})
+
+test_that("addfit bpr with missing blood samples works", {
+  bpr <- bd_extract(blooddata_pl, output = "BPR")
+  bpr_fit <- lm(bpr ~ time, data=bpr)
+  blooddata_pl <- bd_addfit(blooddata_pl, fit = bpr_fit, modeltype = "BPR")
+
+  bdplot <- plot(blooddata_pl)
+
+  expect_true(any(class(bdplot) == "ggplot"))
+})
+
+test_that("addfitted bpr with missing blood samples works", {
+  bpr <- bd_extract(blooddata_pl, output = "BPR")
+  bpr_fit <- lm(bpr ~ time, data=bpr)
+  fitted <- tibble::tibble(
+    time = seq(min(bpr$time), max(bpr$time), length.out = 100)
+  )
+  fitted$pred <- predict(bpr_fit, newdata = list(time = fitted$time))
+
+  blooddata_pl <- bd_addfitted(blooddata_pl,
+                            time = fitted$time,
+                            predicted = fitted$pred,
+                            modeltype = "BPR"
+  )
+
+  bdplot <- plot(blooddata_pl)
+
+  expect_true(any(class(bdplot) == "ggplot"))
+})

@@ -668,6 +668,50 @@ bd_extract_blood <- function(blooddata,
     return(blood)
   }
 
+  # If there are plasma samples lacking blood samples, we can
+  # generate blood estimates for the plasma time points too.
+
+  plasma <- blooddata$Data$Plasma$Values %>%
+    dplyr::filter(!is.na(activity)) %>%
+    dplyr::arrange(time) %>%
+    dplyr::filter(!duplicated(time)) %>%
+    dplyr::rename(plasma = activity)
+
+  blood <- blood %>%
+    dplyr::mutate(Source = "Measured") %>%
+    dplyr::full_join(plasma, by = "time") %>%
+    dplyr::arrange(time) %>%
+    dplyr::mutate(Source = ifelse(is.na(Source),
+                                  yes = "Plasma",
+                                  no = Source))
+
+  # For pred and interp, we want interpolation to start at 1 at time 0
+  if(!(0 %in% blood$time)) {
+    blood <- rbind(c(0,0, "Discrete", "Inferred", 0),
+                        blood) %>%
+      dplyr::mutate(dplyr::across(c(time, activity, plasma), as.numeric))
+  }
+
+  if(blooddata$Models$BPR$Method != "interp") {
+    bprdata <- bd_extract_bpr(blooddata, what = "interp")
+  } else {
+    bprdata <- bd_extract_bpr(blooddata, what="raw")
+  }
+
+  blood$bpr <- interpends(bprdata$time, bprdata$bpr,
+                            blood$time)
+
+  blood$activity <- ifelse( is.na( blood$activity ),
+                            yes = blood$plasma * blood$bpr,
+                            no = blood$activity)
+
+  blood$Method = ifelse( is.na( blood$Method ),
+                         yes = "Discrete",
+                         no = blood$Method)
+
+  blood <- blood %>%
+    dplyr::select(time, activity, Method, Source)
+
   ## Interp
   if (blooddata$Models$Blood$Method == "interp") {
 
@@ -807,12 +851,13 @@ bd_extract_bpr <- function(blooddata,
   # Preparing
 
   plasma <- blooddata$Data$Plasma$Values %>%
+    dplyr::mutate(Method = "Discrete") %>%
     dplyr::filter(!is.na(activity)) %>%
     dplyr::arrange(time) %>%
     dplyr::filter(!duplicated(time)) %>%
     dplyr::filter(activity > (bpr_peakfrac_cutoff*max(activity)))
 
-  blood <- bd_extract_blood(blooddata, startTime, stopTime, what = "pred")
+  blood <- bd_extract_blood(blooddata, startTime, stopTime, what = "raw")
 
 
   blood_discrete <- blood %>%
@@ -852,6 +897,13 @@ bd_extract_bpr <- function(blooddata,
     return(bpr)
   }
 
+  fullblood <- dplyr::bind_rows(
+    blood %>% dplyr::select(time, Method),
+    plasma %>% dplyr::select(time, Method)
+  ) %>%
+    dplyr::filter(!duplicated(time)) %>%
+    dplyr::arrange(time)
+
 
 
   ## Interp
@@ -864,7 +916,7 @@ bd_extract_bpr <- function(blooddata,
         method = "linear"
       )
     )
-    blood$bpr <- interpends(bpr$time, bpr$bpr, blood$time,
+    fullblood$bpr <- interpends(bpr$time, bpr$bpr, fullblood$time,
       method = "linear"
     )
   }
@@ -879,9 +931,9 @@ bd_extract_bpr <- function(blooddata,
       )
     )
 
-    blood$bpr <- as.numeric(
+    fullblood$bpr <- as.numeric(
       predict(blooddata$Models$BPR$Data,
-      newdata = list(time = blood$time))
+      newdata = list(time = fullblood$time))
     )
   }
 
@@ -901,11 +953,11 @@ bd_extract_bpr <- function(blooddata,
       )
     )
     Pars <- append(
-      list(time = blood$time),
+      list(time = fullblood$time),
       as.list(blooddata$Models$BPR$Data$Pars)
     )
 
-    blood$bpr <- do.call(
+    fullblood$bpr <- do.call(
       what = modelname,
       args = Pars
     )
@@ -922,9 +974,9 @@ bd_extract_bpr <- function(blooddata,
       )
     )
 
-    blood$bpr <- interpends(blooddata$Models$BPR$Data$time,
+    fullblood$bpr <- interpends(blooddata$Models$BPR$Data$time,
       blooddata$Models$BPR$Data$predicted,
-      blood$time,
+      fullblood$time,
       method = "linear"
     )
   }
@@ -932,7 +984,7 @@ bd_extract_bpr <- function(blooddata,
   # Return
 
   if( what=="pred" ) {
-    return(blood)
+    return(fullblood)
   }
 
   if( what=="interp" ) {
@@ -940,6 +992,7 @@ bd_extract_bpr <- function(blooddata,
   }
 
 }
+
 
 bd_extract_pf <- function(blooddata,
                           what = c("raw", "pred", "interp"),
@@ -975,6 +1028,12 @@ bd_extract_pf <- function(blooddata,
   }
 
   blood <- bd_extract_bpr(blooddata, startTime, stopTime, what = "pred")
+
+  # if(!(0 %in% blood$time)) {
+  #   blood <- rbind(c(0,"Discrete", blood$bpr[1]),
+  #               blood) %>%
+  #     dplyr::mutate(dplyr::across(c(time, bpr), as.numeric))
+  # }
 
   ## Interp
   if (blooddata$Models$parentFraction$Method == "interp") {
@@ -1093,15 +1152,21 @@ bd_extract_aif <- function(blooddata,
   ### Note: here, the plasm_uncor is generated from the blood and bpr
   ### curves. But, if we've fitted the bpr, we're actually not using
   ### the true raw plasma data when possible.
-  aif <- bd_extract_pf(blooddata, startTime, stopTime, what = "pred") %>%
-    dplyr::rename(blood = activity) %>%
-    dplyr::mutate(plasma_uncor = blood * (1 / bpr),
-                  aif = plasma_uncor * parentFraction
+  bd <- bd_extract_blood(blooddata, startTime, stopTime, what = "pred") %>%
+    dplyr::select(-Source)
+
+  pf <- bd_extract_pf(blooddata, startTime, stopTime, what = "pred")
+
+  aif <- dplyr::inner_join(bd, pf, by=c("time", "Method")) %>%
+              dplyr::rename(blood = activity) %>%
+              dplyr::mutate(plasma_uncor = blood * (1 / bpr),
+                            aif = plasma_uncor * parentFraction
     )
 
   ### Here the raw plasma data is extracted to replace the calculated
   ### values where raw plasma measurements were actually taken.
-  bpr <- bd_extract_bpr(blooddata, startTime, stopTime, what = "raw")
+  bpr <- bd_extract_bpr(blooddata, startTime, stopTime, what = "raw",
+                        bpr_peakfrac_cutoff = 0)
   blood <- bd_extract_blood(blooddata, startTime, stopTime, what = "raw") %>%
     dplyr::filter(Method=="Discrete")
 
