@@ -662,7 +662,8 @@ bd_extract_blood <- function(blooddata,
   }
 
   blood <- dplyr::filter(blood, !is.na(activity)) %>%
-    dplyr::arrange(blood, time)
+    dplyr::arrange(blood, time) %>%
+    dplyr::mutate(time = round(time, 2))
 
   if (what == "raw") {
     return(blood)
@@ -675,15 +676,16 @@ bd_extract_blood <- function(blooddata,
     dplyr::filter(!is.na(activity)) %>%
     dplyr::arrange(time) %>%
     dplyr::filter(!duplicated(time)) %>%
-    dplyr::rename(plasma = activity)
+    dplyr::rename(plasma = activity) %>%
+    dplyr::mutate(time = round(time, 2))
 
   blood <- blood %>%
-    dplyr::mutate(Source = "Measured") %>%
+    dplyr::mutate(time = round(time, 2)) %>%
     dplyr::full_join(plasma, by = "time") %>%
-    dplyr::arrange(time) %>%
-    dplyr::mutate(Source = ifelse(is.na(Source),
-                                  yes = "Plasma",
-                                  no = Source))
+    dplyr::arrange(time) #%>%
+    #dplyr::mutate(Source = ifelse(is.na(Source),
+    #                              yes = "Plasma",
+    #                              no = Source))
 
   # For pred and interp, we want interpolation to start at 1 at time 0
   if(!(0 %in% blood$time)) {
@@ -710,7 +712,7 @@ bd_extract_blood <- function(blooddata,
                          no = blood$Method)
 
   blood <- blood %>%
-    dplyr::select(time, activity, Method, Source)
+    dplyr::select(time, activity, Method) #, Source)
 
   ## Interp
   if (blooddata$Models$Blood$Method == "interp") {
@@ -855,7 +857,8 @@ bd_extract_bpr <- function(blooddata,
     dplyr::filter(!is.na(activity)) %>%
     dplyr::arrange(time) %>%
     dplyr::filter(!duplicated(time)) %>%
-    dplyr::filter(activity > (bpr_peakfrac_cutoff*max(activity)))
+    dplyr::filter(activity > (bpr_peakfrac_cutoff*max(activity))) %>%
+    dplyr::mutate(time = round(time, 2))
 
   blood <- bd_extract_blood(blooddata, startTime, stopTime, what = "raw")
 
@@ -864,7 +867,8 @@ bd_extract_bpr <- function(blooddata,
     dplyr::filter(!is.na(activity)) %>%
     dplyr::filter(Method=="Discrete") %>%
     dplyr::filter(!duplicated(time)) %>%
-    dplyr::filter(activity > (bpr_peakfrac_cutoff*max(activity)))
+    dplyr::filter(activity > (bpr_peakfrac_cutoff*max(activity))) %>%
+    dplyr::mutate(time = round(time, 2))
 
   commonvalues <- intersect(plasma$time, blood_discrete$time)
 
@@ -1153,9 +1157,11 @@ bd_extract_aif <- function(blooddata,
   ### curves. But, if we've fitted the bpr, we're actually not using
   ### the true raw plasma data when possible.
   bd <- bd_extract_blood(blooddata, startTime, stopTime, what = "pred") %>%
-    dplyr::select(-Source)
+    #dplyr::select(-Source) %>%
+    dplyr::mutate(time = round(time, 2))
 
-  pf <- bd_extract_pf(blooddata, startTime, stopTime, what = "pred")
+  pf <- bd_extract_pf(blooddata, startTime, stopTime, what = "pred") %>%
+    dplyr::mutate(time = round(time, 2))
 
   aif <- dplyr::inner_join(bd, pf, by=c("time", "Method")) %>%
               dplyr::rename(blood = activity) %>%
@@ -1166,9 +1172,12 @@ bd_extract_aif <- function(blooddata,
   ### Here the raw plasma data is extracted to replace the calculated
   ### values where raw plasma measurements were actually taken.
   bpr <- bd_extract_bpr(blooddata, startTime, stopTime, what = "raw",
-                        bpr_peakfrac_cutoff = 0)
+                        bpr_peakfrac_cutoff = 0) %>%
+    dplyr::mutate(time = round(time, 2))
+
   blood <- bd_extract_blood(blooddata, startTime, stopTime, what = "raw") %>%
-    dplyr::filter(Method=="Discrete")
+    dplyr::filter(Method=="Discrete")  %>%
+    dplyr::mutate(time = round(time, 2))
 
   rawplasma <- dplyr::left_join(bpr, blood, by="time") %>%
     dplyr::mutate(measplasma = activity * (1 / bpr)) %>%
