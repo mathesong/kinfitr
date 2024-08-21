@@ -203,18 +203,12 @@ plot_Patlakfit <- function(patlakout, roiname = NULL) {
 
   xlimits <- c(0, tail(plotdf$Patlak_Plasma, 1))
 
-  xlabel <- "Integ(C_Plasma)/C_Tissue"
-  ylabel <- "Integ(C_Tissue)/C_Tissue"
+  xlabel <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
+                             "C", phantom()[{ paste("P") }],"(",tau,")d",tau, " / ",
+                             "C", phantom()[{ paste("P") }],"(t)"))
 
-  # xlabel <- expression(paste("", "", integral("", paste("0"), paste("", "t")),
-  #                            "C", phantom()[{paste("Plasma")}], "",
-  #                            phantom()/phantom(), "C", phantom()[{
-  #                              paste("Plasma", "")}]))
-  #
-  # ylabel <- expression(paste("", "", integral("", paste("0"), paste("", "t")),
-  #                            "C", phantom()[{paste("Tissue")}], "",
-  #                            phantom()/phantom(), "C", phantom()[{
-  #                              paste("Plasma", "")}]))
+  ylabel <- expression(paste("C", phantom()[{ paste("T") }],"(t)", " / ",
+                             "C", phantom()[{ paste("P") }],"(t)"))
 
   outplot <- ggplot(data = plotdf, aes(x = Patlak_Plasma, y = Patlak_ROI, colour = Equilibrium)) +
     geom_point(aes(shape = "a", size = Weights)) +
@@ -272,19 +266,16 @@ Patlak_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL,
   medroi_fit <- Patlakplot(t_tac, medroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
   highroi_fit <- Patlakplot(t_tac, highroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
 
-  #xlabel <- "Integ(C_Plasma) / C_Plasma"
-  #ylabel <- "C_Tissue / C_Plasma"
-
-  xlabel <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
-                             "C", phantom()[{ paste("Plasma") }],"(t)", " / ",
-                             "C", phantom()[{ paste("Plasma") }],"(t)"))
-
-  ylabel <- expression(paste("C", phantom()[{ paste("Tissue") }],"(t)", " / ",
-                             "C", phantom()[{ paste("Plasma") }],"(t)"))
-
   low_xlimits <- c(0, tail(lowroi_fit$fitvals$Patlak_Plasma, 1))
   med_xlimits <- c(0, tail(medroi_fit$fitvals$Patlak_Plasma, 1))
   high_xlimits <- c(0, tail(highroi_fit$fitvals$Patlak_Plasma, 1))
+
+  xlabel <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
+                             "C", phantom()[{ paste("P") }],"(",tau,")d",tau, " / ",
+                             "C", phantom()[{ paste("P") }],"(t)"))
+
+  ylabel <- expression(paste("C", phantom()[{ paste("T") }],"(t)", " / ",
+                             "C", phantom()[{ paste("P") }],"(t)"))
 
   low_linplot <- qplot(lowroi_fit$fitvals$Patlak_Plasma, lowroi_fit$fitvals$Patlak_ROI) + ggtitle("Low") + xlab(xlabel) + ylab(ylabel) + xlim(low_xlimits)
   med_linplot <- qplot(medroi_fit$fitvals$Patlak_Plasma, medroi_fit$fitvals$Patlak_ROI) + ggtitle("Medium") + xlab(xlabel) + ylab(ylabel) + xlim(med_xlimits)

@@ -162,10 +162,15 @@ plot_refmlLoganfit <- function(refmlloganout, roiname = NULL) {
   names(myColors) <- levels(plotdf$Equilibrium)
   colScale <- scale_colour_manual(name = paste0(roiname, "\nEquilibrium"), values = myColors)
 
+  xlabel <- "Fitted Values"
+
+  ylabel <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
+                                   "C", phantom()[{ paste("T") }],"(",tau,")d",tau))
+
   outplot <- ggplot(data = plotdf, aes(x = Fitted, y = Term1_DV, colour = Equilibrium)) +
     geom_point(aes(shape = "a", size = Weights)) +
     geom_abline(slope = 1, intercept = 0) +
-    xlab("Fitted Values") + ylab("Integ(C_Tissue)") + colScale +
+    xlab(xlabel) + ylab(ylabel) + colScale +
     guides(shape = "none", color = guide_legend(order = 1)) + scale_size(range = c(1, 3))
 
   return(outplot)
@@ -212,15 +217,14 @@ refmlLogan_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, fi
   medroi_fit <- refmlLogan(t_tac, reftac, medroi, k2prime, length(reftac), frameStartEnd = frameStartEnd)
   highroi_fit <- refmlLogan(t_tac, reftac, highroi, k2prime, length(reftac), frameStartEnd = frameStartEnd)
 
-  mllogan_xlab <- "Fitted Values"
-  # mllogan_ylab <- "Integ(C_Tissue)"
+  xlabel <- "Fitted Values"
 
-  mllogan_ylab <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
-                                 "C", phantom()[{ paste("Tissue") }],"(t)"))
+  ylabel <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
+                             "C", phantom()[{ paste("T") }],"(",tau,")d",tau))
 
-  low_linplot <- qplot(lowroi_fit$fitvals$Fitted, lowroi_fit$fitvals$Term1_DV) + ggtitle("Low") + xlab(mllogan_xlab) + ylab(mllogan_ylab)
-  med_linplot <- qplot(medroi_fit$fitvals$Fitted, medroi_fit$fitvals$Term1_DV) + ggtitle("Medium") + xlab(mllogan_xlab) + ylab(mllogan_ylab)
-  high_linplot <- qplot(highroi_fit$fitvals$Fitted, highroi_fit$fitvals$Term1_DV) + ggtitle("High") + xlab(mllogan_xlab) + ylab(mllogan_ylab)
+  low_linplot <- qplot(lowroi_fit$fitvals$Fitted, lowroi_fit$fitvals$Term1_DV) + ggtitle("Low") + xlab(xlabel) + ylab(ylabel)
+  med_linplot <- qplot(medroi_fit$fitvals$Fitted, medroi_fit$fitvals$Term1_DV) + ggtitle("Medium") + xlab(xlabel) + ylab(ylabel)
+  high_linplot <- qplot(highroi_fit$fitvals$Fitted, highroi_fit$fitvals$Term1_DV) + ggtitle("High") + xlab(xlabel) + ylab(ylabel)
 
   tstarInclFrames <- 3:frames
   zeros <- rep(0, length(tstarInclFrames))

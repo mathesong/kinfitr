@@ -152,13 +152,20 @@ plot_refPatlakfit <- function(refpatlakout, roiname = NULL) {
   names(myColors) <- levels(plotdf$Equilibrium)
   colScale <- scale_colour_manual(name = paste0(roiname, "\nEquilibrium"), values = myColors)
 
+  ylabel <- expression(paste("C", phantom()[{ paste("T") }],"(t)", " / ",
+                                  "C", phantom()[{ paste("R") }],"(t)"))
+
+  xlabel <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
+                                  "C", phantom()[{ paste("R") }],"(",tau,")d",tau, " / ",
+                                  "C", phantom()[{ paste("R") }],"(t)"))
+
   outplot <- ggplot(data = plotdf, aes(x = Patlak_ref, y = Patlak_roi, colour = Equilibrium)) +
     geom_point(aes(shape = "a", size = Weights)) +
     geom_abline(
       slope = as.numeric(refpatlakout$fit$coefficients[2]),
       intercept = as.numeric(refpatlakout$fit$coefficients[1])
     ) +
-    xlab("Integ(C_Ref) / C_Ref") + ylab("C_Tissue / C_Ref") + colScale +
+    xlab(xlabel) + ylab(ylabel) + colScale +
     guides(shape = "none", color = guide_legend(order = 1)) + scale_size(range = c(1, 3))
 
   return(outplot)
@@ -200,20 +207,16 @@ refPatlak_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename = N
   medroi_fit <- refPatlak(t_tac, reftac, medroi, length(reftac), frameStartEnd = frameStartEnd)
   highroi_fit <- refPatlak(t_tac, reftac, highroi, length(reftac), frameStartEnd = frameStartEnd)
 
-  patlak_xlab <- "Integ(C_Ref) / C_Ref"
-  patlak_ylab <- "C_Tissue / C_Ref"
+  ylabel <- expression(paste("C", phantom()[{ paste("T") }],"(t)", " / ",
+                             "C", phantom()[{ paste("R") }],"(t)"))
 
-  patlak_ylab <- expression(paste("C", phantom()[{ paste("Target") }],"(t)", " / ",
-                                  "C", phantom()[{ paste("Ref") }],"(t)"))
+  xlabel <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
+                             "C", phantom()[{ paste("R") }],"(",tau,")d",tau, " / ",
+                             "C", phantom()[{ paste("R") }],"(t)"))
 
-  patlak_xlab <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
-                             "C", phantom()[{ paste("Ref") }],"(t)", " / ",
-                             "C", phantom()[{ paste("Ref") }],"(t)"))
-
-
-  low_linplot <- qplot(lowroi_fit$fitvals$Patlak_Ref, lowroi_fit$fitvals$Patlak_ROI) + ggtitle("Low") + xlab(patlak_xlab) + ylab(patlak_ylab)
-  med_linplot <- qplot(medroi_fit$fitvals$Patlak_Ref, medroi_fit$fitvals$Patlak_ROI) + ggtitle("Medium") + xlab(patlak_xlab) + ylab(patlak_ylab)
-  high_linplot <- qplot(highroi_fit$fitvals$Patlak_Ref, highroi_fit$fitvals$Patlak_ROI) + ggtitle("High") + xlab(patlak_xlab) + ylab(patlak_ylab)
+  low_linplot <- qplot(lowroi_fit$fitvals$Patlak_Ref, lowroi_fit$fitvals$Patlak_ROI) + ggtitle("Low") + xlab(xlabel) + ylab(ylabel)
+  med_linplot <- qplot(medroi_fit$fitvals$Patlak_Ref, medroi_fit$fitvals$Patlak_ROI) + ggtitle("Medium") + xlab(xlabel) + ylab(ylabel)
+  high_linplot <- qplot(highroi_fit$fitvals$Patlak_Ref, highroi_fit$fitvals$Patlak_ROI) + ggtitle("High") + xlab(xlabel) + ylab(ylabel)
 
   tstarInclFrames <- 3:frames
   zeros <- rep(0, length(tstarInclFrames))

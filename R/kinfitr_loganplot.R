@@ -220,18 +220,16 @@ plot_Loganfit <- function(loganout, roiname = NULL) {
 
   xlimits <- c(0, tail(plotdf$Logan_Plasma, 1))
 
-  xlabel <- "Integ(C_Plasma)/C_Tissue"
-  ylabel <- "Integ(C_Tissue)/C_Tissue"
+  # xlabel <- "Integ(C_Plasma)/C_Tissue"
+  # ylabel <- "Integ(C_Tissue)/C_Tissue"
 
-  # xlabel <- expression(paste("", "", integral("", paste("0"), paste("", "t")),
-  #                            "C", phantom()[{paste("Plasma")}], "",
-  #                            phantom()/phantom(), "C", phantom()[{
-  #                              paste("Tissue", "")}]))
-  #
-  # ylabel <- expression(paste("", "", integral("", paste("0"), paste("", "t")),
-  #                            "C", phantom()[{paste("Tissue")}], "",
-  #                             phantom()/phantom(), "C", phantom()[{
-  #                             paste("Tissue", "")}]))
+  xlabel <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
+                             "C", phantom()[{ paste("P") }],"(",tau,")d",tau, " / ",
+                             "C", phantom()[{ paste("T") }],"(t)"))
+
+  ylabel <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
+                             "C", phantom()[{ paste("T") }],"(",tau,")d",tau, " / ",
+                             "C", phantom()[{ paste("T") }],"(t)"))
 
   outplot <- ggplot(data = plotdf, aes(x = Logan_Plasma, y = Logan_ROI, colour = Equilibrium)) +
     geom_point(aes(shape = "a", size = Weights)) +
@@ -302,20 +300,20 @@ Logan_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, 
   # ylabel <- "Integ(C_Tissue)/C_Tissue"
 
   xlabel <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
-                             "C", phantom()[{ paste("Plasma") }],"(t)", " / ",
-                             "C", phantom()[{ paste("Tissue") }],"(t)"))
+                             "C", phantom()[{ paste("P") }],"(",tau,")d",tau, " / ",
+                             "C", phantom()[{ paste("T") }],"(t)"))
 
   ylabel <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
-                             "C", phantom()[{ paste("Tissue") }],"(t)", " / ",
-                             "C", phantom()[{ paste("Tissue") }],"(t)"))
+                             "C", phantom()[{ paste("T") }],"(",tau,")d",tau, " / ",
+                             "C", phantom()[{ paste("T") }],"(t)"))
 
   low_xlimits <- c(0, tail(lowroi_fit$fitvals$Logan_Plasma, 1))
   med_xlimits <- c(0, tail(medroi_fit$fitvals$Logan_Plasma, 1))
   high_xlimits <- c(0, tail(highroi_fit$fitvals$Logan_Plasma, 1))
 
-  low_linplot <- qplot(lowroi_fit$fitvals$Logan_Plasma, lowroi_fit$fitvals$Logan_ROI) + ggtitle("Low") + xlab(xlabel) + ylab(ylabel) + xlim(low_xlimits)
-  med_linplot <- qplot(medroi_fit$fitvals$Logan_Plasma, medroi_fit$fitvals$Logan_ROI) + ggtitle("Medium") + xlab(xlabel) + ylab(ylabel) + xlim(med_xlimits)
-  high_linplot <- qplot(highroi_fit$fitvals$Logan_Plasma, highroi_fit$fitvals$Logan_ROI) + ggtitle("High") + xlab(xlabel) + ylab(ylabel) + xlim(high_xlimits)
+  low_linplot <- qplot(lowroi_fit$fitvals$Logan_Plasma, lowroi_fit$fitvals$Logan_ROI) + ggtitle("Low") + xlim(low_xlimits) + xlab(xlabel) + ylab(ylabel)
+  med_linplot <- qplot(medroi_fit$fitvals$Logan_Plasma, medroi_fit$fitvals$Logan_ROI) + ggtitle("Medium") + xlim(med_xlimits) + xlab(xlabel) + ylab(ylabel)
+  high_linplot <- qplot(highroi_fit$fitvals$Logan_Plasma, highroi_fit$fitvals$Logan_ROI) + ggtitle("High") + xlim(high_xlimits) + xlab(xlabel) + ylab(ylabel)
 
   tstarInclFrames <- 3:frames
   zeros <- rep(0, length(tstarInclFrames))

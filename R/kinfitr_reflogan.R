@@ -148,13 +148,25 @@ plot_refLoganfit <- function(refloganout, roiname = NULL) {
   names(myColors) <- levels(plotdf$Equilibrium)
   colScale <- scale_colour_manual(name = paste0(roiname, "\nEquilibrium"), values = myColors)
 
+  xlabel <- expression(paste("(", "",
+                                    paste(integral(, paste("0"), paste("", "t")),
+                                          "C", phantom()[{ paste("R") }],"(",tau,")d",tau, " + ",
+                                          frac(paste("C", phantom()[{ paste("R") }],"(t)"),
+                                               paste("k",phantom()[{ paste("2") }],"\'",))),")",
+                                      " / ",
+                                 "C", phantom()[{ paste("T") }],"(t)"))
+
+  ylabel <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
+                                 "C", phantom()[{ paste("T") }],"(",tau,")d",tau, " / ",
+                                 "C", phantom()[{ paste("T") }],"(t)"))
+
   outplot <- ggplot(data = plotdf, aes(x = Logan_ref, y = Logan_roi, colour = Equilibrium)) +
     geom_point(aes(shape = "a", size = Weights)) +
     geom_abline(
       slope = as.numeric(refloganout$fit$coefficients[2]),
       intercept = as.numeric(refloganout$fit$coefficients[1])
     ) +
-    xlab("[Integ(C_Ref)+C_Ref/k2prime] / C_Tissue") + ylab("Integ(C_Tissue) / C_Tissue") + colScale +
+    xlab(xlabel) + ylab(ylabel) + colScale +
     guides(shape = "none", color = guide_legend(order = 1)) + scale_size(range = c(1, 3))
 
   return(outplot)
@@ -198,21 +210,21 @@ refLogan_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, file
   medroi_fit <- refLogan(t_tac, reftac, medroi, k2prime, length(reftac), frameStartEnd = frameStartEnd)
   highroi_fit <- refLogan(t_tac, reftac, highroi, k2prime, length(reftac), frameStartEnd = frameStartEnd)
 
-  # logan_xlab <- "[Integ(C_Ref)+C_Ref/k2prime] / C_Tissue"
-  # logan_ylab <- "Integ(C_Tissue) / C_Tissue"
+  xlabel <- expression(paste("(", "",
+                             paste(integral(, paste("0"), paste("", "t")),
+                                   "C", phantom()[{ paste("R") }],"(",tau,")d",tau, " + ",
+                                   frac(paste("C", phantom()[{ paste("R") }],"(t)"),
+                                        paste("k",phantom()[{ paste("2") }],"\'",))),")",
+                             " / ",
+                             "C", phantom()[{ paste("T") }],"(t)"))
 
-  logan_xlab <- expression(paste("(", "", integral(, paste("0"), paste("", "t")),
-                             "C", phantom()[{ paste("Ref") }],"(t)", " + ",
-                             "C", phantom()[{ paste("Ref") }],"(t)","/k",phantom()[{ paste("2") }],"\' ) / ",
-                             "C", phantom()[{ paste("Target") }],"(t)"))
+  ylabel <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
+                             "C", phantom()[{ paste("T") }],"(",tau,")d",tau, " / ",
+                             "C", phantom()[{ paste("T") }],"(t)"))
 
-  logan_ylab <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
-                                 "C", phantom()[{ paste("Tissue") }],"(t)", " / ",
-                                 "C", phantom()[{ paste("Tissue") }],"(t)"))
-
-  low_linplot <- qplot(lowroi_fit$fitvals$Logan_Ref, lowroi_fit$fitvals$Logan_ROI) + ggtitle("Low") + xlab(logan_xlab) + ylab(logan_ylab)
-  med_linplot <- qplot(medroi_fit$fitvals$Logan_Ref, medroi_fit$fitvals$Logan_ROI) + ggtitle("Medium") + xlab(logan_xlab) + ylab(logan_ylab)
-  high_linplot <- qplot(highroi_fit$fitvals$Logan_Ref, highroi_fit$fitvals$Logan_ROI) + ggtitle("High") + xlab(logan_xlab) + ylab(logan_ylab)
+  low_linplot <- qplot(lowroi_fit$fitvals$Logan_Ref, lowroi_fit$fitvals$Logan_ROI) + ggtitle("Low") + xlab(xlabel) + ylab(ylabel)
+  med_linplot <- qplot(medroi_fit$fitvals$Logan_Ref, medroi_fit$fitvals$Logan_ROI) + ggtitle("Medium") + xlab(xlabel) + ylab(ylabel)
+  high_linplot <- qplot(highroi_fit$fitvals$Logan_Ref, highroi_fit$fitvals$Logan_ROI) + ggtitle("High") + xlab(xlabel) + ylab(ylabel)
 
   tstarInclFrames <- 3:frames
   zeros <- rep(0, length(tstarInclFrames))
