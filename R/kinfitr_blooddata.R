@@ -689,7 +689,7 @@ bd_extract_blood <- function(blooddata,
 
   # For pred and interp, we want interpolation to start at 1 at time 0
   if(!(0 %in% blood$time)) {
-    blood <- rbind(c(0,0, "Discrete", "Inferred", 0),
+    blood <- rbind(c(0,0, "Discrete", 0),
                         blood) %>%
       dplyr::mutate(dplyr::across(c(time, activity, plasma), as.numeric))
   }
