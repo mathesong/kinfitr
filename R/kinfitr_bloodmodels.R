@@ -1589,6 +1589,7 @@ blmod_feng <- function(time, activity, Method = NULL,
     lower$A <- 0.1*startvals$A
     lower$B <- 0.1*startvals$B
     lower$C <- 0.1*startvals$C
+
   }
 
   if(is.null(upper)) {
@@ -1922,9 +1923,9 @@ blmod_fengconv <- function(time, activity, inftime = NULL,
     lower$B <- 0
     lower$C <- 0
 
-    lower$alpha <- 0
-    lower$beta <- 0
-    lower$gamma <- 0
+    lower$alpha <- 1e-6
+    lower$beta  <- 1e-6
+    lower$gamma <- 1e-6
   }
 
   if(is.null(upper)) {
