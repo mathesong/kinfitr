@@ -176,17 +176,21 @@ bloodstream_parameter_fix <- function(AIFmodel, AIFpars, Unit_time, Unit_AIF) {
   feng <- AIFmodel == "Fit Individually: Feng"
   fengconv <- AIFmodel == "Fit Individually: FengConv"
 
+  parnames <- colnames(AIFpars)
+
+  AIFpars <- AIFpars %>%
+    dplyr::mutate(dplyr::across(dplyr::all_of(parnames), as.numeric))
 
   ###### Tri-exponential ######
   if(triexp) {
 
     if(Unit_time == "s") {
-      AIFpars$alpha <- AIFpars$alpha*60
-      AIFpars$beta  <- AIFpars$beta *60
-      AIFpars$gamma <- AIFpars$gamma*60
+      AIFpars$alpha <- as.numeric(AIFpars$alpha*60)
+      AIFpars$beta  <- as.numeric(AIFpars$beta *60)
+      AIFpars$gamma <- as.numeric(AIFpars$gamma*60)
 
-      AIFpars$t0       <- AIFpars$t0/60
-      AIFpars$peaktime <- AIFpars$peaktime/60
+      AIFpars$t0       <- as.numeric(AIFpars$t0/60)
+      AIFpars$peaktime <- as.numeric(AIFpars$peaktime/60)
     }
 
     if(Unit_AIF != "kBq") {
