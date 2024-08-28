@@ -3,3 +3,5 @@
 ^\.Rproj\.user$
 ^\.httr-oauth$
 ^\.github$
+^README.Rmd
+^data-raw
