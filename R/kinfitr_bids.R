@@ -248,7 +248,7 @@ bids_filename_attributes <- function(filename) {
   attr_vals <- attr_vals[!duplicated(
     attr_vals$attribute, fromLast = T),]
 
-  attr_vals$measurement <- stringr::str_match(filename, "\\_([a-z]*)\\.")[,2]
+  attr_vals$measurement <- stringr::str_match(filename, "\\_([a-zA-Z1-9]*)\\.")[,2]
 
   tidyr::spread(attr_vals, attribute, value)
 }
