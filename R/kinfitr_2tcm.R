@@ -406,7 +406,7 @@ twotcm_fitDelay_model <- function(t_tac, input, K1, k2, k3, k4, inpshift, vB) {
   i_outtac <- kinfit_convolve(a, b, step)
 
   # Correction for vB
-  i_outtac <- i_outtac * (1 - vB) + vB * aif
+  i_outtac <- i_outtac * (1 - vB) + vB * i_blood
 
   outtac <- pracma::interp1(interptime, i_outtac, t_tac)
 
