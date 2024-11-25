@@ -1322,20 +1322,22 @@ blmod_feng_startpars <- function(time, activity,
     rise_coef <- coef(rise_lm)
     startpars$t0 <- as.numeric(-1*(rise_coef[1] / rise_coef[2]))
 
-    if(startpars$t0 < 0) { # This can happen if the peak is very dispersed
+    if( is.na(startpars$t0) ) { startpars$t0 <- min(time) }
+
+    if(startpars$t0 < min(time)) { # This can happen if the peak is very dispersed
       bloodrise <- bloodrise[blood$activity >= 0.1*startpars$peakval, ]
       rise_lm <- lm(activity ~ time, data=bloodrise)
       rise_coef <- coef(rise_lm)
       startpars$t0 <- as.numeric(-1*(rise_coef[1]/rise_coef[2]))
     }
 
-    if(startpars$t0 < 0) { # If still less than 0
-      startpars$t0 <- 0
+    if(startpars$t0 < min(time)) { # If still less than 0
+      startpars$t0 <- min(time)
     }
   }
 
-    if(startpars$t0 < 0) { # If still less than 0
-      startpars$t0 <- 0
+    if(startpars$t0 < min(time)) { # If still less than 0
+      startpars$t0 <- min(time)
     }
 
 
@@ -1456,8 +1458,8 @@ blmod_feng_startpars <- function(time, activity,
     startpars$A <- startpars$B
     startpars$alpha <- startpars$beta
 
-    warning("not enough points left to define A and alpha: consider
-            revising the expdecay_props")
+    warning("not enough points left to define A and alpha starting parameters:
+            consider revising the expdecay_props")
   }
 
   # return the list in correct order
