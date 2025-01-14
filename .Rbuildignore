@@ -1,3 +1,5 @@
+^renv$
+^renv\.lock$
 ^codecov\.yml$
 ^.*\.Rproj$
 ^\.Rproj\.user$
@@ -5,3 +7,4 @@
 ^\.github$
 ^README.Rmd
 ^data-raw
+^\.Rprofile$
