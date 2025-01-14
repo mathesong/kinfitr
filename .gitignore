@@ -3,4 +3,3 @@
 .RData
 inst/doc
 .httr-oauth
-packrat/lib*/

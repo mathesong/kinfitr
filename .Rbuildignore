@@ -7,5 +7,4 @@
 ^\.github$
 ^README.Rmd
 ^data-raw
-^packrat/
 ^\.Rprofile$

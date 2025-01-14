@@ -24,6 +24,14 @@ as follows:
 remotes::install_github("mathesong/kinfitr")
 ```
 
+Additionally, this package can be cloned with git and setup with renv:
+
+```bash
+git clone https://github.com/mathesong/kinfitr.git
+cd kinfitr
+Rscript -e "renv::install()"
+```
+
 There is also a docker container if you would prefer not to have to
 download everything. If you download Docker, you can pull the container
 and start it with the following commands. The rstudio session can be
