@@ -39,7 +39,8 @@ Imports:
     stringr,
     segmented,
     LambertW,
-    rlang
+    rlang,
+    httr2
 Suggests:
     knitr,
     devtools,
