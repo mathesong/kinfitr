@@ -1,50 +1,14 @@
 Package: kinfitr
-Title: Kinetic Modelling of PET Time Activity Curves
-Date: 2024-08-14
-Version: 0.8.0
-Authors@R: person("Granville", "Matheson", email = "mathesong@gmail.com", role = c("aut", "cre"))
-Description: This package calculates outcome parameters for PET data using time activity curves (TACs). The will allow for more reproducible PET modelling research.
-Depends:
-    R (>= 3.4.0)
+Title: Kinetic Modeling Tools for PET Analysis
+Version: 0.1.0
+Authors@R: 
+    person("Your", "Name", email = "your.email@example.com", role = c("aut", "cre"))
+Description: Tools for kinetic modeling analysis of PET data.
 License: MIT + file LICENSE
 Encoding: UTF-8
-LazyData: true
-RoxygenNote: 7.3.2
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
 Imports:
-    pracma,
-    minpack.lm,
-    forcats,
-    RColorBrewer,
-    plyr,
-    tidyr,
-    magrittr,
-    scales,
-    ggplot2,
     dplyr,
-    nls.multstart,
-    tibble,
-    purrr,
-    broom,
-    grDevices,
-    graphics,
-    stats,
-    utils,
-    tools,
-    jsonlite,
-    invgamma,
-    cowplot,
-    car,
-    mgcv,
     fs,
-    stringr,
-    segmented,
-    LambertW,
-    rlang,
-    httr2
-Suggests:
-    knitr,
-    devtools,
-    roxygen2,
-    testthat,
-    rmarkdown,
-    covr
+    jsonlite
