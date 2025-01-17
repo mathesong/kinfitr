@@ -1,8 +1,10 @@
 # Use the Rocker RStudio image as base
 FROM rocker/rstudio:latest
 
-# Disable authentication
+# Disable authentication and set default user credentials
 ENV AUTH=none
+ENV USER=rstudio
+ENV PASSWORD=rstudio
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
