@@ -2,23 +2,13 @@
 if (Sys.getenv("DOCKER") == "true") {
     # Docker environment - use absolute path
     setwd("/home/rstudio/kinfitr")
-    # Add package to search path
-    .First <- function() {
-        message("Loading kinfitr from source...")
-        devtools::load_all(".")
-        message("✓ Loaded kinfitr")
-    }
+    # Add R package directory to the search path
+    .libPaths(c("/home/rstudio/kinfitr/R", .libPaths()))
 } else {
     # Local environment - use relative path from project root
-    # Get the project root directory (where .Rprofile lives)
     project_root <- normalizePath(dirname(sys.frame(1)$ofile))
     setwd(project_root)
-    # Add package to search path
-    .First <- function() {
-        message("Loading kinfitr from source...")
-        devtools::load_all(".")
-        message("✓ Loaded kinfitr")
-    }
+    .libPaths(c(file.path(project_root, "R"), .libPaths()))
 }
 
 # Auto-load packages from DESCRIPTION file when in RStudio
@@ -50,4 +40,16 @@ if (interactive() && Sys.getenv("RSTUDIO") == "1") {
     }
 
     load_description_packages()
+
+    # Source all R files directly
+    message("Loading kinfitr source files...")
+    r_files <- list.files("R", pattern = "\\.R$", full.names = TRUE)
+    for (file in r_files) {
+        tryCatch({
+            source(file)
+            message(sprintf("✓ Loaded %s", basename(file)))
+        }, error = function(e) {
+            warning(sprintf("Failed to load %s: %s", basename(file), e$message))
+        })
+    }
 }
