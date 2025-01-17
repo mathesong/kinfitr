@@ -2,13 +2,22 @@
 if (Sys.getenv("DOCKER") == "true") {
     # Docker environment - use absolute path
     setwd("/home/rstudio/kinfitr")
-    # Add R package directory to the search path
-    .libPaths(c("/home/rstudio/kinfitr/R", .libPaths()))
+    # We don't need to modify .libPaths() in Docker as packages 
+    # will be installed to the default R library location
 } else {
     # Local environment - use relative path from project root
-    project_root <- normalizePath(dirname(sys.frame(1)$ofile))
+    project_root <- tryCatch({
+        # First try using here package if available
+        if (requireNamespace("here", quietly = TRUE)) {
+            here::here()
+        } else {
+            # Fallback to current working directory
+            getwd()
+        }
+    }, error = function(e) {
+        getwd()
+    })
     setwd(project_root)
-    .libPaths(c(file.path(project_root, "R"), .libPaths()))
 }
 
 # Auto-load packages from DESCRIPTION file when in RStudio

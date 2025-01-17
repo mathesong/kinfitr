@@ -1,5 +1,8 @@
-# Use the Rocker RStudio image as base
+# Use Rocker RStudio image as base
 FROM rocker/rstudio:latest
+
+# Install RStudio Server
+RUN /rocker_scripts/install_rstudio.sh
 
 # Disable authentication and set default user credentials
 ENV AUTH=none
@@ -11,15 +14,15 @@ RUN apt-get update && apt-get install -y \
     libcurl4-openssl-dev \
     libssl-dev \
     libxml2-dev \
+    # Additional system dependencies for R packages
+    libfontconfig1-dev \
+    libfreetype6-dev \
+    libfribidi-dev \
+    libharfbuzz-dev \
+    libpng-dev \
+    libtiff5-dev \
+    libjpeg-dev \
     && rm -rf /var/lib/apt/lists/*
-
-# Install R package dependencies first
-RUN Rscript -e '\
-    repos <- c(CRAN = "https://cloud.r-project.org"); \
-    options(Ncpus = parallel::detectCores()); \
-    install.packages(c("xml2", "roxygen2", "remotes", "devtools", "usethis", "testthat", "pkgload"), \
-        repos = repos, \
-        dependencies = TRUE)'
 
 # Set working directory
 WORKDIR /home/rstudio/kinfitr
@@ -33,17 +36,20 @@ COPY . /home/rstudio/kinfitr/
 # Make sure RStudio user owns the project files
 RUN chown -R rstudio:rstudio /home/rstudio/kinfitr
 
-# Install R package dependencies from DESCRIPTION file
+# Install devtools and then use it to install the package with all dependencies in parallel
 RUN Rscript -e '\
-    repos <- c(CRAN = "https://cloud.r-project.org"); \
+    install.packages(c("devtools", "systemfonts", "textshaping", "ragg", "shiny", "miniUI", "pkgdown")); \
+        #repos="https://cloud.r-project.org", \
+        #dependencies=TRUE); \
     options(Ncpus = parallel::detectCores()); \
-    if (file.exists("DESCRIPTION")) { \
-        deps <- read.dcf("DESCRIPTION", fields = c("Imports", "Depends")); \
-        packages <- unlist(strsplit(paste(deps[!is.na(deps)], collapse = ","), ",")); \
-        packages <- gsub("\\\\s+", "", packages); \
-        packages <- packages[packages != "R"]; \
-        install.packages(packages, repos = repos, dependencies = TRUE); \
-    }'
+    devtools::install("/home/rstudio/kinfitr", dependencies=TRUE, upgrade="never")'
 
-# Expose port 8787 for RStudio
+RUN Rscript -e 'cat("\nR Library Paths:\n"); \
+    .libPaths() |> cat(sep="\n"); \
+    if (!require("kinfitr")) stop("Failed to install kinfitr package")'
+
+# Expose port for RStudio Server
 EXPOSE 8787
+
+# Start RStudio Server
+CMD ["/init"]
