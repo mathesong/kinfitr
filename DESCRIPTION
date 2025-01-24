@@ -9,6 +9,7 @@ Depends:
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
+LazyLoad: no
 RoxygenNote: 7.3.2
 Imports:
     pracma,
