@@ -53,12 +53,6 @@ is_loading_for_tests <- function() {
 
 .onAttach <- function(libname, pkgname) {
   path_to_installation_info_json <- file.path(libname, "kinfitr", "installation_settings.json")
-  # Check if tracking is disabled
-  if (!isTRUE(getOption("kinfitr_no_track"))) {
-    message("Opt-out of sending tracking information to
-    the KinFitR developers.")
-  }
-
   # Skip telemetry during tests
   if (is_loading_for_tests()) {
     return(NULL)
@@ -89,9 +83,12 @@ is_loading_for_tests <- function() {
   if (isTRUE(getOption("kinfitr.no_track")) ||
         Sys.getenv("KINFITR_NO_TRACK") == "TRUE" ||
         isTRUE(is_loading_for_tests())) {
-    # do nothing
+        # do nothing
     install_info <- read_installation_info(path_to_installation_info_json)
+    
+    if (!isFALSE(is_loading_for_tests())) {
     install_info$no_track <- TRUE
+    }
     write_installation_info(install_info, path_to_installation_info_json)
     message("Installation info written to: ", path_to_installation_info_json)
     return(NULL)
@@ -99,5 +96,4 @@ is_loading_for_tests <- function() {
     # Send telemetry when package is loaded
     send_telemetry(list("kinfitr_usage" = "package_loaded"))
   }
-
 }
