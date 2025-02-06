@@ -1,9 +1,12 @@
+# set url_base to http://openneuropet.org for deployment
+url_base <- "http://54.144.240.214"
 get_url <- "http://54.144.240.214/check/kinfitr/"
 post_url <- "http://54.144.240.214/kinfitr/"
 
 get_telemetry <- function(url = get_url, number_of_records = 0) {
-  # checks to see what's been posted to the url endpoint, should return location,
-  # and any other data that gets put there with send_telemetry
+  # checks to see what's been posted to the url endpoint,
+  # should return location and any other data that gets
+  # put there with send_telemetry
   req <- httr2::request(paste(url, as.character(number_of_records), sep = ""))
   req |> httr2::req_headers("Accept" = "application/json")
   req |> httr2::req_retry(max_tries = 3)
@@ -23,7 +26,6 @@ send_telemetry <- function(telemetry_json_data, url = post_url) {
     try(
       {
         req <- httr2::request(url)
-        # Fix the request chain - these need to be assigned
         req <- httr2::req_retry(req, max_tries = 3)
         req <- httr2::req_timeout(req, 3)
 
@@ -34,7 +36,7 @@ send_telemetry <- function(telemetry_json_data, url = post_url) {
         return_values <- list(status_code = response$status_code)
         return(return_values)
       },
-      silent = FALSE # Changed to FALSE to see any errors
+      silent = FALSE
     )
   }
 }
