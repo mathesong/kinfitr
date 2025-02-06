@@ -1,7 +1,7 @@
 # set url_base to http://openneuropet.org for deployment
 url_base <- "http://54.144.240.214"
-get_url <- "http://54.144.240.214/check/kinfitr/"
-post_url <- "http://54.144.240.214/kinfitr/"
+get_url <- paste0(url_base, "/check/kinfitr/")
+post_url <- paste0(url_base, "/kinfitr/")
 
 get_telemetry <- function(url = get_url, number_of_records = 0) {
   # checks to see what's been posted to the url endpoint,
