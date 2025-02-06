@@ -1,4 +1,3 @@
-library(jsonlite)
 
 
 read_installation_info <- function(path_to_installation_info_json) {

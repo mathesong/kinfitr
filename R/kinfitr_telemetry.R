@@ -1,6 +1,3 @@
-library(httr2)
-
-
 get_url <- "http://54.144.240.214/check/kinfitr/"
 post_url <- "http://54.144.240.214/kinfitr/"
 
