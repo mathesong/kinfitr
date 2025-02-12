@@ -11,11 +11,11 @@ build-all: build-rstudio build-dev
 
 # Build RStudio container
 build-rstudio:
-	apptainer build $(RSTUDIO_IMAGE) Singularity.rstudio
+	apptainer build $(RSTUDIO_IMAGE) containers/rstudio.Singularity
 
 # Build Development container
 build-dev:
-	apptainer build $(DEV_IMAGE) Singularity.dev
+	apptainer build $(DEV_IMAGE) containers/dev.Singularity
 
 # Run RStudio container
 run-rstudio:

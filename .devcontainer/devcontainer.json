@@ -1,7 +1,7 @@
 {
     "name": "R Development",
     "build": {
-        "dockerfile": "Dockerfile"
+        "dockerfile": "../containers/dev.Dockerfile"
     },
     "customizations": {
         "vscode": {

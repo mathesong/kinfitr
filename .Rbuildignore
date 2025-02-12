@@ -8,3 +8,4 @@
 ^.vscode\/
 launch_rstudio.sh
 Dockerfile*
+containers/
