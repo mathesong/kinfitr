@@ -61,7 +61,7 @@ check_port
 # Build the Docker image if it doesn't exist
 if [[ "$(docker images -q mathesong/kinfitr:latest 2> /dev/null)" == "" ]]; then
     echo -e "${YELLOW}Building Docker image...${NC}"
-    if ! docker build -t mathesong/kinfitr .; then
+    if ! docker build -t mathesong/kinfitr -f Dockerfile-Rstudio .; then
         echo -e "${RED}Error: Failed to build Docker image${NC}"
         exit 1
     fi

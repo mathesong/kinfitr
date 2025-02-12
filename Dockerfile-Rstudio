@@ -1,5 +1,5 @@
 # Use Rocker RStudio image as base
-FROM rocker/rstudio:latest
+FROM rocker/rstudio:4.4.2
 
 # Install RStudio Server
 RUN /rocker_scripts/install_rstudio.sh
