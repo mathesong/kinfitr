@@ -9,3 +9,4 @@
 launch_rstudio.sh
 Dockerfile*
 containers/
+^\*.sif
