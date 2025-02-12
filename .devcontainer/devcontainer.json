@@ -1,0 +1,19 @@
+{
+    "name": "R Development",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "REditorSupport.r",
+                "RDebugger.r-debugger"
+            ]
+        }
+    },
+    "remoteUser": "root",
+    "postCreateCommand": "R -e 'devtools::install(\".\")'",
+    "mounts": [
+        "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
+    ]
+}
