@@ -1,7 +1,7 @@
 {
-    "name": "R Development",
+    "name": "R Docker Development",
     "build": {
-        "dockerfile": "../containers/dev.Dockerfile"
+        "dockerfile": "../../containers/dev.Dockerfile"
     },
     "customizations": {
         "vscode": {
@@ -12,7 +12,7 @@
         }
     },
     "remoteUser": "root",
-    "postCreateCommand": "R -e 'devtools::install(\".\")'",
+    "postCreateCommand": "R -e 'install.packages(\"shiny\"); devtools::install(\".\")'",
     "mounts": [
         "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
     ]
