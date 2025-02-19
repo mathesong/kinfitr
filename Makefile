@@ -3,26 +3,29 @@ RSTUDIO_IMAGE = kinfitr-rstudio.sif
 DEV_IMAGE = kinfitr-dev.sif
 BIND_PATH = ${PWD}
 DOCKER_DEV_IMAGE = kinfitr-dev-docker
+DOCKER_RSTUDIO_IMAGE = kinfitr-rstudio-docker
 
 # Default target
 all: build-all
 
 # Build all containers
-build-all: build-rstudio build-dev build-docker-dev
+build-all: build-rstudio build-dev build-docker-dev build-docker-rstudio
 
 # Build RStudio container
 build-rstudio:
-	apptainer build $(RSTUDIO_IMAGE) Singularity.rstudio
-	mv $(RSTUDIO_IMAGE) containers/
+	apptainer build containers/$(RSTUDIO_IMAGE) containers/rstudio.Singularity
 
 # Build Development container
 build-dev:
-	apptainer build $(DEV_IMAGE) Singularity.dev
-	mv $(DEV_IMAGE) containers/
+	apptainer build containers/$(DEV_IMAGE) containers/dev.Singularity
 
 # Build Docker development container for VSCode
 build-docker-dev:
-	docker build -t $(DOCKER_DEV_IMAGE) -f Dockerfile.dev .
+	docker build -t containers/$(DOCKER_DEV_IMAGE) -f Dockerfile.dev .
+
+# Build Docker RStudio container for VSCode
+build-docker-rstudio:
+	docker build -t containers/$(DOCKER_RSTUDIO_IMAGE) -f containers/rstudio.Dockerfile .
 
 # Run RStudio container
 run-rstudio:
