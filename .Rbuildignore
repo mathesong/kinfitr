@@ -10,3 +10,5 @@ launch_rstudio.sh
 Dockerfile*
 containers/
 ^\*.sif
+Makefile
+installation_settings.json
