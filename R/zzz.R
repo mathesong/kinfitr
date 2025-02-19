@@ -22,8 +22,8 @@ read_installation_info <- function(path_to_installation_info_json) {
   return(installation_info)
 }
 
-write_installation_info <- function(
-    install_info, path_to_installation_info_json) {
+write_installation_info <- function(install_info,
+                                    path_to_installation_info_json) {
   # Create a list to write to JSON
   install_info$installed_on <- Sys.Date()
 
@@ -62,32 +62,40 @@ is_loading_for_tests <- function() {
   }
 
   if (isTRUE(getOption("kinfitr.no_track") |> as.logical()) ||
-        isTRUE(Sys.getenv("KINFITR_NO_TRACK") |> as.logical()) ||
-        isTRUE(install_info$no_track |> as.logical())) {
+      isTRUE(Sys.getenv("KINFITR_NO_TRACK") |> as.logical()) ||
+      isTRUE(install_info$no_track |> as.logical())) {
+
     install_info$no_track <- TRUE
     write_installation_info(install_info, path_to_installation_info_json)
+
     return(NULL)
   }
 
   if (!isTRUE(getOption("kinfitr.no_track") |> as.logical()) &&
-        !isTRUE(Sys.getenv("KINFITR_NO_TRACK") |> as.logical()) &&
-        !isTRUE(install_info$no_track |> as.logical()) &&
-        !isTRUE(is_loading_for_tests())) {
+      !isTRUE(Sys.getenv("KINFITR_NO_TRACK") |> as.logical()) &&
+      !isTRUE(install_info$no_track |> as.logical()) &&
+      !isTRUE(is_loading_for_tests())) {
+
     send_telemetry(list("kinfitr_usage" = "package_installed"))
     write_installation_info(install_info, path_to_installation_info_json)
   }
 
   # display this message at install
-  if (!isTRUE(install_info$displayed_message |> as.logical())) {
+  if (!isTRUE(install_info$displayed_message %>% as.logical())) {
     message(
-      "Opt-out of sending tracking information to the KinFitR developers. ",
-      "This information provides an indicator of real world usage crucial",
-      "for ",
-      "obtaining funding. To disable tracking set ",
-      "options(kinfitr.no_track = TRUE) or the environment variable ",
-      "KINFITR_NO_TRACK to TRUE), to hide this message set ",
-      "options(kinfitr.no_track = FALSE) or the environment variable ",
-      "KINFITR_NO_TRACK to FALSE"
+      paste(
+        "Please note that kinfitr will send telemetry information to the",
+        "kinfitr developers in order to track real world usage, which is",
+        "critical for obtaining funding to continue future development.",
+        "This consists of information about approximate location and operating",
+        "system.\n\n",
+        "To opt-out of sending this information and disable usage tracking, set",
+        "options(kinfitr.no_track = TRUE) or the environment variable",
+        "KINFITR_NO_TRACK to TRUE. To hide this message, set",
+        "options(kinfitr.no_track = FALSE) or the environment variable",
+        "KINFITR_NO_TRACK to FALSE .",
+        sep = " "
+      )
     )
     install_info$displayed_message <- TRUE
     write_installation_info(install_info, path_to_installation_info_json)
@@ -106,10 +114,12 @@ is_loading_for_tests <- function() {
   # system environment, R environment, or via config file
   # or if this library is being tested
   if (isTRUE(getOption("kinfitr.no_track") |> as.logical()) ||
-        isTRUE(Sys.getenv("KINFITR_NO_TRACK") |> as.logical()) ||
-        isTRUE(install_info$no_track |> as.logical())) {
+      isTRUE(Sys.getenv("KINFITR_NO_TRACK") |> as.logical()) ||
+      isTRUE(install_info$no_track |> as.logical())) {
+
     install_info$no_track <- TRUE
     write_installation_info(install_info, path_to_installation_info_json)
+
     return(NULL)
   }
 
@@ -119,11 +129,13 @@ is_loading_for_tests <- function() {
   }
 
   if (!isTRUE(getOption("kinfitr.no_track") |> as.logical()) &&
-        !isTRUE(Sys.getenv("KINFITR_NO_TRACK") |> as.logical()) &&
-        !isTRUE(install_info$no_track |> as.logical()) &&
-        !isTRUE(is_loading_for_tests())) {
+      !isTRUE(Sys.getenv("KINFITR_NO_TRACK") |> as.logical()) &&
+      !isTRUE(install_info$no_track |> as.logical()) &&
+      !isTRUE(is_loading_for_tests())) {
+
     # Send telemetry when package is loaded
     send_telemetry(list("kinfitr_usage" = "package_loaded"))
+
     # if none of the conditionals are met in the first statement, then
     # set tracking to true (no_track=FALSE)
     install_info$no_track <- FALSE

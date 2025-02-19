@@ -6,3 +6,4 @@
 ^README.Rmd
 ^data-raw
 Makefile
+installation_settings.json
