@@ -34,7 +34,8 @@ bids_parse_files <- function(studypath) {
     dplyr::mutate(extension = ifelse( extension=="gz" &
                                       grepl(".nii.gz", path),
                                       "nii.gz", extension)) %>%
-    dplyr::filter(!is.na(measurement))
+    dplyr::filter(!is.na(measurement)) %>%
+    dplyr::filter(stringr::str_detect(path, "/pet/"))
 
   if(!("sub" %in% colnames(attributes))) {
     attributes$sub <- "01"
