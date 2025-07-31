@@ -1,16 +1,49 @@
-# Makefile
-.PHONY: reload clean install
+# Variables
+RSTUDIO_IMAGE = kinfitr-rstudio.sif
+DEV_IMAGE = kinfitr-dev.sif
+BIND_PATH = ${PWD}
+DOCKER_DEV_IMAGE = kinfitr-dev-docker
+DOCKER_RSTUDIO_IMAGE = kinfitr-rstudio-docker
 
-reload:
-	Rscript -e "if('kinfitr' %in% (.packages())) { detach('package:kinfitr', unload=TRUE); try(unloadNamespace('kinfitr'), silent=TRUE) }; devtools::install('.', force=TRUE); library(kinfitr)"
+# Default target
+all: build-all
 
+# Build all containers
+build-all: build-rstudio build-dev build-docker-dev build-docker-rstudio
+
+# Build RStudio container
+build-rstudio:
+	apptainer build containers/$(RSTUDIO_IMAGE) containers/rstudio.Singularity
+
+# Build Development container
+build-dev:
+	apptainer build containers/$(DEV_IMAGE) containers/dev.Singularity
+
+# Build Docker development container for VSCode
+build-docker-dev:
+	docker build -t containers/$(DOCKER_DEV_IMAGE) -f Dockerfile.dev .
+
+# Build Docker RStudio container for VSCode
+build-docker-rstudio:
+	docker build -t containers/$(DOCKER_RSTUDIO_IMAGE) -f containers/rstudio.Dockerfile .
+
+# Run RStudio container
+run-rstudio:
+	apptainer run --bind $(BIND_PATH):/home/rstudio/kinfitr containers/$(RSTUDIO_IMAGE)
+
+# Run Development container
+run-dev:
+	apptainer shell --bind $(BIND_PATH):/workspace containers/$(DEV_IMAGE)
+
+# Run Docker development container
+run-docker-dev:
+	docker run -it --rm \
+		-v $(BIND_PATH):/workspace \
+		$(DOCKER_DEV_IMAGE)
+
+# Clean up built images
 clean:
-	Rscript -e "remove.packages('kinfitr'); devtools::clean_dll()"
+	rm -f containers/$(RSTUDIO_IMAGE) containers/$(DEV_IMAGE)
+	docker rmi $(DOCKER_DEV_IMAGE) || true
 
-install:
-	Rscript -e "devtools::install('.', force=TRUE)"
-
-interactive:
-	R
-
-debug: reload interactive
+.PHONY: all build-all build-rstudio build-dev build-docker-dev run-rstudio run-dev run-docker-dev clean 

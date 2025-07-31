@@ -5,5 +5,10 @@
 ^\.github$
 ^README.Rmd
 ^data-raw
+^.vscode\/
+launch_rstudio.sh
+Dockerfile*
+containers/
+^\*.sif
 Makefile
 installation_settings.json
