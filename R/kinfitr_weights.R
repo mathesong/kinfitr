@@ -8,6 +8,7 @@
 #' @param t_end The end times of the frames in minutes.
 #' @param tac The time activity curve.
 #' @param radioisotope The radioisotope.
+#' @param radionuclide_halflife The half-life of the radionuclide in minutes. If specified, this overrides the radioisotope parameter. Defaults to NULL.
 #' @param method Which method should be used? 1 represents duration /
 #'   (tac_uncorrected). 2 represents sqrt(durations*tac_uncorrected). 3
 #'   represents duration / tac. 4 represents sqrt(durations). 5 represents
@@ -53,24 +54,29 @@ weights_create <- function(t_start, t_end, tac,
                            method = 2,
                            minweight = 0.5,
                            minweight_risetopeak = FALSE,
-                           weight_checkn = 5) {
+                           weight_checkn = 5,
+                           radionuclide_halflife = NULL) {
 
   radioisotope <- match.arg(radioisotope, c("C11", "O15", "F18"))
 
   tac <- ifelse(tac < 0, 0, tac)
 
-  tac_uncor <- decay_uncorrect(t_start, t_end, tac, radioisotope)
+  tac_uncor <- decay_uncorrect(t_start, t_end, tac, radioisotope, radionuclide_halflife)
   durations <- t_end - t_start
   t_tac <- t_start + durations/2
 
   corrections <- tac_uncor / tac
   if( is.nan(corrections[1]) ) corrections[1] <- 1
 
-  hl <- dplyr::case_when(
-    radioisotope == "C11" ~ 20.4,
-    radioisotope == "O15" ~ 2.05,
-    radioisotope == "F18" ~ 109.8
-  )
+  if (!is.null(radionuclide_halflife)) {
+    hl <- radionuclide_halflife
+  } else {
+    hl <- dplyr::case_when(
+      radioisotope == "C11" ~ 20.4,
+      radioisotope == "O15" ~ 2.05,
+      radioisotope == "F18" ~ 109.8
+    )
+  }
 
 
   # pmaxes here to prevent denominators sending weights to infinity

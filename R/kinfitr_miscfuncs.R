@@ -584,6 +584,7 @@ unit_convert <- function(values,
 #' @param t_end The end times of the frames in minutes.
 #' @param tac The uncorrected radioactivity values.
 #' @param radioisotope The radioisotope.
+#' @param radionuclide_halflife The half-life of the radionuclide in minutes. If specified, this overrides the radioisotope parameter. Defaults to NULL.
 #'
 #' @return The tac before decay correction
 #' @export
@@ -599,15 +600,18 @@ unit_convert <- function(values,
 #'  tac = s1$FC)
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
-decay_uncorrect <- function(t_start, t_end, tac, radioisotope = c("C11", "O15", "F18")) {
+decay_uncorrect <- function(t_start, t_end, tac, radioisotope = c("C11", "O15", "F18"), radionuclide_halflife = NULL) {
 
-  radioisotope <- match.arg(radioisotope, c("C11", "O15", "F18"))
-
-  hl <- dplyr::case_when(
-    radioisotope == "C11" ~ 20.4,
-    radioisotope == "O15" ~ 2.05,
-    radioisotope == "F18" ~ 109.8
-  )
+  if (!is.null(radionuclide_halflife)) {
+    hl <- radionuclide_halflife
+  } else {
+    radioisotope <- match.arg(radioisotope, c("C11", "O15", "F18"))
+    hl <- dplyr::case_when(
+      radioisotope == "C11" ~ 20.4,
+      radioisotope == "O15" ~ 2.05,
+      radioisotope == "F18" ~ 109.8
+    )
+  }
 
   lambda <- log(2) / hl
 
@@ -630,6 +634,7 @@ decay_uncorrect <- function(t_start, t_end, tac, radioisotope = c("C11", "O15", 
 #' @param t_end The end times of the frames in minutes.
 #' @param tac_uncor The uncorrected radioactivity values.
 #' @param radioisotope The radioisotope.
+#' @param radionuclide_halflife The half-life of the radionuclide in minutes. If specified, this overrides the radioisotope parameter. Defaults to NULL.
 #'
 #' @return The tac after decay correction
 #' @export
@@ -646,15 +651,19 @@ decay_uncorrect <- function(t_start, t_end, tac, radioisotope = c("C11", "O15", 
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 decay_correct <- function(t_start, t_end, tac_uncor,
-                          radioisotope = c("C11", "O15", "F18")) {
+                          radioisotope = c("C11", "O15", "F18"),
+                          radionuclide_halflife = NULL) {
 
-  radioisotope <- match.arg(radioisotope, c("C11", "O15", "F18"))
-
-  hl <- dplyr::case_when(
-    radioisotope == "C11" ~ 20.4,
-    radioisotope == "O15" ~ 2.05,
-    radioisotope == "F18" ~ 109.8
-  )
+  if (!is.null(radionuclide_halflife)) {
+    hl <- radionuclide_halflife
+  } else {
+    radioisotope <- match.arg(radioisotope, c("C11", "O15", "F18"))
+    hl <- dplyr::case_when(
+      radioisotope == "C11" ~ 20.4,
+      radioisotope == "O15" ~ 2.05,
+      radioisotope == "F18" ~ 109.8
+    )
+  }
 
   lambda <- log(2) / hl
 
