@@ -16,7 +16,8 @@
 #' @param dur Optional. Numeric vector of the time durations of the frames. If
 #' not included, the integrals will be calculated using trapezoidal integration.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
-#' This is to assess time stability.
+#' This can be used to assess time stability for example.
+#' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
 #'
 #' @return A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit}, a dataframe
 #' containing the TACs of the data \code{out$tacs}, a dataframe containing the TACs of the fitted values \code{out$fitvals},
@@ -41,8 +42,13 @@
 #' @export
 
 refPatlak <- function(t_tac, reftac, roitac, tstarIncludedFrames,
-                      weights = NULL, dur = NULL, frameStartEnd = NULL) {
+                      weights = NULL, dur = NULL, frameStartEnd = NULL, timeStartEnd = NULL) {
 
+  # Convert timeStartEnd to frameStartEnd if needed
+  if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
+                       tail(which(t_tac <= timeStartEnd[2]), 1))
+  }
 
   # Tidying
 
@@ -185,7 +191,8 @@ plot_refPatlakfit <- function(refpatlakout, roiname = NULL) {
 #' @param highroi Numeric vector of radioactivity concentrations in a target tissue for each frame. This should be from a ROI with high binding.
 #' @param filename The name of the output image: filename_refPatlak.jpeg
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
-#' This is to assess time stability.
+#' This can be used to assess time stability for example.
+#' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
 #' @param gridbreaks Optional. The size of the grid in the plots. Default: 2.
 #'
 #' @return Saves a jpeg of the plots as filename_refPatlak.jpeg
@@ -201,7 +208,13 @@ plot_refPatlakfit <- function(refpatlakout, roiname = NULL) {
 #'
 #' @export
 
-refPatlak_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename = NULL, frameStartEnd = NULL, gridbreaks = 2) {
+refPatlak_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename = NULL, frameStartEnd = NULL, timeStartEnd = NULL, gridbreaks = 2) {
+  # Convert timeStartEnd to frameStartEnd if needed
+  if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
+                       tail(which(t_tac <= timeStartEnd[2]), 1))
+  }
+
   frames <- length(reftac)
   lowroi_fit <- refPatlak(t_tac, reftac, lowroi, length(reftac), frameStartEnd = frameStartEnd)
   medroi_fit <- refPatlak(t_tac, reftac, medroi, length(reftac), frameStartEnd = frameStartEnd)

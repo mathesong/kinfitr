@@ -15,6 +15,7 @@ twotcm_macro(
   BPp = NULL,
   k4 = NULL,
   frameStartEnd = NULL,
+  timeStartEnd = NULL,
   K1.start = 0.1,
   K1.lower = 1e-04,
   K1.upper = 1,
@@ -78,8 +79,9 @@ K1k3/k2k4 to a specific value.  If not specified, this will be fitted.}
 If not specified, this will be fitted.}
 
 \item{frameStartEnd}{Optional: This allows one to specify the beginning and
-final frame to use for modelling, e.g. c(1,20). This is to assess time
-stability.}
+final frame to use for modelling, e.g. c(1,20). This can be used to assess time stability for example.}
+
+\item{timeStartEnd}{Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.}
 
 \item{K1.start}{Optional. Starting parameter for fitting of K1. Default is
 0.1.}

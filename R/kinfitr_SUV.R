@@ -10,7 +10,8 @@
 #' @param injRad The injected radioactivity.  If not included, this will be set to 1 in case one is using SUV ratios.
 #' @param bodymass The body mass of the participant. If not included, this will be set to 1 in case one is using SUV ratios.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
-#' This is to assess time stability.
+#' This can be used to assess time stability for example.
+#' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes. Note that this requires t_tac.
 #'
 #' @return A list with a data frame of the calculated parameters \code{out$par} and a dataframe containing the TACs both of the
 #' original data and the transformed values \code{out$tacs}
@@ -25,26 +26,59 @@
 #'
 #' fit1 <- SUV(tac, t_tac, injRad = 150, bodymass = 85)
 #' fit2 <- SUV(tac, dur_tac = dur_tac, injRad = 150, bodymass = 85)
+#' fit3 <- SUV(tac, t_tac = t_tac, dur_tac = dur_tac, injRad = 150, bodymass = 85)
+#' fit4 <- SUV(tac, t_tac = t_tac, dur_tac = dur_tac, injRad = 150, bodymass = 85, frameStartEnd = c(1,5))
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export
 
-SUV <- function(tac, t_tac = NULL, dur_tac = NULL, injRad = 1, bodymass = 1, frameStartEnd = NULL) {
+SUV <- function(tac, t_tac = NULL, dur_tac = NULL, injRad = 1, bodymass = 1,
+                frameStartEnd = NULL, timeStartEnd = NULL) {
 
   # Tidying
 
-  if (is.null(dur_tac)) {
-    tidyinput <- tidyinput_art(t_tac, tac, tac,
-                               frameStartEnd) # Don't need weights, thus just set to same as tac
-    t_tac <- tidyinput$t_tac
-  } else {
+  if( is.null(frameStartEnd) && !is.null(timeStartEnd) && is.null(t_tac) ) {
+    stop("timeStartEnd can only be used if t_tac is provided.")
+  }
+
+  # Convert timeStartEnd to frameStartEnd if needed
+  if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1],
+                       tail(which(t_tac <= timeStartEnd[2]), 1))
+  }
+
+  if (!is.null(dur_tac) & is.null(t_tac)) {
+
     tidyinput <- tidyinput_art(dur_tac, tac, tac,
                                frameStartEnd) # Don't need weights, thus just set to same as tac
     dur_tac <- tidyinput$t_tac
+
+    tac <- tidyinput$tac
   }
 
+  if (is.null(dur_tac) & !is.null(t_tac)) {
+    tidyinput <- tidyinput_art(t_tac, tac, tac,
+                               frameStartEnd) # Don't need weights, thus just set to same as tac
+    t_tac <- tidyinput$t_tac
 
-  tac <- tidyinput$tac
+    tac <- tidyinput$tac
+  }
+
+  if (is.null(dur_tac) & is.null(t_tac)) {
+    stop("Either t_tac or dur_tac must be provided")
+  }
+
+  if (!is.null(dur_tac) & !is.null(t_tac)) {
+    tidyinput1 <- tidyinput_art(dur_tac, tac, tac,
+                               frameStartEnd) # Don't need weights, thus just set to same as tac
+    dur_tac <- tidyinput1$t_tac
+
+    tidyinput2 <- tidyinput_art(t_tac, tac, tac,
+                               frameStartEnd) # Don't need weights, thus just set to same as tac
+    t_tac <- tidyinput2$t_tac
+
+    tac <- tidyinput1$tac
+  }
 
 
   # 'Model'

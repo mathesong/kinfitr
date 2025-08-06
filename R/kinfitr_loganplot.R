@@ -29,8 +29,8 @@
 #' @param dur Optional. Numeric vector of the time durations of the frames. If
 #' not included, the integrals will be calculated using trapezoidal integration.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and
-#'   final frame to use for modelling, e.g. c(1,20). This is to assess time
-#'   stability.
+#'   final frame to use for modelling, e.g. c(1,20). This can be used to assess time stability for example.
+#' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
 #'
 #' @return A list with a data frame of the fitted parameters \code{out$par},
 #'   their percentage standard errors \code{out$par.se}, the model fit object
@@ -71,7 +71,13 @@
 #' @export
 
 Loganplot <- function(t_tac, tac, input, tstarIncludedFrames, weights = NULL,
-                      inpshift = 0, vB = 0, dur = NULL, frameStartEnd = NULL) {
+                      inpshift = 0, vB = 0, dur = NULL, frameStartEnd = NULL, timeStartEnd = NULL) {
+
+  # Convert timeStartEnd to frameStartEnd if needed
+  if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
+                       tail(which(t_tac <= timeStartEnd[2]), 1))
+  }
 
   # Tidying
 
@@ -270,8 +276,8 @@ plot_Loganfit <- function(loganout, roiname = NULL) {
 #'   prior to parameter estimation using the following equation: \deqn{C_{T}(t)
 #'   = \frac{C_{Measured}(t) - vB\times C_{B}(t)}{1-vB}}
 #' @param frameStartEnd Optional: This allows one to specify the beginning and
-#'   final frame to use for modelling, e.g. c(1,20). This is to assess time
-#'   stability.
+#'   final frame to use for modelling, e.g. c(1,20). This can be used to assess time stability for example.
+#' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
 #' @param gridbreaks Optional. The size of the grid in the plots. Default: 2.
 #'
 #' @return Saves a jpeg of the plots as filename_Logan.jpeg
@@ -290,7 +296,7 @@ plot_Loganfit <- function(loganout, roiname = NULL) {
 #'
 #' @export
 
-Logan_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, inpshift = 0, vB = 0.05, frameStartEnd = NULL, gridbreaks = 2) {
+Logan_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, inpshift = 0, vB = 0.05, frameStartEnd = NULL, timeStartEnd = NULL, gridbreaks = 2) {
   frames <- length(t_tac)
   lowroi_fit <- Loganplot(t_tac, lowroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
   medroi_fit <- Loganplot(t_tac, medroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)

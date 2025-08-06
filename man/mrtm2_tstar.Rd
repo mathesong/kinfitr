@@ -13,6 +13,7 @@ mrtm2_tstar(
   k2prime,
   filename = NULL,
   frameStartEnd = NULL,
+  timeStartEnd = NULL,
   gridbreaks = 2
 )
 }
@@ -34,7 +35,9 @@ obtained from another model, such as MRTM1, SRTM or set at a specified value. If
 \item{filename}{The name of the output image: filename_mrtm1.jpeg}
 
 \item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
-This is to assess time stability.}
+This can be used to assess time stability for example.}
+
+\item{timeStartEnd}{Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.}
 
 \item{gridbreaks}{Optional. The size of the grid in the plots. Default: 2.}
 }

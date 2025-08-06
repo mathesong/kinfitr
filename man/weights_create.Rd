@@ -12,7 +12,8 @@ weights_create(
   method = 2,
   minweight = 0.5,
   minweight_risetopeak = FALSE,
-  weight_checkn = 5
+  weight_checkn = 5,
+  radionuclide_halflife = NULL
 )
 }
 \arguments{
@@ -45,6 +46,8 @@ values towards the start of the TAC. Defaults to FALSE.}
 \item{weight_checkn}{The number of values of the weights to check to make
 sure that things haven't gone terribly wrong. It will check that this
 number of weights are all above half of the maximum weight.}
+
+\item{radionuclide_halflife}{The half-life of the radionuclide in minutes. If specified, this overrides the radioisotope parameter. Defaults to NULL.}
 }
 \value{
 The vector of weights.

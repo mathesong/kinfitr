@@ -30,8 +30,8 @@
 #'   specify which column of \code{tacdf} to use for fitting this: best to use
 #'   the largest ROI.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and
-#'   final frame to use for modelling, e.g. c(1,20). This is to assess time
-#'   stability.
+#'   final frame to use for modelling, e.g. c(1,20). This can be used to assess time stability for example.
+#' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
 #' @param k2.start Optional. Starting parameter for fitting of k2. Default is
 #'   0.1.
 #' @param k2.lower Optional. Lower bound for the fitting of k2. Default is 0.
@@ -89,11 +89,17 @@
 #' @importFrom dplyr "%>%"
 
 SIME <- function(t_tac, tacdf, input, Vndgrid, weights = NULL, roiweights = NULL,
-                 inpshift = 0, vB = NULL, twotcmstart = NULL, frameStartEnd = NULL,
+                 inpshift = 0, vB = NULL, twotcmstart = NULL, frameStartEnd = NULL, timeStartEnd = NULL,
                  k2.start = 0.1, k2.lower = 0, k2.upper = 0.5,
                  k3.start = 0.1, k3.lower = 0, k3.upper = 0.5,
                  k4.start = 0.1, k4.lower = 0, k4.upper = 0.5,
                  success_cutoff = 0.5) {
+
+  # Convert timeStartEnd to frameStartEnd if needed
+  if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
+                       tail(which(t_tac <= timeStartEnd[2]), 1))
+  }
 
   # Tidying
 

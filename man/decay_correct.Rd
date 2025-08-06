@@ -4,7 +4,13 @@
 \alias{decay_correct}
 \title{Perform Decay Correction of TAC values}
 \usage{
-decay_correct(t_start, t_end, tac_uncor, radioisotope = c("C11", "O15", "F18"))
+decay_correct(
+  t_start,
+  t_end,
+  tac_uncor,
+  radioisotope = c("C11", "O15", "F18"),
+  radionuclide_halflife = NULL
+)
 }
 \arguments{
 \item{t_start}{The starting times of the frames in minutes.}
@@ -14,6 +20,8 @@ decay_correct(t_start, t_end, tac_uncor, radioisotope = c("C11", "O15", "F18"))
 \item{tac_uncor}{The uncorrected radioactivity values.}
 
 \item{radioisotope}{The radioisotope.}
+
+\item{radionuclide_halflife}{The half-life of the radionuclide in minutes. If specified, this overrides the radioisotope parameter. Defaults to NULL.}
 }
 \value{
 The tac after decay correction

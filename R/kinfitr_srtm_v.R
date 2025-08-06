@@ -20,8 +20,8 @@
 #'   not specified, this will be fitted. This parameter was fixed in the
 #'   original article.
 #' @param frameStartEnd Optional. This allows one to specify the beginning and
-#'   final frame to use for modelling, e.g. c(1,20). This is to assess time
-#'   stability.
+#'   final frame to use for modelling, e.g. c(1,20). This can be used to assess time stability for example.
+#' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
 #' @param R1.start Optional. Starting parameter for fitting of R1. Default is 1.
 #' @param R1.lower Optional. Lower bound for the fitting of R1. Default is
 #'   0.0001.
@@ -100,7 +100,7 @@
 #'
 #' @export
 
-srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights = NULL, vBr = NULL, frameStartEnd = NULL,
+srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights = NULL, vBr = NULL, frameStartEnd = NULL, timeStartEnd = NULL,
                    R1.start = 1, R1.lower = 0.0001, R1.upper = 10,
                    k2.start = 0.1, k2.lower = 0.0001, k2.upper = 1,
                    bp.start = 1.5, bp.lower = 0, bp.upper = 15,
@@ -109,6 +109,11 @@ srtm_v <- function(t_tac, reftac, roitac, bloodtac, weights = NULL, vBr = NULL, 
                    multstart_iter = 1, multstart_lower = NULL, multstart_upper = NULL,
                    printvals = F) {
 
+  # Convert timeStartEnd to frameStartEnd if needed
+  if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
+                       tail(which(t_tac <= timeStartEnd[2]), 1))
+  }
 
   # Tidying
 

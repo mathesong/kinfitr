@@ -15,6 +15,7 @@ SIME(
   vB = NULL,
   twotcmstart = NULL,
   frameStartEnd = NULL,
+  timeStartEnd = NULL,
   k2.start = 0.1,
   k2.lower = 0,
   k2.upper = 0.5,
@@ -64,8 +65,9 @@ specify which column of \code{tacdf} to use for fitting this: best to use
 the largest ROI.}
 
 \item{frameStartEnd}{Optional: This allows one to specify the beginning and
-final frame to use for modelling, e.g. c(1,20). This is to assess time
-stability.}
+final frame to use for modelling, e.g. c(1,20). This can be used to assess time stability for example.}
+
+\item{timeStartEnd}{Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.}
 
 \item{k2.start}{Optional. Starting parameter for fitting of k2. Default is
 0.1.}

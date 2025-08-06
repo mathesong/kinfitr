@@ -34,8 +34,8 @@
 #' @param k4 Optional. This parameter can be used to fix k4 to a specific value.
 #'   If not specified, this will be fitted.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and
-#'   final frame to use for modelling, e.g. c(1,20). This is to assess time
-#'   stability.
+#'   final frame to use for modelling, e.g. c(1,20). This can be used to assess time stability for example.
+#' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
 #' @param K1.start Optional. Starting parameter for fitting of K1. Default is
 #'   0.1.
 #' @param K1.lower Optional. Lower bound for the fitting of K1. Default is
@@ -110,7 +110,7 @@
 
 twotcm_macro <- function(t_tac, tac, input, weights = NULL, inpshift = NULL,
                          vB = NULL, Vnd = NULL, BPp = NULL, k4 = NULL,
-                         frameStartEnd = NULL,
+                         frameStartEnd = NULL, timeStartEnd = NULL,
                          K1.start = 0.1, K1.lower = 0.0001, K1.upper = 1,
                          Vnd.start = 1, Vnd.lower = 0.0001, Vnd.upper = 10,
                          BPp.start = 1, BPp.lower = 0.0001, BPp.upper = 50,
@@ -119,6 +119,12 @@ twotcm_macro <- function(t_tac, tac, input, weights = NULL, inpshift = NULL,
                          vB.start = 0.05, vB.lower = 0.01, vB.upper = 0.1,
                          multstart_iter = 1, multstart_lower = NULL, multstart_upper = NULL,
                          printvals = F) {
+
+  # Convert timeStartEnd to frameStartEnd if needed
+  if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
+                       tail(which(t_tac <= timeStartEnd[2]), 1))
+  }
 
   # Tidying
 

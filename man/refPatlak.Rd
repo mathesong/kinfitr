@@ -11,7 +11,8 @@ refPatlak(
   tstarIncludedFrames,
   weights = NULL,
   dur = NULL,
-  frameStartEnd = NULL
+  frameStartEnd = NULL,
+  timeStartEnd = NULL
 )
 }
 \arguments{
@@ -35,7 +36,9 @@ if not included, it is added. If not specified, uniform weights will be used.}
 not included, the integrals will be calculated using trapezoidal integration.}
 
 \item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
-This is to assess time stability.}
+This can be used to assess time stability for example.}
+
+\item{timeStartEnd}{Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.}
 }
 \value{
 A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit}, a dataframe

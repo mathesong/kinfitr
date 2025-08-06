@@ -24,8 +24,8 @@
 #'   not included, the integrals will be calculated using trapezoidal
 #'   integration.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and
-#'   final frame to use for modelling, e.g. c(1,20). This is to assess time
-#'   stability.
+#'   final frame to use for modelling, e.g. c(1,20). This can be used to assess time stability for example.
+#' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
 #'
 #' @return A list with a data frame of the fitted parameters \code{out$par}, the
 #'   model fit object \code{out$fit}, a dataframe containing the TACs of the
@@ -62,8 +62,14 @@
 #'
 #' @export
 lin2tcm <- function(t_tac, tac, input, weights = NULL, inpshift = 0,
-                    vB = NULL, dur = NULL, frameStartEnd = NULL) {
+                    vB = NULL, dur = NULL, frameStartEnd = NULL, timeStartEnd = NULL) {
 
+
+  # Convert timeStartEnd to frameStartEnd if needed
+  if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
+                       tail(which(t_tac <= timeStartEnd[2]), 1))
+  }
 
   # Tidying
 
@@ -341,8 +347,8 @@ plot_lin2tcmfit <- function(lin2tcmout, roiname = NULL) {
 #'   not included, the integrals will be calculated using trapezoidal
 #'   integration.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and
-#'   final frame to use for modelling, e.g. c(1,20). This is to assess time
-#'   stability.
+#'   final frame to use for modelling, e.g. c(1,20). This can be used to assess time stability for example.
+#' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
 #' @param inpshift_vals Optional. The values of the inpshift to assess with the
 #'   grid. By default, a grid between -1 and 1 with spacing of 0.01 will be
 #'   used.
@@ -381,7 +387,13 @@ plot_lin2tcmfit <- function(lin2tcmout, roiname = NULL) {
 #' @export
 lin2tcm_inpshiftProfile <- function(t_tac, tac, input, weights = NULL, vB = NULL,
                                     dur = NULL, frameStartEnd = NULL,
-                                    inpshift_vals = NULL) {
+                                    timeStartEnd = NULL, inpshift_vals = NULL) {
+
+  # Convert timeStartEnd to frameStartEnd if needed
+  if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
+                       tail(which(t_tac <= timeStartEnd[2]), 1))
+  }
 
   if ( is.null(inpshift_vals) ) {
     inpshift_vals <- seq(from = -1, to = 1, by = 0.01)

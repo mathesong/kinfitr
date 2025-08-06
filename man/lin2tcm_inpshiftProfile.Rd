@@ -12,6 +12,7 @@ lin2tcm_inpshiftProfile(
   vB = NULL,
   dur = NULL,
   frameStartEnd = NULL,
+  timeStartEnd = NULL,
   inpshift_vals = NULL
 )
 }
@@ -41,8 +42,9 @@ not included, the integrals will be calculated using trapezoidal
 integration.}
 
 \item{frameStartEnd}{Optional: This allows one to specify the beginning and
-final frame to use for modelling, e.g. c(1,20). This is to assess time
-stability.}
+final frame to use for modelling, e.g. c(1,20). This can be used to assess time stability for example.}
+
+\item{timeStartEnd}{Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.}
 
 \item{inpshift_vals}{Optional. The values of the inpshift to assess with the
 grid. By default, a grid between -1 and 1 with spacing of 0.01 will be

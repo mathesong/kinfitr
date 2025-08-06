@@ -18,7 +18,8 @@
 #' @param dur Optional. Numeric vector of the time durations of the frames. If
 #' not included, the integrals will be calculated using trapezoidal integration.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
-#' This is to assess time stability.
+#' This can be used to assess time stability for example.
+#' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
 
 #'
 #' @return A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit}, a dataframe
@@ -43,8 +44,13 @@
 #' @export
 
 refLogan <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames,
-                     weights = NULL, dur = NULL, frameStartEnd = NULL) {
+                     weights = NULL, dur = NULL, frameStartEnd = NULL, timeStartEnd = NULL) {
 
+  # Convert timeStartEnd to frameStartEnd if needed
+  if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
+                       tail(which(t_tac <= timeStartEnd[2]), 1))
+  }
 
   # Tidying
 
@@ -188,7 +194,8 @@ plot_refLoganfit <- function(refloganout, roiname = NULL) {
 #' obtained from another model, or set at a specified value. If using SRTM to estimate this value, it is equal to k2 / R1.
 #' @param filename The name of the output image: filename_refLogan.jpeg
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
-#' This is to assess time stability.
+#' This can be used to assess time stability for example.
+#' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
 #' @param gridbreaks Optional. The size of the grid in the plots. Default: 2.
 #'
 #' @return Saves a jpeg of the plots as filename_refLogan.jpeg
@@ -204,7 +211,13 @@ plot_refLoganfit <- function(refloganout, roiname = NULL) {
 #'
 #' @export
 
-refLogan_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, filename = NULL, frameStartEnd = NULL, gridbreaks = 2) {
+refLogan_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, filename = NULL, frameStartEnd = NULL, timeStartEnd = NULL, gridbreaks = 2) {
+  # Convert timeStartEnd to frameStartEnd if needed
+  if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
+                       tail(which(t_tac <= timeStartEnd[2]), 1))
+  }
+
   frames <- length(reftac)
   lowroi_fit <- refLogan(t_tac, reftac, lowroi, k2prime, length(reftac), frameStartEnd = frameStartEnd)
   medroi_fit <- refLogan(t_tac, reftac, medroi, k2prime, length(reftac), frameStartEnd = frameStartEnd)

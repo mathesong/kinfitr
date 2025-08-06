@@ -12,6 +12,7 @@ srtm_v(
   weights = NULL,
   vBr = NULL,
   frameStartEnd = NULL,
+  timeStartEnd = NULL,
   R1.start = 1,
   R1.lower = 1e-04,
   R1.upper = 10,
@@ -58,8 +59,9 @@ not specified, this will be fitted. This parameter was fixed in the
 original article.}
 
 \item{frameStartEnd}{Optional. This allows one to specify the beginning and
-final frame to use for modelling, e.g. c(1,20). This is to assess time
-stability.}
+final frame to use for modelling, e.g. c(1,20). This can be used to assess time stability for example.}
+
+\item{timeStartEnd}{Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.}
 
 \item{R1.start}{Optional. Starting parameter for fitting of R1. Default is 1.}
 
