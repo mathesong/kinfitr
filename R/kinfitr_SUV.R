@@ -27,7 +27,8 @@
 #' fit1 <- SUV(tac, t_tac, injRad = 150, bodymass = 85)
 #' fit2 <- SUV(tac, dur_tac = dur_tac, injRad = 150, bodymass = 85)
 #' fit3 <- SUV(tac, t_tac = t_tac, dur_tac = dur_tac, injRad = 150, bodymass = 85)
-#' fit4 <- SUV(tac, t_tac = t_tac, dur_tac = dur_tac, injRad = 150, bodymass = 85, frameStartEnd = c(1,5))
+#' fit4 <- SUV(tac, t_tac = t_tac, dur_tac = dur_tac, injRad = 150, bodymass = 85,
+#'    frameStartEnd = c(1,5))
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @export

@@ -64,6 +64,16 @@ test_that("Loganplot works with durations and frameStartEnd", {
   expect_true(any(class(plot(Loganout)) == "ggplot"))
 })
 
+test_that("Loganplot with time-based tstar works", {
+  Loganout <- Loganplot(
+    t_tac, tac, input, tstar = 30, tstar_type = "time", weights,
+    inpshift = inpshift
+  )
+  expect_lt(Loganout$par$Vt, 3)
+  expect_gt(Loganout$par$Vt, 2)
+  expect_true(any(class(plot(Loganout)) == "ggplot"))
+})
+
 test_that("Loganplot tstarfinder works", {
   suppressWarnings(
     tstar <- Logan_tstar(t_tac, lowroi, medroi, highroi,
@@ -113,6 +123,16 @@ test_that("mlLoganplot works with durations and frameStartEnd", {
     t_tac, tac, input, 10, weights,
     inpshift = inpshift, dur=dur,
     frameStartEnd = c(1, 33)
+  )
+  expect_lt(mlLoganout$par$Vt, 3)
+  expect_gt(mlLoganout$par$Vt, 2)
+  expect_true(any(class(plot(mlLoganout)) == "ggplot"))
+})
+
+test_that("mlLoganplot with time-based tstar works", {
+  mlLoganout <- mlLoganplot(
+    t_tac, tac, input, tstar = 30, tstar_type = "time", weights,
+    inpshift = inpshift
   )
   expect_lt(mlLoganout$par$Vt, 3)
   expect_gt(mlLoganout$par$Vt, 2)
@@ -169,6 +189,16 @@ test_that("MA1 works with durations and frameStartEnd", {
     t_tac, tac, input, 10, weights,
     inpshift = inpshift, dur=dur,
     frameStartEnd = c(1, 33)
+  )
+  expect_lt(ma1out$par$Vt, 3)
+  expect_gt(ma1out$par$Vt, 2)
+  expect_true(any(class(plot(ma1out)) == "ggplot"))
+})
+
+test_that("MA1 with time-based tstar works", {
+  ma1out <- ma1(
+    t_tac, tac, input, tstar = 30, tstar_type = "time", weights,
+    inpshift = inpshift
   )
   expect_lt(ma1out$par$Vt, 3)
   expect_gt(ma1out$par$Vt, 2)
@@ -365,6 +395,16 @@ test_that("Patlakplot with frameStartEnd works", {
   expect_gt(Patlakout$par$K, 0)
   expect_lt(Patlakout$par$K, 0.01)
   expect_lt(max(Patlakout$tacs$Time), max(t_tac))
+  expect_true(any(class(plot(Patlakout)) == "ggplot"))
+})
+
+test_that("Patlakplot with time-based tstar works", {
+  Patlakout <- Patlakplot(
+    t_tac, tac, input, tstar = 30, tstar_type = "time", weights,
+    inpshift = inpshift
+  )
+  expect_gt(Patlakout$par$K, 0)
+  expect_lt(Patlakout$par$K, 0.015)
   expect_true(any(class(plot(Patlakout)) == "ggplot"))
 })
 

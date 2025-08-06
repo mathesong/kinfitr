@@ -9,11 +9,13 @@ mrtm2(
   reftac,
   roitac,
   k2prime,
-  tstarIncludedFrames = NULL,
+  tstar = NULL,
   weights = NULL,
   dur = NULL,
   frameStartEnd = NULL,
-  timeStartEnd = NULL
+  timeStartEnd = NULL,
+  tstar_type = "frames",
+  tstarIncludedFrames = NULL
 )
 }
 \arguments{
@@ -34,14 +36,14 @@ tissue-to-plasma clearance rate. This can be obtained from MRTM1 of SRTM,
 or set at a specified value. If using SRTM to estimate this value, it is
 equal to k2 / R1.}
 
-\item{tstarIncludedFrames}{Optional. The number of frames to be used in the
-multiple regression. This is a count from the end of the measurement, so a
-value of 10 means that last 10 frames will be used. This value can be
-estimated using \code{mrtm2_tstar}. Note that this tstar differs from that
-of the non-invasive Logan plot (which is the point at which
+\item{tstar}{Optional. The t* specification for regression. If tstar_type="frames", 
+this is the number of frames from the end to include (e.g., 10 means last 10 frames).
+If tstar_type="time", this is the time point (in minutes) after which all frames 
+with midpoints later than this time are included. This value can be estimated using \code{mrtm2_tstar}.
+Note that this t* differs from that of the non-invasive Logan plot (which is the point at which
 pseudo-equilibrium is reached). Rather, with MRTM1 and MRTM2, all frames
 can be used provided that the kinetics in the target tissue can be
-described by a one tissue compartment model (like SRTM).  If this is not
+described by a one tissue compartment model (like SRTM). If this is not
 the case, a t* is required. If the number of included frames is greater
 than the number of frames minus 2, then the par output will also include R1
 and k2 values. These parameters are only applicable if 1TC dynamics can be
@@ -59,6 +61,10 @@ integration.}
 final frame to use for modelling, e.g. c(1,20). This can be used to assess time stability for example.}
 
 \item{timeStartEnd}{Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.}
+
+\item{tstar_type}{Either "frames" (default) or "time", specifying how to interpret tstar.}
+
+\item{tstarIncludedFrames}{Deprecated. Use 'tstar' with 'tstar_type="frames"' instead.}
 }
 \value{
 A list with a data frame of the fitted parameters \code{out$par}, the

@@ -397,7 +397,7 @@ fix_multstartpars <- function(start, lower, upper, multstart_iter, multstart_low
 
     ### Adding multstart boundaries
     if (!is.null(multstart_lower)) {
-      if (class(multstart_lower) != "list" ||
+      if (!inherits(multstart_lower, "list") ||
         sum(!(names(multstart_lower) %in% parnames)) > 0) { # Are there any names not in start?
         stop("multstart_lower should be a named list whose names match the parameters to be fitted")
       }
@@ -408,7 +408,7 @@ fix_multstartpars <- function(start, lower, upper, multstart_iter, multstart_low
     }
 
     if (!is.null(multstart_upper)) {
-      if (class(multstart_upper) != "list" ||
+      if (!inherits(multstart_upper, "list") ||
         sum(!(names(multstart_upper) %in% parnames)) > 0) { # Are there any names not in start?
         stop("multstart_upper should be a named list whose names match the parameters to be fitted")
       }

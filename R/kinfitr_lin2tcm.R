@@ -24,8 +24,13 @@
 #'   not included, the integrals will be calculated using trapezoidal
 #'   integration.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and
-#'   final frame to use for modelling, e.g. c(1,20). This can be used to assess time stability for example.
-#' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
+#'   final frame to use for modelling, e.g. c(1,20). This can be used to assess
+#'   time stability for example.
+#' @param timeStartEnd Optional. This allows one to specify the beginning and
+#'   end time point instead of defining the frame numbers using frameStartEnd.
+#'   This function will restrict the model to all time frames whose t_tac is
+#'   between the values, i.e. c(0,5) will select all frames with midtimes during
+#'   the first 5 minutes.
 #'
 #' @return A list with a data frame of the fitted parameters \code{out$par}, the
 #'   model fit object \code{out$fit}, a dataframe containing the TACs of the
@@ -55,10 +60,10 @@
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Oikonen, V (2003). Multilinear solution for 4-compartment model:
-#' I. Tissue compartments in series. Gjedde A, Wong DF 1990. Modeling
-#' neuroreceptor binding of radioligands in vivo. In: Quantitative imaging:
-#' neuroreceptors, neurotransmitters, and enzymes. (Eds. Frost JJ, Wagner HM
-#' Jr). Raven Press, 51-79.
+#'   I. Tissue compartments in series. Gjedde A, Wong DF 1990. Modeling
+#'   neuroreceptor binding of radioligands in vivo. In: Quantitative imaging:
+#'   neuroreceptors, neurotransmitters, and enzymes. (Eds. Frost JJ, Wagner HM
+#'   Jr). Raven Press, 51-79.
 #'
 #' @export
 lin2tcm <- function(t_tac, tac, input, weights = NULL, inpshift = 0,
@@ -67,7 +72,7 @@ lin2tcm <- function(t_tac, tac, input, weights = NULL, inpshift = 0,
 
   # Convert timeStartEnd to frameStartEnd if needed
   if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
-    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1],
                        tail(which(t_tac <= timeStartEnd[2]), 1))
   }
 
@@ -347,8 +352,13 @@ plot_lin2tcmfit <- function(lin2tcmout, roiname = NULL) {
 #'   not included, the integrals will be calculated using trapezoidal
 #'   integration.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and
-#'   final frame to use for modelling, e.g. c(1,20). This can be used to assess time stability for example.
-#' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
+#'   final frame to use for modelling, e.g. c(1,20). This can be used to assess
+#'   time stability for example.
+#' @param timeStartEnd Optional. This allows one to specify the beginning and
+#'   end time point instead of defining the frame numbers using frameStartEnd.
+#'   This function will restrict the model to all time frames whose t_tac is
+#'   between the values, i.e. c(0,5) will select all frames with midtimes during
+#'   the first 5 minutes.
 #' @param inpshift_vals Optional. The values of the inpshift to assess with the
 #'   grid. By default, a grid between -1 and 1 with spacing of 0.01 will be
 #'   used.
@@ -379,10 +389,10 @@ plot_lin2tcmfit <- function(lin2tcmout, roiname = NULL) {
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Oikonen, V (2003). Multilinear solution for 4-compartment model:
-#' I. Tissue compartments in series. Gjedde A, Wong DF 1990. Modeling
-#' neuroreceptor binding of radioligands in vivo. In: Quantitative imaging:
-#' neuroreceptors, neurotransmitters, and enzymes. (Eds. Frost JJ, Wagner HM
-#' Jr). Raven Press, 51-79.
+#'   I. Tissue compartments in series. Gjedde A, Wong DF 1990. Modeling
+#'   neuroreceptor binding of radioligands in vivo. In: Quantitative imaging:
+#'   neuroreceptors, neurotransmitters, and enzymes. (Eds. Frost JJ, Wagner HM
+#'   Jr). Raven Press, 51-79.
 #'
 #' @export
 lin2tcm_inpshiftProfile <- function(t_tac, tac, input, weights = NULL, vB = NULL,
@@ -391,7 +401,7 @@ lin2tcm_inpshiftProfile <- function(t_tac, tac, input, weights = NULL, vB = NULL
 
   # Convert timeStartEnd to frameStartEnd if needed
   if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
-    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1],
                        tail(which(t_tac <= timeStartEnd[2]), 1))
   }
 
