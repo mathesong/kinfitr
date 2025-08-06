@@ -210,9 +210,9 @@ plot_ma1fit <- function(ma1out, roiname = NULL) {
     roiname <- "ROI"
   }
 
-  measured <- plyr::rename(measured, c("Target.measured" = paste0(roiname, ".measured")))
+  measured <- dplyr::rename(measured, !!paste0(roiname, ".measured") := Target.measured)
 
-  fitted <- plyr::rename(fitted, c("Target.fitted" = paste0(roiname, ".fitted")))
+  fitted <- dplyr::rename(fitted, !!paste0(roiname, ".fitted") := Target.fitted)
 
   tidymeasured <- tidyr::gather(
     measured,

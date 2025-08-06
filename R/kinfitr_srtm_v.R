@@ -331,12 +331,12 @@ plot_srtm_vfit <- function(srtmvout, roiname = NULL, refname = NULL) {
     refname <- "Reference"
   }
 
-  measured <- plyr::rename(measured, c(
-    "ROI.measured" = paste0(roiname, ".measured"),
-    "Reference" = refname
-  ))
+  measured <- dplyr::rename(measured, 
+    !!paste0(roiname, ".measured") := ROI.measured,
+    !!refname := Reference
+  )
 
-  fitted <- plyr::rename(fitted, c("ROI.fitted" = paste0(roiname, ".fitted")))
+  fitted <- dplyr::rename(fitted, !!paste0(roiname, ".fitted") := ROI.fitted)
 
   tidymeasured <- tidyr::gather(
     measured,

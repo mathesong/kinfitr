@@ -584,7 +584,7 @@ bd_tidy_times <- function(blooddata,
                               interpPoints = 6000) {
 
   # Check that it actually is a blooddata object, even if old
-  if( class(blooddata) != "blooddata" ) {
+  if( !inherits(blooddata, "blooddata") ) {
     stop("The input data does not appear to be a blooddata object. Please make
            sure that the input data is correct.")
   }

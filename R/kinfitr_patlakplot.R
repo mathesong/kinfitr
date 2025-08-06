@@ -194,7 +194,7 @@ plot_Patlakfit <- function(patlakout, roiname = NULL) {
   }
 
   if (roiname != "ROI") {
-    plotdf <- plyr::rename(plotdf, c("ROI_measured" = roiname))
+    plotdf <- dplyr::rename(plotdf, !!roiname := ROI_measured)
   }
 
   plotdf$Equilibrium <- as.character(plotdf$Equilibrium)
