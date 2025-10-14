@@ -10,9 +10,12 @@
 #' zero: if not included, it is added.
 #' @param k2prime Value of k2prime to be used for the fitting, i.e. the average tissue-to-plasma clearance rate. This can be
 #' obtained from another model, or set at a specified value. If using SRTM to estimate this value, it is equal to k2 / R1.
-#' @param tstarIncludedFrames The number of frames to be used in the regression model, i.e. the number of frames for which
-#' the function is linear after pseudo-equilibrium is reached. This is a count from the end of the measurement, so a value of
-#' 10 means that last 10 frames will be used. This value can be estimated using \code{refmlLogan_tstar}.
+#' @param tstar The t* specification for regression. If tstar_type="frames", 
+#' this is the number of frames from the end to include (e.g., 10 means last 10 frames).
+#' If tstar_type="time", this is the time point (in minutes) after which all frames 
+#' with midpoints later than this time are included. This value can be estimated using \code{refmlLogan_tstar}.
+#' @param tstar_type Either "frames" (default) or "time", specifying how to interpret tstar.
+#' @param tstarIncludedFrames Deprecated. Use 'tstar' with 'tstar_type="frames"' instead.
 #' @param weights Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
 #' if not included, it is added. If not specified, uniform weights will be used.
 #' @param dur Optional. Numeric vector of the time durations of the frames. If
@@ -41,13 +44,42 @@
 #'
 #' @export
 
-refmlLogan <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames,
-                       weights = NULL, dur = NULL, frameStartEnd = NULL, timeStartEnd = NULL) {
+refmlLogan <- function(t_tac, reftac, roitac, k2prime, tstar, weights = NULL,
+                       dur = NULL, frameStartEnd = NULL, timeStartEnd = NULL,
+                       tstar_type = "frames", tstarIncludedFrames = NULL) {
 
   # Convert timeStartEnd to frameStartEnd if needed
   if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
     frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
                        tail(which(t_tac <= timeStartEnd[2]), 1))
+  }
+
+  # Handle deprecated parameter
+  if (!is.null(tstarIncludedFrames)) {
+    warning("tstarIncludedFrames is deprecated and will be removed in a future version. Use 'tstar' with 'tstar_type=\"frames\"' instead", call. = FALSE)
+    if (!missing(tstar)) {
+      stop("Cannot specify both 'tstar' and 'tstarIncludedFrames'")
+    }
+    tstar <- tstarIncludedFrames
+    tstar_type <- "frames"
+  }
+
+  # Validate tstar_type
+  tstar_type <- match.arg(tstar_type, c("frames", "time"))
+
+  # Handle missing tstar
+  if (missing(tstar)) {
+    tstar <- length(t_tac)
+    tstar_type <- "frames"
+    warning("No value specified for tstar: defaulting to including all frames. This may produce biased outcomes.", call. = FALSE)
+  }
+
+  # Convert tstar based on type
+  if (tstar_type == "time") {
+    frames_after_tstar <- which(t_tac >= tstar)
+    tstarIncludedFrames <- length(frames_after_tstar)
+  } else {
+    tstarIncludedFrames <- tstar
   }
 
   # Tidying

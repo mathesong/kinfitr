@@ -17,18 +17,20 @@
 #'   tissue-to-plasma clearance rate. This can be obtained from MRTM1 of SRTM,
 #'   or set at a specified value. If using SRTM to estimate this value, it is
 #'   equal to k2 / R1.
-#' @param tstarIncludedFrames Optional. The number of frames to be used in the
-#'   multiple regression. This is a count from the end of the measurement, so a
-#'   value of 10 means that last 10 frames will be used. This value can be
-#'   estimated using \code{mrtm2_tstar}. Note that this tstar differs from that
-#'   of the non-invasive Logan plot (which is the point at which
+#' @param tstar Optional. The t* specification for regression. If tstar_type="frames", 
+#'   this is the number of frames from the end to include (e.g., 10 means last 10 frames).
+#'   If tstar_type="time", this is the time point (in minutes) after which all frames 
+#'   with midpoints later than this time are included. This value can be estimated using \code{mrtm2_tstar}.
+#'   Note that this t* differs from that of the non-invasive Logan plot (which is the point at which
 #'   pseudo-equilibrium is reached). Rather, with MRTM1 and MRTM2, all frames
 #'   can be used provided that the kinetics in the target tissue can be
-#'   described by a one tissue compartment model (like SRTM).  If this is not
+#'   described by a one tissue compartment model (like SRTM). If this is not
 #'   the case, a t* is required. If the number of included frames is greater
 #'   than the number of frames minus 2, then the par output will also include R1
 #'   and k2 values. These parameters are only applicable if 1TC dynamics can be
 #'   assumed.
+#' @param tstar_type Either "frames" (default) or "time", specifying how to interpret tstar.
+#' @param tstarIncludedFrames Deprecated. Use 'tstar' with 'tstar_type="frames"' instead.
 #' @param weights Optional. Numeric vector of the weights assigned to each frame
 #'   in the fitting. We include zero at time zero: if not included, it is added.
 #'   If not specified, uniform weights will be used.
@@ -67,13 +69,37 @@
 #'
 #' @export
 
-mrtm2 <- function(t_tac, reftac, roitac, k2prime, tstarIncludedFrames = NULL,
-                  weights = NULL, dur = NULL, frameStartEnd = NULL, timeStartEnd = NULL) {
+mrtm2 <- function(t_tac, reftac, roitac, k2prime, tstar = NULL, weights = NULL,
+                  dur = NULL, frameStartEnd = NULL, timeStartEnd = NULL,
+                  tstar_type = "frames", tstarIncludedFrames = NULL) {
 
   # Convert timeStartEnd to frameStartEnd if needed
   if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
     frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
                        tail(which(t_tac <= timeStartEnd[2]), 1))
+  }
+
+  # Handle deprecated parameter
+  if (!is.null(tstarIncludedFrames)) {
+    warning("tstarIncludedFrames is deprecated and will be removed in a future version. Use 'tstar' with 'tstar_type=\"frames\"' instead", call. = FALSE)
+    if (!is.null(tstar)) {
+      stop("Cannot specify both 'tstar' and 'tstarIncludedFrames'")
+    }
+    tstar <- tstarIncludedFrames
+    tstar_type <- "frames"
+  }
+
+  # Validate tstar_type
+  if (!is.null(tstar)) {
+    tstar_type <- match.arg(tstar_type, c("frames", "time"))
+    
+    # Convert tstar based on type
+    if (tstar_type == "time") {
+      frames_after_tstar <- which(t_tac >= tstar)
+      tstarIncludedFrames <- length(frames_after_tstar)
+    } else {
+      tstarIncludedFrames <- tstar
+    }
   }
 
   # Tidying
@@ -210,12 +236,12 @@ plot_mrtm2fit <- function(mrtm2out, roiname = NULL, refname = NULL) {
     refname <- "Reference"
   }
 
-  measured <- plyr::rename(measured, c(
-    "ROI.measured" = paste0(roiname, ".measured"),
-    "Reference" = refname
-  ))
+  measured <- dplyr::rename(measured, 
+    !!paste0(roiname, ".measured") := ROI.measured,
+    !!refname := Reference
+  )
 
-  fitted <- plyr::rename(fitted, c("ROI.fitted" = paste0(roiname, ".fitted")))
+  fitted <- dplyr::rename(fitted, !!paste0(roiname, ".fitted") := ROI.fitted)
 
   tidymeasured <- tidyr::gather(
     measured,

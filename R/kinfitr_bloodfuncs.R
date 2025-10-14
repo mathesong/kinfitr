@@ -118,14 +118,14 @@ blood_interp <- function(t_blood, blood,
 
   interptime <- pracma::linspace(0, maxtime, interpPoints)
 
-  interpcurves <- plyr::dlply(
-    input, "Measure",
-    function(x) pracma::interp1(x$Time,
-        x$Value,
+  interpcurves <- input %>%
+    dplyr::group_split(Measure) %>%
+    purrr::map(~ pracma::interp1(.x$Time,
+        .x$Value,
         interptime,
         method = "linear"
-      )
-  )
+      )) %>%
+    purrr::set_names(unique(input$Measure))
 
   if(is.null(aif)) {
 
