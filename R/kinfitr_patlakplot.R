@@ -11,9 +11,9 @@
 #' @param input Data frame containing the blood, plasma, and parent fraction
 #'   concentrations over time.  This can be generated using the
 #'   \code{blood_interp} function.
-#' @param tstar The t* specification for regression. If tstar_type="frames", 
+#' @param tstar The t* specification for regression. If tstar_type="frames",
 #'   this is the number of frames from the end to include (e.g., 10 means last 10 frames).
-#'   If tstar_type="time", this is the time point (in minutes) after which all frames 
+#'   If tstar_type="time", this is the time point (in minutes) after which all frames
 #'   with midpoints later than this time are included. This value can be estimated using \code{Patlak_tstar}.
 #' @param tstar_type Either "frames" (default) or "time", specifying how to interpret tstar.
 #' @param tstarIncludedFrames Deprecated. Use 'tstar' with 'tstar_type="frames"' instead.
@@ -71,7 +71,7 @@ Patlakplot <- function(t_tac, tac, input, tstar, weights = NULL,
 
   # Convert timeStartEnd to frameStartEnd if needed
   if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
-    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1],
                        tail(which(t_tac <= timeStartEnd[2]), 1))
   }
 
@@ -219,14 +219,6 @@ plot_Patlakfit <- function(patlakout, roiname = NULL) {
     Equilibrium = as.character("Before")
   )
 
-  if (is.null(roiname)) {
-    roiname <- "ROI"
-  }
-
-  if (roiname != "ROI") {
-    plotdf <- dplyr::rename(plotdf, !!roiname := ROI_measured)
-  }
-
   plotdf$Equilibrium <- as.character(plotdf$Equilibrium)
   plotdf$Equilibrium [ (nrow(plotdf) - (patlakout$tstarIncludedFrames - 1)):nrow(plotdf)  ] <- "After"
 
@@ -300,7 +292,7 @@ plot_Patlakfit <- function(patlakout, roiname = NULL) {
 Patlak_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, inpshift = 0, vB = 0, frameStartEnd = NULL, timeStartEnd = NULL, gridbreaks = 2) {
   # Convert timeStartEnd to frameStartEnd if needed
   if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
-    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1],
                        tail(which(t_tac <= timeStartEnd[2]), 1))
   }
 
