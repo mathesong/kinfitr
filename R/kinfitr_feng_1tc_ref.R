@@ -19,7 +19,13 @@
 #'   accommodate zero values in the TAC before rising. If FALSE, the TAC must
 #'   rise at time = 0.
 #' @param frameStartEnd Optional. This allows one to specify the beginning and
-#'   final frame to use for modelling, e.g. c(1,20).
+#'   final frame to use for modelling, e.g. c(1,20). This can be used to assess
+#'   time stability for example.
+#' @param timeStartEnd Optional. This allows one to specify the beginning and
+#'   end time point instead of defining the frame numbers using frameStartEnd.
+#'   This function will restrict the model to all time frames whose t_tac is
+#'   between the values, i.e. c(0,5) will select all frames with midtimes
+#'   during the first 5 minutes.
 #' @param multstart_iter Number of iterations for starting parameters. Default
 #'   is 500. For more information, see
 #'   \code{\link[nls.multstart]{nls_multstart}}.
@@ -49,8 +55,14 @@
 feng_1tc_tac <- function(t_tac, tac, weights = NULL,
                          fit_t0 = TRUE,
                          frameStartEnd = NULL,
+                         timeStartEnd = NULL,
                          multstart_iter = 500) {
 
+  # Convert timeStartEnd to frameStartEnd if needed
+  if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1],
+                       tail(which(t_tac <= timeStartEnd[2]), 1))
+  }
 
   # Tidying
 

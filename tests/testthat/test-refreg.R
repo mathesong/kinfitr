@@ -551,3 +551,121 @@ test_that("refPatlak tstarfinder works", {
   )
   expect_true(any(class(plot(tstar)) == "ggplot"))
 })
+
+
+#### Reference TAC Fitting Functions
+
+# spline_tac
+
+test_that("spline_tac works", {
+  fit <- spline_tac(t_tac, reftac, weights = weights)
+  expect_true("spline_tac" %in% class(fit))
+  expect_true("kinfit" %in% class(fit))
+  expect_true(!is.null(fit$par$t0))
+  expect_true(!is.null(fit$gam_fit))
+  expect_gt(fit$par$t0, 0)
+  expect_lt(fit$par$t0, 5)
+  expect_equal(length(fit$tacs$TAC_fitted), length(reftac)) # tidyinput adds zero frame if needed
+  expect_true(any(class(plot(fit)) == "ggplot"))
+})
+
+test_that("spline_tac works with frameStartEnd", {
+  fit <- spline_tac(t_tac, reftac, weights = weights, frameStartEnd = c(1, 30))
+  expect_true(!is.null(fit$par$t0))
+  expect_equal(nrow(fit$tacs), 30)
+  expect_true(any(class(plot(fit)) == "ggplot"))
+})
+
+test_that("spline_tac works with timeStartEnd", {
+  fit <- spline_tac(t_tac, reftac, weights = weights, timeStartEnd = c(0, 50))
+  expect_true(!is.null(fit$par$t0))
+  expect_true(max(fit$tacs$Time) <= 50)
+  expect_true(any(class(plot(fit)) == "ggplot"))
+})
+
+test_that("spline_tac predict method works at original times", {
+  fit <- spline_tac(t_tac, reftac, weights = weights)
+  pred <- predict(fit)
+  expect_equal(length(pred), nrow(fit$tacs))
+  expect_true(all(pred >= 0)) # All predictions should be non-negative
+  expect_true(all(pred[fit$tacs$Time < fit$par$t0] == 0)) # Before t0 should be zero
+})
+
+test_that("spline_tac predict method works with newdata", {
+  fit <- spline_tac(t_tac, reftac, weights = weights)
+  new_times <- seq(0, max(t_tac), length.out = 100)
+  pred <- predict(fit, newdata = list(t_tac = new_times))
+  expect_equal(length(pred), 100)
+  expect_true(all(pred >= 0)) # All predictions should be non-negative
+  expect_true(all(pred[new_times < fit$par$t0] == 0)) # Before t0 should be zero
+})
+
+test_that("spline_tac fitted values are accessible", {
+  fit <- spline_tac(t_tac, reftac, weights = weights)
+  expect_true("TAC_fitted" %in% names(fit$tacs))
+  expect_equal(length(fit$tacs$TAC_fitted), nrow(fit$tacs))
+  expect_true(all(fit$tacs$TAC_fitted >= 0))
+})
+
+test_that("spline_tac weights are accessible", {
+  fit <- spline_tac(t_tac, reftac, weights = weights)
+  expect_true(!is.null(fit$weights))
+  expect_equal(length(fit$weights), nrow(fit$tacs))
+})
+
+test_that("spline_tac k parameter controls wiggliness", {
+  fit_smooth <- spline_tac(t_tac, reftac, weights = weights, k = 5)
+  fit_flex <- spline_tac(t_tac, reftac, weights = weights, k = 15)
+
+  # Check both fits work
+  expect_true(!is.null(fit_smooth$gam_fit))
+  expect_true(!is.null(fit_flex$gam_fit))
+
+  # Flexible fit should have higher effective degrees of freedom
+  edf_smooth <- sum(fit_smooth$gam_fit$edf)
+  edf_flex <- sum(fit_flex$gam_fit$edf)
+  expect_lt(edf_smooth, edf_flex)
+})
+
+
+# feng_1tc_tac
+
+test_that("feng_1tc_tac works", {
+  fit <- feng_1tc_tac(t_tac, reftac, weights = weights)
+  expect_true("feng_1tc_tac" %in% class(fit))
+  expect_true("kinfit" %in% class(fit))
+  expect_true(!is.null(fit$par))
+  expect_true("t0" %in% names(fit$par))
+  expect_gt(fit$par$t0, 0)
+  expect_lt(fit$par$t0, 5)
+  expect_equal(length(fit$tacs$Reference_fitted), length(reftac)) # tidyinput adds zero frame if needed
+  expect_true(any(class(plot(fit)) == "ggplot"))
+})
+
+test_that("feng_1tc_tac works with frameStartEnd", {
+  fit <- feng_1tc_tac(t_tac, reftac, weights = weights, frameStartEnd = c(1, 30))
+  expect_true(!is.null(fit$par$t0))
+  expect_equal(nrow(fit$tacs), 30)
+  expect_true(any(class(plot(fit)) == "ggplot"))
+})
+
+test_that("feng_1tc_tac works with timeStartEnd", {
+  fit <- feng_1tc_tac(t_tac, reftac, weights = weights, timeStartEnd = c(0, 50))
+  expect_true(!is.null(fit$par$t0))
+  expect_true(max(fit$tacs$Time) <= 50)
+  expect_true(any(class(plot(fit)) == "ggplot"))
+})
+
+test_that("feng_1tc_tac works without fitting t0", {
+  fit <- feng_1tc_tac(t_tac, reftac, weights = weights, fit_t0 = FALSE)
+  expect_true("feng_1tc_tac" %in% class(fit))
+  expect_false("t0" %in% names(fit$par))
+  expect_true(any(class(plot(fit)) == "ggplot"))
+})
+
+test_that("feng_1tc_tac fitted values are accessible", {
+  fit <- feng_1tc_tac(t_tac, reftac, weights = weights)
+  expect_true("Reference_fitted" %in% names(fit$tacs))
+  expect_equal(length(fit$tacs$Reference_fitted), nrow(fit$tacs))
+  expect_true(all(fit$tacs$Reference_fitted >= 0))
+})
