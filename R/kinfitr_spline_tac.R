@@ -1,9 +1,9 @@
 #' Spline-based Reference TAC Fitting
 #'
-#' This function fits a reference TAC using a piecewise approach: NLS to optimize
+#' This function fits a TAC using a piecewise approach: NLS to optimize
 #' t0 (the time when the curve starts rising from zero), and GAM to fit the curve
-#' after t0. The parameters are not meant to be interpreted as true physiological
-#' values, but merely as a guide for denoising.
+#' after t0. The model is intended for either de-noising in the case of severe
+#' noise, or alternatively estimating the noise of a given TAC.
 #'
 #' @param t_tac Numeric vector of times for each frame in minutes. We use the
 #'   time halfway through the frame as well as a zero. If a time zero frame is
@@ -15,8 +15,7 @@
 #'   zero: if not included, it is added. If not specified, uniform weights will
 #'   be used.
 #' @param frameStartEnd Optional. This allows one to specify the beginning and
-#'   final frame to use for modelling, e.g. c(1,20). This can be used to assess
-#'   time stability for example.
+#'   final frame to use for modelling, e.g. c(1,20).
 #' @param timeStartEnd Optional. This allows one to specify the beginning and
 #'   end time point instead of defining the frame numbers using frameStartEnd.
 #'   This function will restrict the model to all time frames whose t_tac is
@@ -30,9 +29,10 @@
 #'   to 15 (flexible).
 #'
 #' @return A list with a data frame of the fitted parameters \code{out$par},
-#'   the optimization fit object \code{out$fit}, the final GAM fit object
+#'   the t0 fit object \code{out$fit}, the final GAM fit object
 #'   \code{out$gam_fit}, the model weights \code{out$weights}, and a dataframe
 #'   containing the TACs both of the data and the fitted values \code{out$tacs}.
+#'   Predicted values can be extracted using predict().
 #'
 #' @details The model fits the curve in two pieces:
 #'   \itemize{
@@ -124,7 +124,7 @@ spline_tac <- function(t_tac, tac, weights = NULL,
   }
 
   # Optimize t0 using base R optimize()
-  opt_result <- optimize(
+  opt_result <- stats::optimize(
     f = objective_fn,
     interval = c(t0.lower, t0.upper),
     tol = 0.0001
