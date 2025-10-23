@@ -10,6 +10,7 @@ feng_1tc_tac(
   weights = NULL,
   fit_t0 = TRUE,
   frameStartEnd = NULL,
+  timeStartEnd = NULL,
   multstart_iter = 500
 )
 }
@@ -30,7 +31,14 @@ accommodate zero values in the TAC before rising. If FALSE, the TAC must
 rise at time = 0.}
 
 \item{frameStartEnd}{Optional. This allows one to specify the beginning and
-final frame to use for modelling, e.g. c(1,20).}
+final frame to use for modelling, e.g. c(1,20). This can be used to assess
+time stability for example.}
+
+\item{timeStartEnd}{Optional. This allows one to specify the beginning and
+end time point instead of defining the frame numbers using frameStartEnd.
+This function will restrict the model to all time frames whose t_tac is
+between the values, i.e. c(0,5) will select all frames with midtimes
+during the first 5 minutes.}
 
 \item{multstart_iter}{Number of iterations for starting parameters. Default
 is 500. For more information, see

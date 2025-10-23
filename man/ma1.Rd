@@ -21,7 +21,7 @@ ma1(
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
-zero. If a time zero frame is not included, it will be added.}
+zero. If a time zero frame is not included, it  will be added.}
 
 \item{tac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
 zero: if not included, it is added.}
@@ -29,9 +29,9 @@ zero: if not included, it is added.}
 \item{input}{Data frame containing the blood, plasma, and parent fraction concentrations over time.  This can be generated
 using the \code{blood_interp} function.}
 
-\item{tstar}{The t* specification for regression. If tstar_type="frames", 
+\item{tstar}{The t* specification for regression. If tstar_type="frames",
 this is the number of frames from the end to include (e.g., 10 means last 10 frames).
-If tstar_type="time", this is the time point (in minutes) after which all frames 
+If tstar_type="time", this is the time point (in minutes) after which all frames
 with midpoints later than this time are included. This value can be estimated using \code{ma1_tstar}.}
 
 \item{weights}{Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:

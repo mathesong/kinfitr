@@ -3,14 +3,14 @@
 #' Function to fit the MA1 of Ichise et al (2002) to data.
 #'
 #' @param t_tac Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
-#' zero. If a time zero frame is not included, it will be added.
+#' zero. If a time zero frame is not included, it  will be added.
 #' @param tac Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
 #' zero: if not included, it is added.
 #' @param input Data frame containing the blood, plasma, and parent fraction concentrations over time.  This can be generated
 #' using the \code{blood_interp} function.
-#' @param tstar The t* specification for regression. If tstar_type="frames", 
+#' @param tstar The t* specification for regression. If tstar_type="frames",
 #' this is the number of frames from the end to include (e.g., 10 means last 10 frames).
-#' If tstar_type="time", this is the time point (in minutes) after which all frames 
+#' If tstar_type="time", this is the time point (in minutes) after which all frames
 #' with midpoints later than this time are included. This value can be estimated using \code{ma1_tstar}.
 #' @param tstar_type Either "frames" (default) or "time", specifying how to interpret tstar.
 #' @param tstarIncludedFrames Deprecated. Use 'tstar' with 'tstar_type="frames"' instead.
@@ -63,7 +63,7 @@ ma1 <- function(t_tac, tac, input, tstar, weights = NULL,
 
   # Convert timeStartEnd to frameStartEnd if needed
   if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
-    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1],
                        tail(which(t_tac <= timeStartEnd[2]), 1))
   }
 
@@ -317,7 +317,7 @@ plot_ma1fit <- function(ma1out, roiname = NULL) {
 ma1_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, inpshift = 0, vB = 0, frameStartEnd = NULL, timeStartEnd = NULL, gridbreaks = 2) {
   # Convert timeStartEnd to frameStartEnd if needed
   if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
-    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1],
                        tail(which(t_tac <= timeStartEnd[2]), 1))
   }
 
