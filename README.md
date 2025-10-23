@@ -24,19 +24,6 @@ as follows:
 remotes::install_github("mathesong/kinfitr")
 ```
 
-There is also a docker container if you would prefer not to have to
-download everything. If you download Docker, you can pull the container
-and start it with the following commands. The rstudio session can be
-opened in a browser pointing to `http://localhost:8787`.
-
-    docker pull mathesong/kinfitr_docker
-    docker run -e PASSWORD=XYZ --name rstudio -p 8787:8787 mathesong/kinfitr_docker
-
-Alternatively, if you want to mess around with the kinfitr package and
-its vignettes in order to get a feel for it before installing it, click
-the “launch binder” button above to open the vignettes in a binder
-instance.
-
 ## Citation
 
 At present, there are two preprints out about *kinfitr*. Please cite at
@@ -57,10 +44,8 @@ A validation study compared against commercial software:
 ## Background and Usage
 
 I’ve written up a series of blog posts describing some PET modelling
-theory and demonstrating how the package can be used. These will
-eventually be included as vignettes in the package. You can launch them
-in a cloud instance to play around with them yourself by clicking the
-“launch binder” button above.
+theory and demonstrating how the package can be used on my blog. These give 
+a good general introduction to using the package.
 
   - [Part 1: PET Modelling
     Theory](https://www.granvillematheson.com/post/pharmacokinetic-modelling-of-pet-data-in-r-using-kinfitr-part-1-theory)
@@ -255,16 +240,20 @@ in a cloud instance to play around with them yourself by clicking the
 **Reference Region Models**
 
   - Simplified Reference Tissue Model (SRTM) *(Lammertsma & Hume, 1996)*
+  
+  - Simplified Reference Tissue Model 2 (SRTM2) *(Wu et al., 2002)*
+  
+  - Simplified Reference Tissue Model with Blood Volumes (SRTM-V) *(Tomasi et al., 2008)*
+  
+  - Full Reference Tissue Model (FRTM) *(Hume et al, 1991)*
 
   - Non-Invasive Logan Plot *(Logan et al., 1996)*
 
   - Non-Invasive Multilinear Logan Plot *(Turkheimer et al., 2003)*
 
-  - Ichise Multilinear Reference Tissue Model 1 (MRTM1) *(Ichise et al.,
-    2003)*
+  - Ichise Multilinear Reference Tissue Model 1 (MRTM1) *(Ichise et al., 2003)*
 
-  - Ichise Multilinear Reference Tissue Model 2 (MRTM2) *(Ichise et al.,
-    2003)*
+  - Ichise Multilinear Reference Tissue Model 2 (MRTM2) *(Ichise et al., 2003)*
 
   - Patlak Reference Tissue Model *(Patlak & Blasberg, 1985)*
 
@@ -273,6 +262,10 @@ in a cloud instance to play around with them yourself by clicking the
   - One-Tissue Compartment Model
 
   - Two-Tissue Compartment Model
+  
+  - Two-Tissue Compartment Model with Irreversible Binding
+  
+  - Two-Tissue Compartment Model with Macroparameter Parameterisation
 
   - Logan Plot *(Logan et al., 1990)*
 
@@ -286,28 +279,21 @@ in a cloud instance to play around with them yourself by clicking the
 
 **Other Models**
 
-  - Simultaneous Estimation of Non-Displaceable Binding (SIME) *(Ogden
-    et al., 2015)*
+  - Simultaneous Estimation of Non-Displaceable Binding (SIME) *(Ogden et al., 2015)*
 
-## To-Do
+  - Feng+1TC for Reference Tissue Modelling *(Matheson et al., 2024)*
+  
+  - Spline fits for Reference TAC Denoising
+  
+  
+**Blood Data Preparation**
 
-**General**
+The package also contains a large number of models and methods for preparing and modelling blood data to generate the metabolite-corrected arterial input function.
+  
+  
+**BIDS Data**
 
-  - Vignettes
+The kinfitr package also contains functions for parsing PET BIDS data and extracting the relevant information from these files.
 
-**Additions**
-
-**Improvements**
-
-  - Tidy up
-    
-      - Documentation still quite rough and several inconsistencies
-    
-      - T-star finders have lots of code duplication: should be more
-        generic
-
-  - Revise vignette
-
-  - Update plyr functions to dplyr functions
-
-  - Get the package CRAN-ready
+A containerised PET BIDS App called [PETFit](https://github.com/mathesong/petfit) is under active development to allow users to perform
+PET kinetic modelling using PET preprocessing derivative data, which makes use of kinfitr functionality to do so.
