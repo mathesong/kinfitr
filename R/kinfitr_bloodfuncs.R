@@ -119,13 +119,15 @@ blood_interp <- function(t_blood, blood,
   interptime <- pracma::linspace(0, maxtime, interpPoints)
 
   interpcurves <- input %>%
-    dplyr::group_split(Measure) %>%
-    purrr::map(~ pracma::interp1(.x$Time,
-        .x$Value,
-        interptime,
-        method = "linear"
-      )) %>%
-    purrr::set_names(unique(input$Measure))
+    dplyr::group_by(Measure) %>%  # Add group_by here!
+    dplyr::group_split() %>%
+    purrr::map(~{
+      measure_name <- unique(.x$Measure)
+      values <- pracma::interp1(.x$Time, .x$Value, interptime, method = "linear")
+      list(measure = measure_name, values = values)
+    }) %>%
+    purrr::set_names(purrr::map_chr(., "measure")) %>%
+    purrr::map("values")
 
   if(is.null(aif)) {
 
