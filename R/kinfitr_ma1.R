@@ -87,14 +87,6 @@ ma1 <- function(t_tac, tac, input, tstar, weights = NULL,
     warning("No value specified for tstar: defaulting to including all frames. This may produce biased outcomes.", call. = FALSE)
   }
 
-  # Convert tstar based on type
-  if (tstar_type == "time") {
-    frames_after_tstar <- which(t_tac >= tstar)
-    tstarIncludedFrames <- length(frames_after_tstar)
-  } else {
-    tstarIncludedFrames <- tstar
-  }
-
   # Tidying
 
   tidyinput <- tidyinput_art(t_tac, tac, weights, frameStartEnd)
@@ -107,6 +99,16 @@ ma1 <- function(t_tac, tac, input, tstar, weights = NULL,
   t_tac <- tidyinput$t_tac
   tac <- tidyinput$tac
   weights <- tidyinput$weights
+
+
+  # Convert tstar based on type
+  if (tstar_type == "time") {
+    frames_after_tstar <- which(t_tac >= tstar)
+    tstarIncludedFrames <- length(frames_after_tstar)
+  } else {
+    tstarIncludedFrames <- tstar
+  }
+
 
   newvals <- shift_timings(
     t_tac = t_tac,

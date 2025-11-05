@@ -10,9 +10,9 @@
 #' zero: if not included, it is added.
 #' @param k2prime Value of k2prime to be used for the fitting, i.e. the average tissue-to-plasma clearance rate. This can be
 #' obtained from another model, or set at a specified value. If using SRTM to estimate this value, it is equal to k2 / R1.
-#' @param tstar The t* specification for regression. If tstar_type="frames", 
+#' @param tstar The t* specification for regression. If tstar_type="frames",
 #' this is the number of frames from the end to include (e.g., 10 means last 10 frames).
-#' If tstar_type="time", this is the time point (in minutes) after which all frames 
+#' If tstar_type="time", this is the time point (in minutes) after which all frames
 #' with midpoints later than this time are included. This value can be estimated using \code{refmlLogan_tstar}.
 #' @param tstar_type Either "frames" (default) or "time", specifying how to interpret tstar.
 #' @param tstarIncludedFrames Deprecated. Use 'tstar' with 'tstar_type="frames"' instead.
@@ -50,7 +50,7 @@ refmlLogan <- function(t_tac, reftac, roitac, k2prime, tstar, weights = NULL,
 
   # Convert timeStartEnd to frameStartEnd if needed
   if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
-    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1],
                        tail(which(t_tac <= timeStartEnd[2]), 1))
   }
 
@@ -74,14 +74,6 @@ refmlLogan <- function(t_tac, reftac, roitac, k2prime, tstar, weights = NULL,
     warning("No value specified for tstar: defaulting to including all frames. This may produce biased outcomes.", call. = FALSE)
   }
 
-  # Convert tstar based on type
-  if (tstar_type == "time") {
-    frames_after_tstar <- which(t_tac >= tstar)
-    tstarIncludedFrames <- length(frames_after_tstar)
-  } else {
-    tstarIncludedFrames <- tstar
-  }
-
   # Tidying
 
   tidyinput <- tidyinput_ref(t_tac, reftac, roitac, weights, frameStartEnd)
@@ -95,6 +87,14 @@ refmlLogan <- function(t_tac, reftac, roitac, k2prime, tstar, weights = NULL,
   reftac <- tidyinput$reftac
   roitac <- tidyinput$roitac
   weights <- tidyinput$weights
+
+  # Convert tstar based on type
+  if (tstar_type == "time") {
+    frames_after_tstar <- which(t_tac >= tstar)
+    tstarIncludedFrames <- length(frames_after_tstar)
+  } else {
+    tstarIncludedFrames <- tstar
+  }
 
   # Parameters
 
@@ -253,7 +253,7 @@ plot_refmlLoganfit <- function(refmlloganout, roiname = NULL) {
 refmlLogan_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, filename = NULL, frameStartEnd = NULL, timeStartEnd = NULL, gridbreaks = 2) {
   # Convert timeStartEnd to frameStartEnd if needed
   if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
-    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1],
                        tail(which(t_tac <= timeStartEnd[2]), 1))
   }
 

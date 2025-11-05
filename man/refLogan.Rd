@@ -31,9 +31,9 @@ zero: if not included, it is added.}
 \item{k2prime}{Value of k2prime to be used for the fitting, i.e. the average tissue-to-plasma clearance rate. This can be
 obtained from another model, or set at a specified value. If using SRTM to estimate this value, it is equal to k2 / R1.}
 
-\item{tstar}{The t* specification for regression. If tstar_type="frames", 
+\item{tstar}{The t* specification for regression. If tstar_type="frames",
 this is the number of frames from the end to include (e.g., 10 means last 10 frames).
-If tstar_type="time", this is the time point (in minutes) after which all frames 
+If tstar_type="time", this is the time point (in minutes) after which all frames
 with midpoints later than this time are included. This value can be estimated using \code{refLogan_tstar}.}
 
 \item{weights}{Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:

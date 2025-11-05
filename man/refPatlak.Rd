@@ -27,9 +27,9 @@ time zero: if not included, it is added.}
 \item{roitac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
 zero: if not included, it is added.}
 
-\item{tstar}{The t* specification for regression. If tstar_type="frames", 
+\item{tstar}{The t* specification for regression. If tstar_type="frames",
 this is the number of frames from the end to include (e.g., 10 means last 10 frames).
-If tstar_type="time", this is the time point (in minutes) after which all frames 
+If tstar_type="time", this is the time point (in minutes) after which all frames
 with midpoints later than this time are included. This value can be estimated using \code{refPatlak_tstar}.}
 
 \item{weights}{Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
