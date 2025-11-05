@@ -30,9 +30,9 @@ added.}
 tissue for each frame. We include zero at time zero: if not included, it is
 added.}
 
-\item{tstar}{Optional. The t* specification for regression. If tstar_type="frames", 
+\item{tstar}{Optional. The t* specification for regression. If tstar_type="frames",
 this is the number of frames from the end to include (e.g., 10 means last 10 frames).
-If tstar_type="time", this is the time point (in minutes) after which all frames 
+If tstar_type="time", this is the time point (in minutes) after which all frames
 with midpoints later than this time are included. This value can be estimated using \code{mrtm1_tstar}.
 Note that this t* differs from that of the non-invasive Logan plot (which is the point at which
 pseudo-equilibrium is reached). Rather, with MRTM1 and MRTM2, all frames

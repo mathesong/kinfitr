@@ -11,9 +11,9 @@
 #' @param input Data frame containing the blood, plasma, and parent fraction
 #'   concentrations over time.  This can be generated using the
 #'   \code{blood_interp} function.
-#' @param tstar The t* specification for regression. If tstar_type="frames", 
+#' @param tstar The t* specification for regression. If tstar_type="frames",
 #'   this is the number of frames from the end to include (e.g., 10 means last 10 frames).
-#'   If tstar_type="time", this is the time point (in minutes) after which all frames 
+#'   If tstar_type="time", this is the time point (in minutes) after which all frames
 #'   with midpoints later than this time are included. This value can be estimated using \code{Logan_tstar}.
 #' @param tstar_type Either "frames" (default) or "time", specifying how to interpret tstar.
 #' @param tstarIncludedFrames Deprecated. Use 'tstar' with 'tstar_type="frames"' instead.
@@ -77,7 +77,7 @@ Loganplot <- function(t_tac, tac, input, tstar, weights = NULL,
 
   # Convert timeStartEnd to frameStartEnd if needed
   if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
-    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1],
                        tail(which(t_tac <= timeStartEnd[2]), 1))
   }
 
@@ -101,14 +101,6 @@ Loganplot <- function(t_tac, tac, input, tstar, weights = NULL,
     warning("No value specified for tstar: defaulting to including all frames. This may produce biased outcomes.", call. = FALSE)
   }
 
-  # Convert tstar based on type
-  if (tstar_type == "time") {
-    frames_after_tstar <- which(t_tac >= tstar)
-    tstarIncludedFrames <- length(frames_after_tstar)
-  } else {
-    tstarIncludedFrames <- tstar
-  }
-
   # Tidying
 
   tidyinput <- tidyinput_art(t_tac, tac, weights, frameStartEnd)
@@ -121,6 +113,14 @@ Loganplot <- function(t_tac, tac, input, tstar, weights = NULL,
   t_tac <- tidyinput$t_tac
   tac <- tidyinput$tac
   weights <- tidyinput$weights
+
+  # Convert tstar based on type
+  if (tstar_type == "time") {
+    frames_after_tstar <- which(t_tac >= tstar)
+    tstarIncludedFrames <- length(frames_after_tstar)
+  } else {
+    tstarIncludedFrames <- tstar
+  }
 
   newvals <- shift_timings(
     t_tac = t_tac,

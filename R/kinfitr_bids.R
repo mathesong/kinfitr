@@ -655,6 +655,10 @@ bids_create_blooddata <- function(filedata) {
 
   bids_data <- bids_parse_blood(filedata)
 
+  if(length(bids_data) == 1) {
+    return(list(NA))
+  }
+
   blooddata <- list(
     Data = bids_data,
     Models = list(

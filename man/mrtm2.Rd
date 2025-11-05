@@ -36,9 +36,9 @@ tissue-to-plasma clearance rate. This can be obtained from MRTM1 of SRTM,
 or set at a specified value. If using SRTM to estimate this value, it is
 equal to k2 / R1.}
 
-\item{tstar}{Optional. The t* specification for regression. If tstar_type="frames", 
+\item{tstar}{Optional. The t* specification for regression. If tstar_type="frames",
 this is the number of frames from the end to include (e.g., 10 means last 10 frames).
-If tstar_type="time", this is the time point (in minutes) after which all frames 
+If tstar_type="time", this is the time point (in minutes) after which all frames
 with midpoints later than this time are included. This value can be estimated using \code{mrtm2_tstar}.
 Note that this t* differs from that of the non-invasive Logan plot (which is the point at which
 pseudo-equilibrium is reached). Rather, with MRTM1 and MRTM2, all frames
