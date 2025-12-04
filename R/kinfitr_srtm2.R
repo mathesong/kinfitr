@@ -90,7 +90,7 @@ srtm2 <- function(t_tac, reftac, roitac, k2prime=NULL, weights = NULL, frameStar
 
   # Convert timeStartEnd to frameStartEnd if needed
   if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
-    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
+    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1],
                        tail(which(t_tac <= timeStartEnd[2]), 1))
   }
 
@@ -196,15 +196,16 @@ srtm2 <- function(t_tac, reftac, roitac, k2prime=NULL, weights = NULL, frameStar
   par.se[1,] <- purrr::map_dbl(names(coef(output)), ~ get_se(output, .x))
   names(par.se) <- paste0(names(par.se), ".se")
 
-  if(!is.null(k2prime)) {
-    par$k2prime = k2prime
-    par.se$k2prime=0
-  }
-
-  # Derived
   par$k2a = with(par, (R1 * k2prime) / (bp + 1)  )
 
-  par.se$k2a.se <- get_se(output, "(R1 * k2prime) / (bp + 1)")
+  if(!is.null(k2prime)) {
+    par.se$k2a.se <- get_se(output, paste("(R1 * ",k2prime,") / (bp + 1)"))
+
+    par$k2prime = k2prime
+    par.se$k2prime=0
+  } else {
+    par.se$k2a.se <- get_se(output, "(R1 * k2prime) / (bp + 1)")
+  }
 
   out <- list(
     par = par, par.se = par.se,
@@ -315,7 +316,7 @@ plot_srtm2fit <- function(srtm2out, roiname = NULL, refname = NULL) {
     refname <- "Reference"
   }
 
-  measured <- dplyr::rename(measured, 
+  measured <- dplyr::rename(measured,
     !!paste0(roiname, ".measured") := ROI.measured,
     !!refname := Reference
   )
