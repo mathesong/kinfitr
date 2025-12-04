@@ -67,12 +67,13 @@ final frame to use for modelling, e.g. c(1,20). This can be used to assess time 
 \item{tstarIncludedFrames}{Deprecated. Use 'tstar' with 'tstar_type="frames"' instead.}
 }
 \value{
-A list with a data frame of the fitted parameters \code{out$par}, the
-  model fit object \code{out$fit}, a dataframe containing the TACs of the
-  data \code{out$tacs}, a dataframe containing the TACs of the fitted values
-  \code{out$fitvals}, a vector of the weights \code{out$weights}, the
-  specified k2prime value \code{out$k2prime}, and the specified
-  tstarIncludedFrames value \code{out$tstarIncludedFrames}.
+A list with a data frame of the fitted parameters \code{out$par},
+  their percentage standard errors (scaled so that 1 represents 100\%)
+  \code{out$par.se}, the model fit object \code{out$fit}, a dataframe
+  containing the TACs of the data \code{out$tacs}, a dataframe containing the
+  TACs of the fitted values \code{out$fitvals}, a vector of the weights
+  \code{out$weights}, the specified k2prime value \code{out$k2prime}, and the
+  specified tstarIncludedFrames value \code{out$tstarIncludedFrames}.
 }
 \description{
 Function to fit MRTM2 of Ichise et al. (2003) to data.  This model is often

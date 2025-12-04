@@ -41,12 +41,13 @@
 #'   final frame to use for modelling, e.g. c(1,20). This can be used to assess time stability for example.
 #' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
 #'
-#' @return A list with a data frame of the fitted parameters \code{out$par}, the
-#'   model fit object \code{out$fit}, a dataframe containing the TACs of the
-#'   data \code{out$tacs}, a dataframe containing the TACs of the fitted values
-#'   \code{out$fitvals}, a vector of the weights \code{out$weights}, the
-#'   specified k2prime value \code{out$k2prime}, and the specified
-#'   tstarIncludedFrames value \code{out$tstarIncludedFrames}.
+#' @return A list with a data frame of the fitted parameters \code{out$par},
+#'   their percentage standard errors (scaled so that 1 represents 100\%)
+#'   \code{out$par.se}, the model fit object \code{out$fit}, a dataframe
+#'   containing the TACs of the data \code{out$tacs}, a dataframe containing the
+#'   TACs of the fitted values \code{out$fitvals}, a vector of the weights
+#'   \code{out$weights}, the specified k2prime value \code{out$k2prime}, and the
+#'   specified tstarIncludedFrames value \code{out$tstarIncludedFrames}.
 #'
 #' @examples
 #' data(simref)
@@ -164,9 +165,19 @@ mrtm2 <- function(t_tac, reftac, roitac, k2prime, tstar = NULL, weights = NULL,
 
   par <- as.data.frame(list(bp = bp))
 
+  par.se <- par
+  names(par.se) <- paste0(names(par.se), ".se")
+  par.se$bp.se <- get_se(mrtm2_model, "-((Term1 / Term2) + 1)")
+
+  k2.se <- get_se(mrtm2_model, "-Term2")
+  R1.se <- get_se(mrtm2_model, "Term1 / (-Term2)")
+
   if( tstarIncludedFrames >= length(reftac) - 1 ) {
     par$R1 <- R1
     par$k2 <- k2
+
+    par.se$R1.se <- R1.se
+    par.se$k2.se <- k2.se
   }
 
   fit <- mrtm2_model
@@ -179,8 +190,10 @@ mrtm2 <- function(t_tac, reftac, roitac, k2prime, tstar = NULL, weights = NULL,
   fitvals$Target_fitted <- as.numeric(predict(mrtm2_model))
 
   out <- list(
-    par = par, fit = fit, tacs = tacs, fitvals = fitvals, weights = weights,
-    k2prime = k2prime, tstarIncludedFrames = tstarIncludedFrames, model = "mrtm2"
+    par = par, par.se = par.se, fit = fit, tacs = tacs,
+    fitvals = fitvals, weights = weights,
+    k2prime = k2prime, tstarIncludedFrames = tstarIncludedFrames,
+    model = "mrtm2"
   )
 
   class(out) <- c("mrtm2", "kinfit")

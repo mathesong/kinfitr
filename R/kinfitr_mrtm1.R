@@ -38,11 +38,13 @@
 #' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
 
 #'
-#' @return A list with a data frame of the fitted parameters \code{out$par}, the
-#'   model fit object \code{out$fit}, a dataframe containing the TACs of the
-#'   data \code{out$tacs}, a dataframe containing the TACs of the fitted values
-#'   \code{out$fitvals}, a vector of the weights \code{out$weights}, and the
-#'   specified tstarIncludedFrames value \code{out$tstarIncludedFrames}
+#' @return A list with a data frame of the fitted parameters \code{out$par},
+#'   their percentage standard errors (scaled so that 1 represents 100\%)
+#'   \code{out$par.se}, the model fit object \code{out$fit}, a dataframe
+#'   containing the TACs of the data \code{out$tacs}, a dataframe containing the
+#'   TACs of the fitted values \code{out$fitvals}, a vector of the weights
+#'   \code{out$weights}, and the specified tstarIncludedFrames value
+#'   \code{out$tstarIncludedFrames}
 #'
 #' @examples
 #' data(simref)
@@ -167,9 +169,20 @@ mrtm1 <- function(t_tac, reftac, roitac, tstar = NULL, weights = NULL,
 
   par <- as.data.frame(list(bp = bp, k2prime = k2prime))
 
+  par.se <- par
+  names(par.se) <- paste0(names(par.se), ".se")
+  par.se$bp.se <- get_se(mrtm1_model, "-((Term1 / Term2) + 1)")
+  par.se$k2prime.se <- get_se(mrtm1_model, "Term1 / Term3")
+
+  R1.se <- get_se(mrtm1_model, "Term3")
+  k2.se <- get_se(mrtm1_model, "-Term2")
+
   if( tstarIncludedFrames >= length(reftac) - 1 ) {
     par$R1 <- R1
     par$k2 <- k2
+
+    par.se$R1.se <- R1.se
+    par.se$k2.se <- k2.se
   }
 
   fit <- mrtm1_model
@@ -182,7 +195,8 @@ mrtm1 <- function(t_tac, reftac, roitac, tstar = NULL, weights = NULL,
   fitvals$Target_fitted <- as.numeric(predict(mrtm1_model))
 
   out <- list(
-    par = par, fit = fit, tacs = tacs, fitvals = fitvals, weights = weights,
+    par = par, par.se = par.se, fit = fit,
+    tacs = tacs, fitvals = fitvals, weights = weights,
     tstarIncludedFrames = tstarIncludedFrames, model = "mrtm1"
   )
 
