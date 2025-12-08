@@ -150,7 +150,7 @@ refLogan <- function(t_tac, reftac, roitac, k2prime, tstar, weights = NULL,
 
   par.se <- par
   names(par.se) <- paste0(names(par.se), ".se")
-  par.se$bp.se <- get_se(logan_model, "logan_equil_ref - 1)")
+  par.se$bp.se <- get_se(logan_model, "logan_equil_ref - 1")
 
   fit <- logan_model
 
