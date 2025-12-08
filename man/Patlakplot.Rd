@@ -32,9 +32,10 @@ concentrations over time.  This can be generated using the
 \code{blood_interp} function.}
 
 \item{tstar}{The t* specification for regression. If tstar_type="frames",
-this is the number of frames from the end to include (e.g., 10 means last 10 frames).
-If tstar_type="time", this is the time point (in minutes) after which all frames
-with midpoints later than this time are included. This value can be estimated using \code{Patlak_tstar}.}
+this is the number of frames from the end to include (e.g., 10 means last
+10 frames). If tstar_type="time", this is the time point (in minutes) after
+which all frames with midpoints later than this time are included. This
+value can be estimated using \code{Patlak_tstar}.}
 
 \item{weights}{Optional. Numeric vector of the weights assigned to each frame
 in the fitting. We include zero at time zero: if not included, it is added.
@@ -50,23 +51,30 @@ prior to parameter estimation using the following equation: \deqn{C_{T}(t)
 = \frac{C_{Measured}(t) - vB\times C_{B}(t)}{1-vB}}}
 
 \item{frameStartEnd}{Optional: This allows one to specify the beginning and
-final frame to use for modelling, e.g. c(1,20). This can be used to assess time stability for example.}
+final frame to use for modelling, e.g. c(1,20). This can be used to assess
+time stability for example.}
 
-\item{timeStartEnd}{Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.}
+\item{timeStartEnd}{Optional. This allows one to specify the beginning and
+end time point instead of defining the frame numbers using frameStartEnd.
+This function will restrict the model to all time frames whose t_tac is
+between the values, i.e. c(0,5) will select all frames with midtimes during
+the first 5 minutes.}
 
-\item{tstar_type}{Either "frames" (default) or "time", specifying how to interpret tstar.}
+\item{tstar_type}{Either "frames" (default) or "time", specifying how to
+interpret tstar.}
 
-\item{tstarIncludedFrames}{Deprecated. Use 'tstar' with 'tstar_type="frames"' instead.}
+\item{tstarIncludedFrames}{Deprecated. Use 'tstar' with 'tstar_type="frames"'
+instead.}
 }
 \value{
-A list with a data frame of the fitted parameters \code{out$par},
-  their percentage standard errors \code{out$par.se}, the model fit object
-  \code{out$fit}, a dataframe containing the TACs of the data
-  \code{out$tacs}, a dataframe containing the fitted values
-  \code{out$fitvals}, the blood input data frame after time shifting
-  \code{input}, a vector of the weights \code{out$weights}, the inpshift
-  value used \code{inpshift}, the specified vB value \code{out$vB}, and the
-  specified tstarIncludedFrames value \code{out$tstarIncludedFrames}.
+A list with a data frame of the fitted parameters \code{out$par},,
+  their percentage standard errors (scaled so that 1 represents 100\%)
+  \code{out$par.se}, the model fit object \code{out$fit}, a dataframe
+  containing the TACs of the data \code{out$tacs}, a dataframe containing the
+  fitted values \code{out$fitvals}, the blood input data frame after time
+  shifting \code{input}, a vector of the weights \code{out$weights}, the
+  inpshift value used \code{inpshift}, the specified vB value \code{out$vB},
+  and the specified tstarIncludedFrames value \code{out$tstarIncludedFrames}.
 }
 \description{
 Function to fit the Patlak Plot of of Patlak et al (1983) to data.
@@ -85,7 +93,7 @@ input <- blood_interp(
   t_parentfrac = 1, parentfrac = 1
 )
 
-fit <- Patlakplot(t_tac, tac, input, 10, weights, inpshift = 0.1)
+fit <- Patlakplot(t_tac, tac, input, tstar=10, weights, inpshift = 0.1)
 }
 \references{
 Patlak CS, Blasberg RG, Fenstermacher JD. Graphical evaluation of

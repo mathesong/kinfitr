@@ -324,9 +324,9 @@ ma1_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, in
   }
 
   frames <- length(t_tac)
-  lowroi_fit <- ma1(t_tac, lowroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
-  medroi_fit <- ma1(t_tac, medroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
-  highroi_fit <- ma1(t_tac, highroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+  lowroi_fit <- ma1(t_tac, lowroi, input, tstar = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+  medroi_fit <- ma1(t_tac, medroi, input, tstar = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+  highroi_fit <- ma1(t_tac, highroi, input, tstar = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
 
   low_linplot <- plot_ma1fit(lowroi_fit) + ggtitle("Low") + ylim(0, max(lowroi_fit$tacs$Target * 1.1)) + theme(legend.position = "none")
   med_linplot <- plot_ma1fit(medroi_fit) + ggtitle("Medium") + ylim(0, max(medroi_fit$tacs$Target * 1.1)) + theme(legend.position = "none")
@@ -340,9 +340,9 @@ ma1_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, in
   vt_df <- data.frame(Frames = tstarInclFrames, Time = t_tac[ tstarInclFrames ], Low = zeros, Medium = zeros, High = zeros)
 
   for (i in 1:length(tstarInclFrames)) {
-    lowfit <- ma1(t_tac, lowroi, input, tstarIncludedFrames = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
-    medfit <- ma1(t_tac, medroi, input, tstarIncludedFrames = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
-    highfit <- ma1(t_tac, highroi, input, tstarIncludedFrames = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+    lowfit <- ma1(t_tac, lowroi, input, tstar = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+    medfit <- ma1(t_tac, medroi, input, tstar = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+    highfit <- ma1(t_tac, highroi, input, tstar = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
 
     r2_df$Low[i] <- summary(lowfit$fit)$r.squared
     r2_df$Medium[i] <- summary(medfit$fit)$r.squared

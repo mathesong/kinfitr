@@ -328,9 +328,9 @@ plot_Loganfit <- function(loganout, roiname = NULL) {
 
 Logan_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, inpshift = 0, vB = 0.05, frameStartEnd = NULL, timeStartEnd = NULL, gridbreaks = 2) {
   frames <- length(t_tac)
-  lowroi_fit <- Loganplot(t_tac, lowroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
-  medroi_fit <- Loganplot(t_tac, medroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
-  highroi_fit <- Loganplot(t_tac, highroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+  lowroi_fit <- Loganplot(t_tac, lowroi, input, tstar = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+  medroi_fit <- Loganplot(t_tac, medroi, input, tstar = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+  highroi_fit <- Loganplot(t_tac, highroi, input, tstar = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
 
   # xlabel <- "Integ(C_Plasma)/C_Tissue"
   # ylabel <- "Integ(C_Tissue)/C_Tissue"
@@ -359,9 +359,9 @@ Logan_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, 
   vt_df <- data.frame(Frames = tstarInclFrames, Time = t_tac[ tstarInclFrames ], Low = zeros, Medium = zeros, High = zeros)
 
   for (i in 1:length(tstarInclFrames)) {
-    lowfit <- Loganplot(t_tac, lowroi, input, tstarIncludedFrames = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
-    medfit <- Loganplot(t_tac, medroi, input, tstarIncludedFrames = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
-    highfit <- Loganplot(t_tac, highroi, input, tstarIncludedFrames = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+    lowfit <- Loganplot(t_tac, lowroi, input, tstar = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+    medfit <- Loganplot(t_tac, medroi, input, tstar = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+    highfit <- Loganplot(t_tac, highroi, input, tstar = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
 
     r2_df$Low[i] <- summary(lowfit$fit)$r.squared
     r2_df$Medium[i] <- summary(medfit$fit)$r.squared

@@ -13,20 +13,23 @@
 #' @param roitac Numeric vector of radioactivity concentrations in the target
 #'   tissue for each frame. We include zero at time zero: if not included, it is
 #'   added.
-#' @param tstar Optional. The t* specification for regression. If tstar_type="frames",
-#'   this is the number of frames from the end to include (e.g., 10 means last 10 frames).
-#'   If tstar_type="time", this is the time point (in minutes) after which all frames
-#'   with midpoints later than this time are included. This value can be estimated using \code{mrtm1_tstar}.
-#'   Note that this t* differs from that of the non-invasive Logan plot (which is the point at which
-#'   pseudo-equilibrium is reached). Rather, with MRTM1 and MRTM2, all frames
-#'   can be used provided that the kinetics in the target tissue can be
-#'   described by a one tissue compartment (1TC) model (like SRTM). If this is
-#'   not the case, a t* is required. If the number of included frames is greater
-#'   than the number of frames minus 2, then the par output will also include R1
-#'   and k2 values. These parameters are only applicable if 1TC dynamics can be
-#'   assumed.
-#' @param tstar_type Either "frames" (default) or "time", specifying how to interpret tstar.
-#' @param tstarIncludedFrames Deprecated. Use 'tstar' with 'tstar_type="frames"' instead.
+#' @param tstar Optional. The t* specification for regression. If
+#'   tstar_type="frames", this is the number of frames from the end to include
+#'   (e.g., 10 means last 10 frames). If tstar_type="time", this is the time
+#'   point (in minutes) after which all frames with midpoints later than this
+#'   time are included. This value can be estimated using \code{mrtm1_tstar}.
+#'   Note that this t* differs from that of the non-invasive Logan plot (which
+#'   is the point at which pseudo-equilibrium is reached). Rather, with MRTM1
+#'   and MRTM2, all frames can be used provided that the kinetics in the target
+#'   tissue can be described by a one tissue compartment (1TC) model (like
+#'   SRTM). If this is not the case, a t* is required. If the number of included
+#'   frames is greater than the number of frames minus 2, then the par output
+#'   will also include R1 and k2 values. These parameters are only applicable if
+#'   1TC dynamics can be assumed.
+#' @param tstar_type Either "frames" (default) or "time", specifying how to
+#'   interpret tstar.
+#' @param tstarIncludedFrames Deprecated. Use 'tstar' with 'tstar_type="frames"'
+#'   instead.
 #' @param weights Optional. Numeric vector of the weights assigned to each frame
 #'   in the fitting. We include zero at time zero: if not included, it is added.
 #'   If not specified, uniform weights will be used.
@@ -34,8 +37,13 @@
 #'   not included, the integrals will be calculated using trapezoidal
 #'   integration.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and
-#'   final frame to use for modelling, e.g. c(1,20). This can be used to assess time stability for example.
-#' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
+#'   final frame to use for modelling, e.g. c(1,20). This can be used to assess
+#'   time stability for example.
+#' @param timeStartEnd Optional. This allows one to specify the beginning and
+#'   end time point instead of defining the frame numbers using frameStartEnd.
+#'   This function will restrict the model to all time frames whose t_tac is
+#'   between the values, i.e. c(0,5) will select all frames with midtimes during
+#'   the first 5 minutes.
 
 #'
 #' @return A list with a data frame of the fitted parameters \code{out$par},
@@ -354,9 +362,9 @@ mrtm1_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename = NULL,
   bp_df <- data.frame(Frames = tstarInclFrames, Time = t_tac[ tstarInclFrames ], Low = zeros, Medium = zeros, High = zeros)
 
   for (i in 1:length(tstarInclFrames)) {
-    lowfit <- mrtm1(t_tac, reftac, lowroi, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
-    medfit <- mrtm1(t_tac, reftac, medroi, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
-    highfit <- mrtm1(t_tac, reftac, highroi, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    lowfit <- mrtm1(t_tac, reftac, lowroi, tstar = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    medfit <- mrtm1(t_tac, reftac, medroi, tstar = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    highfit <- mrtm1(t_tac, reftac, highroi, tstar = tstarInclFrames[i], frameStartEnd = frameStartEnd)
 
     r2_df$Low[i] <- summary(lowfit$fit)$r.squared
     r2_df$Medium[i] <- summary(medfit$fit)$r.squared

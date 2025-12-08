@@ -37,7 +37,7 @@
 #' roitac <- simref$tacs[[2]]$ROI1
 #' weights <- simref$tacs[[2]]$Weights
 #'
-#' fit <- refmlLogan(t_tac, reftac, roitac, k2prime = 0.1, tstarIncludedFrames = 10, weights = weights)
+#' fit <- refmlLogan(t_tac, reftac, roitac, k2prime = 0.1, tstar = 10, weights = weights)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Turkheimer FE, Aston JA, Banati RB, Riddell C, Cunningham VJ. A linear wavelet filter for parametric imaging with dynamic PET. IEEE transactions on medical imaging. 2003 Mar;22(3):289-301.
@@ -173,7 +173,7 @@ refmlLogan <- function(t_tac, reftac, roitac, k2prime, tstar, weights = NULL,
 #' roitac <- simref$tacs[[2]]$ROI1
 #' weights <- simref$tacs[[2]]$Weights
 #'
-#' fit <- refmlLogan(t_tac, reftac, roitac, k2prime = 0.1, tstarIncludedFrames = 10, weights = weights)
+#' fit <- refmlLogan(t_tac, reftac, roitac, k2prime = 0.1, tstar = 10, weights = weights)
 #'
 #' plot_refmlLoganfit(fit)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
@@ -279,9 +279,9 @@ refmlLogan_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, fi
   bp_df <- data.frame(Frames = tstarInclFrames, Time = t_tac[ tstarInclFrames ], Low = zeros, Medium = zeros, High = zeros)
 
   for (i in 1:length(tstarInclFrames)) {
-    lowfit <- refmlLogan(t_tac, reftac, lowroi, k2prime, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
-    medfit <- refmlLogan(t_tac, reftac, medroi, k2prime, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
-    highfit <- refmlLogan(t_tac, reftac, highroi, k2prime, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    lowfit <- refmlLogan(t_tac, reftac, lowroi, k2prime, tstar = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    medfit <- refmlLogan(t_tac, reftac, medroi, k2prime, tstar = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    highfit <- refmlLogan(t_tac, reftac, highroi, k2prime, tstar = tstarInclFrames[i], frameStartEnd = frameStartEnd)
 
     r2_df$Low[i] <- summary(lowfit$fit)$r.squared
     r2_df$Medium[i] <- summary(medfit$fit)$r.squared
