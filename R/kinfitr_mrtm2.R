@@ -340,9 +340,9 @@ mrtm2_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, filenam
   bp_df <- data.frame(Frames = tstarInclFrames, Time = t_tac[ tstarInclFrames ], Low = zeros, Medium = zeros, High = zeros)
 
   for (i in 1:length(tstarInclFrames)) {
-    lowfit <- mrtm2(t_tac, reftac, lowroi, k2prime = k2prime, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
-    medfit <- mrtm2(t_tac, reftac, medroi, k2prime = k2prime, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
-    highfit <- mrtm2(t_tac, reftac, highroi, k2prime = k2prime, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    lowfit <- mrtm2(t_tac, reftac, lowroi, k2prime = k2prime, tstar = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    medfit <- mrtm2(t_tac, reftac, medroi, k2prime = k2prime, tstar = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    highfit <- mrtm2(t_tac, reftac, highroi, k2prime = k2prime, tstar = tstarInclFrames[i], frameStartEnd = frameStartEnd)
 
     r2_df$Low[i] <- summary(lowfit$fit)$r.squared
     r2_df$Medium[i] <- summary(medfit$fit)$r.squared

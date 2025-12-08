@@ -12,11 +12,14 @@
 #'   concentrations over time.  This can be generated using the
 #'   \code{blood_interp} function.
 #' @param tstar The t* specification for regression. If tstar_type="frames",
-#'   this is the number of frames from the end to include (e.g., 10 means last 10 frames).
-#'   If tstar_type="time", this is the time point (in minutes) after which all frames
-#'   with midpoints later than this time are included. This value can be estimated using \code{Patlak_tstar}.
-#' @param tstar_type Either "frames" (default) or "time", specifying how to interpret tstar.
-#' @param tstarIncludedFrames Deprecated. Use 'tstar' with 'tstar_type="frames"' instead.
+#'   this is the number of frames from the end to include (e.g., 10 means last
+#'   10 frames). If tstar_type="time", this is the time point (in minutes) after
+#'   which all frames with midpoints later than this time are included. This
+#'   value can be estimated using \code{Patlak_tstar}.
+#' @param tstar_type Either "frames" (default) or "time", specifying how to
+#'   interpret tstar.
+#' @param tstarIncludedFrames Deprecated. Use 'tstar' with 'tstar_type="frames"'
+#'   instead.
 #' @param weights Optional. Numeric vector of the weights assigned to each frame
 #'   in the fitting. We include zero at time zero: if not included, it is added.
 #'   If not specified, uniform weights will be used.
@@ -28,18 +31,23 @@
 #'   prior to parameter estimation using the following equation: \deqn{C_{T}(t)
 #'   = \frac{C_{Measured}(t) - vB\times C_{B}(t)}{1-vB}}
 #' @param frameStartEnd Optional: This allows one to specify the beginning and
-#'   final frame to use for modelling, e.g. c(1,20). This can be used to assess time stability for example.
-#' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
+#'   final frame to use for modelling, e.g. c(1,20). This can be used to assess
+#'   time stability for example.
+#' @param timeStartEnd Optional. This allows one to specify the beginning and
+#'   end time point instead of defining the frame numbers using frameStartEnd.
+#'   This function will restrict the model to all time frames whose t_tac is
+#'   between the values, i.e. c(0,5) will select all frames with midtimes during
+#'   the first 5 minutes.
 #'
 #'
-#' @return A list with a data frame of the fitted parameters \code{out$par},
-#'   their percentage standard errors \code{out$par.se}, the model fit object
-#'   \code{out$fit}, a dataframe containing the TACs of the data
-#'   \code{out$tacs}, a dataframe containing the fitted values
-#'   \code{out$fitvals}, the blood input data frame after time shifting
-#'   \code{input}, a vector of the weights \code{out$weights}, the inpshift
-#'   value used \code{inpshift}, the specified vB value \code{out$vB}, and the
-#'   specified tstarIncludedFrames value \code{out$tstarIncludedFrames}.
+#' @return A list with a data frame of the fitted parameters \code{out$par},,
+#'   their percentage standard errors (scaled so that 1 represents 100\%)
+#'   \code{out$par.se}, the model fit object \code{out$fit}, a dataframe
+#'   containing the TACs of the data \code{out$tacs}, a dataframe containing the
+#'   fitted values \code{out$fitvals}, the blood input data frame after time
+#'   shifting \code{input}, a vector of the weights \code{out$weights}, the
+#'   inpshift value used \code{inpshift}, the specified vB value \code{out$vB},
+#'   and the specified tstarIncludedFrames value \code{out$tstarIncludedFrames}.
 #'
 #' @examples
 #'
@@ -55,7 +63,7 @@
 #'   t_parentfrac = 1, parentfrac = 1
 #' )
 #'
-#' fit <- Patlakplot(t_tac, tac, input, 10, weights, inpshift = 0.1)
+#' fit <- Patlakplot(t_tac, tac, input, tstar=10, weights, inpshift = 0.1)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Patlak CS, Blasberg RG, Fenstermacher JD. Graphical evaluation of
@@ -155,7 +163,7 @@ Patlakplot <- function(t_tac, tac, input, tstar, weights = NULL,
 
   # Output
 
-  par <- as.data.frame(list(K = as.numeric(patlak_model$coefficients[2])))
+  par <- as.data.frame(list(Ki = as.numeric(patlak_model$coefficients[2])))
   fit <- patlak_model
 
   tacs <- data.frame(Time = t_tac, Target = tac, Target_uncor = tac_uncor) # uncorrected for blood volume
@@ -298,9 +306,9 @@ Patlak_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL,
   }
 
   frames <- length(t_tac)
-  lowroi_fit <- Patlakplot(t_tac, lowroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
-  medroi_fit <- Patlakplot(t_tac, medroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
-  highroi_fit <- Patlakplot(t_tac, highroi, input, tstarIncludedFrames = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+  lowroi_fit <- Patlakplot(t_tac, lowroi, input, tstar = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+  medroi_fit <- Patlakplot(t_tac, medroi, input, tstar = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+  highroi_fit <- Patlakplot(t_tac, highroi, input, tstar = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
 
   low_xlimits <- c(0, tail(lowroi_fit$fitvals$Patlak_Plasma, 1))
   med_xlimits <- c(0, tail(medroi_fit$fitvals$Patlak_Plasma, 1))
@@ -322,12 +330,12 @@ Patlak_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL,
 
   r2_df <- data.frame(Frames = tstarInclFrames, Low = zeros, Medium = zeros, High = zeros)
   maxperc_df <- data.frame(Frames = tstarInclFrames, Time = t_tac[ tstarInclFrames ], Low = zeros, Medium = zeros, High = zeros)
-  K_df <- data.frame(Frames = tstarInclFrames, Time = t_tac[ tstarInclFrames ], Low = zeros, Medium = zeros, High = zeros)
+  Ki_df <- data.frame(Frames = tstarInclFrames, Time = t_tac[ tstarInclFrames ], Low = zeros, Medium = zeros, High = zeros)
 
   for (i in 1:length(tstarInclFrames)) {
-    lowfit <- Patlakplot(t_tac, lowroi, input, tstarIncludedFrames = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
-    medfit <- Patlakplot(t_tac, medroi, input, tstarIncludedFrames = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
-    highfit <- Patlakplot(t_tac, highroi, input, tstarIncludedFrames = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+    lowfit <- Patlakplot(t_tac, lowroi, input, tstar = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+    medfit <- Patlakplot(t_tac, medroi, input, tstar = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+    highfit <- Patlakplot(t_tac, highroi, input, tstar = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
 
     r2_df$Low[i] <- summary(lowfit$fit)$r.squared
     r2_df$Medium[i] <- summary(medfit$fit)$r.squared
@@ -337,9 +345,9 @@ Patlak_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL,
     maxperc_df$Medium[i] <- maxpercres(medfit)
     maxperc_df$High[i] <- maxpercres(highfit)
 
-    K_df$Low[i] <- lowfit$par$K
-    K_df$Medium[i] <- medfit$par$K
-    K_df$High[i] <- highfit$par$K
+    Ki_df$Low[i] <- lowfit$par$Ki
+    Ki_df$Medium[i] <- medfit$par$Ki
+    Ki_df$High[i] <- highfit$par$Ki
   }
 
   xlabel <- "Number of Included Frames"
@@ -379,12 +387,12 @@ Patlak_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL,
   tacplot <- ggplot(tacplotdf, aes(x = Time, y = Radioactivity, colour = Region)) + geom_point() + geom_line() + colScale
 
 
-  # K Plot
+  # Ki Plot
 
-  Kplotdf <- tidyr::gather(K_df, key = Region, value = K, -Frames, -Time)
-  Kplotdf$Region <- forcats::fct_rev(forcats::fct_inorder(factor(Kplotdf$Region)))
+  Kiplotdf <- tidyr::gather(Ki_df, key = Region, value = Ki, -Frames, -Time)
+  Kiplotdf$Region <- forcats::fct_rev(forcats::fct_inorder(factor(Kiplotdf$Region)))
 
-  Kplot <- ggplot(Kplotdf, aes(x = Frames, y = K, colour = Region)) + geom_point() + geom_line() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + ylab(expression(K[i])) + colScale
+  Kiplot <- ggplot(Kiplotdf, aes(x = Frames, y = Ki, colour = Region)) + geom_point() + geom_line() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + ylab(expression(K[i])) + colScale
 
 
   # Output
@@ -392,7 +400,7 @@ Patlak_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL,
   linrow <- cowplot::plot_grid(low_linplot, med_linplot, high_linplot, nrow = 1)
   r2row <- cowplot::plot_grid(low_r2plot, med_r2plot, high_r2plot, nrow = 1)
   mprow <- cowplot::plot_grid(low_mpplot, med_mpplot, high_mpplot, nrow = 1)
-  outrow <- cowplot::plot_grid(tacplot, Kplot, rel_widths = c(2, 1))
+  outrow <- cowplot::plot_grid(tacplot, Kiplot, rel_widths = c(2, 1))
 
   totalplot <- cowplot::plot_grid(linrow, r2row, mprow, outrow, nrow = 4)
 

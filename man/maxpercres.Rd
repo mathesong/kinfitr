@@ -29,7 +29,7 @@ reftac <- pbr28$tacs[[2]]$CBL
 roitac <- pbr28$tacs[[2]]$STR
 weights <- pbr28$tacs[[2]]$Weights
 
-refloganout <- refLogan(t_tac, reftac, roitac, 0.1, tstarIncludedFrames = 9)
+refloganout <- refLogan(t_tac, reftac, roitac, 0.1, tstar = 9)
 
 maxpercres(refloganout)
 }

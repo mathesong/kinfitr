@@ -18,42 +18,60 @@ refPatlak(
 )
 }
 \arguments{
-\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
-zero. If a time zero frame is not included, it will be added.}
+\item{t_tac}{Numeric vector of times for each frame in minutes. We use the
+time halfway through the frame as well as a zero. If a time zero frame is
+not included, it will be added.}
 
-\item{reftac}{Numeric vector of radioactivity concentrations in the reference tissue for each frame. We include zero at
-time zero: if not included, it is added.}
+\item{reftac}{Numeric vector of radioactivity concentrations in the reference
+tissue for each frame. We include zero at time zero: if not included, it is
+added.}
 
-\item{roitac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
-zero: if not included, it is added.}
+\item{roitac}{Numeric vector of radioactivity concentrations in the target
+tissue for each frame. We include zero at time zero: if not included, it is
+added.}
 
 \item{tstar}{The t* specification for regression. If tstar_type="frames",
-this is the number of frames from the end to include (e.g., 10 means last 10 frames).
-If tstar_type="time", this is the time point (in minutes) after which all frames
-with midpoints later than this time are included. This value can be estimated using \code{refPatlak_tstar}.}
+this is the number of frames from the end to include (e.g., 10 means last
+10 frames). If tstar_type="time", this is the time point (in minutes) after
+which all frames with midpoints later than this time are included. This
+value can be estimated using \code{refPatlak_tstar}.}
 
-\item{weights}{Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
-if not included, it is added. If not specified, uniform weights will be used.}
+\item{weights}{Optional. Numeric vector of the weights assigned to each frame
+in the fitting. We include zero at time zero: if not included, it is added.
+If not specified, uniform weights will be used.}
 
 \item{dur}{Optional. Numeric vector of the time durations of the frames. If
-not included, the integrals will be calculated using trapezoidal integration.}
+not included, the integrals will be calculated using trapezoidal
+integration.}
 
-\item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
-This can be used to assess time stability for example.}
+\item{frameStartEnd}{Optional: This allows one to specify the beginning and
+final frame to use for modelling, e.g. c(1,20). This can be used to assess
+time stability for example.}
 
-\item{timeStartEnd}{Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.}
+\item{timeStartEnd}{Optional. This allows one to specify the beginning and
+end time point instead of defining the frame numbers using frameStartEnd.
+This function will restrict the model to all time frames whose t_tac is
+between the values, i.e. c(0,5) will select all frames with midtimes during
+the first 5 minutes.}
 
-\item{tstar_type}{Either "frames" (default) or "time", specifying how to interpret tstar.}
+\item{tstar_type}{Either "frames" (default) or "time", specifying how to
+interpret tstar.}
 
-\item{tstarIncludedFrames}{Deprecated. Use 'tstar' with 'tstar_type="frames"' instead.}
+\item{tstarIncludedFrames}{Deprecated. Use 'tstar' with 'tstar_type="frames"'
+instead.}
 }
 \value{
-A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit}, a dataframe
-containing the TACs of the data \code{out$tacs}, a dataframe containing the TACs of the fitted values \code{out$fitvals},
-a vector of the weights \code{out$weights}, and the specified tstarIncludedFrames value \code{out$tstarIncludedFrames}
+A list with a data frame of the fitted parameters \code{out$par},
+  their percentage standard errors (scaled so that 1 represents 100\%)
+  \code{out$par.se}, the model fit object \code{out$fit}, a dataframe
+  containing the TACs of the data \code{out$tacs}, a dataframe containing the
+  TACs of the fitted values \code{out$fitvals}, a vector of the weights
+  \code{out$weights}, and the specified tstarIncludedFrames value
+  \code{out$tstarIncludedFrames}
 }
 \description{
-Function to fit the Patlak Reference Tissue Model of Patlak & Blasbert (1985) to data.
+Function to fit the Patlak Reference Tissue Model of Patlak & Blasbert (1985)
+to data.
 }
 \examples{
 # Note: Reference region models, and irreversible binding models, should not
@@ -66,10 +84,12 @@ reftac <- pbr28$tacs[[2]]$CBL
 roitac <- pbr28$tacs[[2]]$STR
 weights <- pbr28$tacs[[2]]$Weights
 
-fit <- refPatlak(t_tac, reftac, roitac, tstarIncludedFrames = 10, weights = weights)
+fit <- refPatlak(t_tac, reftac, roitac, tstar = 10, weights = weights)
 }
 \references{
-Patlak CS, Blasberg RG. Graphical evaluation of blood-to-brain transfer constants from multiple-time uptake data. Generalizations. Journal of Cerebral Blood Flow & Metabolism. 1985 Dec 1;5(4):584-90.
+Patlak CS, Blasberg RG. Graphical evaluation of blood-to-brain
+  transfer constants from multiple-time uptake data. Generalizations. Journal
+  of Cerebral Blood Flow & Metabolism. 1985 Dec 1;5(4):584-90.
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}

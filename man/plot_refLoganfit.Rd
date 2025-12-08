@@ -25,7 +25,7 @@ reftac <- simref$tacs[[2]]$Reference
 roitac <- simref$tacs[[2]]$ROI1
 weights <- simref$tacs[[2]]$Weights
 
-fit <- refLogan(t_tac, reftac, roitac, k2prime = 0.1, tstarIncludedFrames = 10, weights = weights)
+fit <- refLogan(t_tac, reftac, roitac, k2prime = 0.1, tstar = 10, weights = weights)
 
 plot_refLoganfit(fit)
 }

@@ -1,34 +1,54 @@
 #' Non-Invasive Logan Plot
 #'
-#' Function to fit the non-invasive Logan plot model of Logan et al. (1996) to data.
+#' Function to fit the non-invasive Logan plot model of Logan et al. (1996) to
+#' data.
 #'
-#' @param t_tac Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
-#' zero. If a time zero frame is not included, it will be added.
-#' @param reftac Numeric vector of radioactivity concentrations in the reference tissue for each frame. We include zero at
-#' time zero: if not included, it is added.
-#' @param roitac Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
-#' zero: if not included, it is added.
-#' @param k2prime Value of k2prime to be used for the fitting, i.e. the average tissue-to-plasma clearance rate. This can be
-#' obtained from another model, or set at a specified value. If using SRTM to estimate this value, it is equal to k2 / R1.
+#' @param t_tac Numeric vector of times for each frame in minutes. We use the
+#'   time halfway through the frame as well as a zero. If a time zero frame is
+#'   not included, it will be added.
+#' @param reftac Numeric vector of radioactivity concentrations in the reference
+#'   tissue for each frame. We include zero at time zero: if not included, it is
+#'   added.
+#' @param roitac Numeric vector of radioactivity concentrations in the target
+#'   tissue for each frame. We include zero at time zero: if not included, it is
+#'   added.
+#' @param k2prime Value of k2prime to be used for the fitting, i.e. the average
+#'   tissue-to-plasma clearance rate. This can be obtained from another model,
+#'   or set at a specified value. If using SRTM to estimate this value, it is
+#'   equal to k2 / R1.
 #' @param tstar The t* specification for regression. If tstar_type="frames",
-#' this is the number of frames from the end to include (e.g., 10 means last 10 frames).
-#' If tstar_type="time", this is the time point (in minutes) after which all frames
-#' with midpoints later than this time are included. This value can be estimated using \code{refLogan_tstar}.
-#' @param tstar_type Either "frames" (default) or "time", specifying how to interpret tstar.
-#' @param tstarIncludedFrames Deprecated. Use 'tstar' with 'tstar_type="frames"' instead.
-#' @param weights Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
-#' if not included, it is added. If not specified, uniform weights will be used.
+#'   this is the number of frames from the end to include (e.g., 10 means last
+#'   10 frames). If tstar_type="time", this is the time point (in minutes) after
+#'   which all frames with midpoints later than this time are included. This
+#'   value can be estimated using \code{refLogan_tstar}.
+#' @param tstar_type Either "frames" (default) or "time", specifying how to
+#'   interpret tstar.
+#' @param tstarIncludedFrames Deprecated. Use 'tstar' with 'tstar_type="frames"'
+#'   instead.
+#' @param weights Optional. Numeric vector of the weights assigned to each frame
+#'   in the fitting. We include zero at time zero: if not included, it is added.
+#'   If not specified, uniform weights will be used.
 #' @param dur Optional. Numeric vector of the time durations of the frames. If
-#' not included, the integrals will be calculated using trapezoidal integration.
-#' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
-#' This can be used to assess time stability for example.
-#' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
+#'   not included, the integrals will be calculated using trapezoidal
+#'   integration.
+#' @param frameStartEnd Optional: This allows one to specify the beginning and
+#'   final frame to use for modelling, e.g. c(1,20). This can be used to assess
+#'   time stability for example.
+#' @param timeStartEnd Optional. This allows one to specify the beginning and
+#'   end time point instead of defining the frame numbers using frameStartEnd.
+#'   This function will restrict the model to all time frames whose t_tac is
+#'   between the values, i.e. c(0,5) will select all frames with midtimes during
+#'   the first 5 minutes.
 
 #'
-#' @return A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit}, a dataframe
-#' containing the TACs of the data \code{out$tacs}, a dataframe containing the TACs of the fitted values \code{out$fitvals},
-#' a vector of the weights \code{out$weights}, the specified k2prime value \code{out$k2prime}, and the specified
-#' tstarIncludedFrames value \code{out$tstarIncludedFrames}
+#' @return A list with a data frame of the fitted parameters \code{out$par},
+#'   their percentage standard errors (scaled so that 1 represents 100\%)
+#'   \code{out$par.se}, the
+#'   model fit object \code{out$fit}, a dataframe containing the TACs of the
+#'   data \code{out$tacs}, a dataframe containing the TACs of the fitted values
+#'   \code{out$fitvals}, a vector of the weights \code{out$weights}, the
+#'   specified k2prime value \code{out$k2prime}, and the specified
+#'   tstarIncludedFrames value \code{out$tstarIncludedFrames}
 #'
 #' @examples
 #'
@@ -39,10 +59,13 @@
 #' roitac <- simref$tacs[[2]]$ROI1
 #' weights <- simref$tacs[[2]]$Weights
 #'
-#' fit <- refLogan(t_tac, reftac, roitac, k2prime = 0.1, tstarIncludedFrames = 15, weights = weights)
+#' fit <- refLogan(t_tac, reftac, roitac, k2prime = 0.1, tstar = 15, weights = weights)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
-#' @references Logan J, Fowler JS, Volkow ND, Wang GJ, Ding YS, Alexoff DL. Distribution volume ratios without blood sampling from graphical analysis of PET data. Journal of Cerebral Blood Flow & Metabolism. 1996 Sep 1;16(5):834-40.
+#' @references Logan J, Fowler JS, Volkow ND, Wang GJ, Ding YS, Alexoff DL.
+#'   Distribution volume ratios without blood sampling from graphical analysis
+#'   of PET data. Journal of Cerebral Blood Flow & Metabolism. 1996 Sep
+#'   1;16(5):834-40.
 #'
 #' @export
 
@@ -124,6 +147,11 @@ refLogan <- function(t_tac, reftac, roitac, k2prime, tstar, weights = NULL,
   # Output
 
   par <- as.data.frame(list(bp = as.numeric(logan_model$coefficients[2]) - 1))
+
+  par.se <- par
+  names(par.se) <- paste0(names(par.se), ".se")
+  par.se$bp.se <- get_se(logan_model, "logan_equil_ref - 1)")
+
   fit <- logan_model
 
   tacs <- data.frame(Time = t_tac, Reference = reftac, Target = roitac)
@@ -133,8 +161,8 @@ refLogan <- function(t_tac, reftac, roitac, k2prime, tstar, weights = NULL,
   fitvals <- data.frame(Logan_ROI = logan_roi, Logan_Ref = logan_ref)
 
   out <- list(
-    par = par, fit = fit, tacs = tacs, fitvals = fitvals,
-    weights = weights, k2prime = k2prime,
+    par = par, par.se = par.se, fit = fit, tacs = tacs,
+    fitvals = fitvals, weights = weights, k2prime = k2prime,
     tstarIncludedFrames = tstarIncludedFrames, model = "refLogan"
   )
 
@@ -160,7 +188,7 @@ refLogan <- function(t_tac, reftac, roitac, k2prime, tstar, weights = NULL,
 #' roitac <- simref$tacs[[2]]$ROI1
 #' weights <- simref$tacs[[2]]$Weights
 #'
-#' fit <- refLogan(t_tac, reftac, roitac, k2prime = 0.1, tstarIncludedFrames = 10, weights = weights)
+#' fit <- refLogan(t_tac, reftac, roitac, k2prime = 0.1, tstar = 10, weights = weights)
 #'
 #' plot_refLoganfit(fit)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
@@ -279,9 +307,9 @@ refLogan_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, file
   bp_df <- data.frame(Frames = tstarInclFrames, Time = t_tac[ tstarInclFrames ], Low = zeros, Medium = zeros, High = zeros)
 
   for (i in 1:length(tstarInclFrames)) {
-    lowfit <- refLogan(t_tac, reftac, lowroi, k2prime = k2prime, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
-    medfit <- refLogan(t_tac, reftac, medroi, k2prime = k2prime, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
-    highfit <- refLogan(t_tac, reftac, highroi, k2prime = k2prime, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    lowfit <- refLogan(t_tac, reftac, lowroi, k2prime = k2prime, tstar = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    medfit <- refLogan(t_tac, reftac, medroi, k2prime = k2prime, tstar = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    highfit <- refLogan(t_tac, reftac, highroi, k2prime = k2prime, tstar = tstarInclFrames[i], frameStartEnd = frameStartEnd)
 
     r2_df$Low[i] <- summary(lowfit$fit)$r.squared
     r2_df$Medium[i] <- summary(medfit$fit)$r.squared

@@ -1,30 +1,48 @@
 #' Patlak Reference Tissue Model
 #'
-#' Function to fit the Patlak Reference Tissue Model of Patlak & Blasbert (1985) to data.
+#' Function to fit the Patlak Reference Tissue Model of Patlak & Blasbert (1985)
+#' to data.
 #'
-#' @param t_tac Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
-#' zero. If a time zero frame is not included, it will be added.
-#' @param reftac Numeric vector of radioactivity concentrations in the reference tissue for each frame. We include zero at
-#' time zero: if not included, it is added.
-#' @param roitac Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
-#' zero: if not included, it is added.
+#' @param t_tac Numeric vector of times for each frame in minutes. We use the
+#'   time halfway through the frame as well as a zero. If a time zero frame is
+#'   not included, it will be added.
+#' @param reftac Numeric vector of radioactivity concentrations in the reference
+#'   tissue for each frame. We include zero at time zero: if not included, it is
+#'   added.
+#' @param roitac Numeric vector of radioactivity concentrations in the target
+#'   tissue for each frame. We include zero at time zero: if not included, it is
+#'   added.
 #' @param tstar The t* specification for regression. If tstar_type="frames",
-#' this is the number of frames from the end to include (e.g., 10 means last 10 frames).
-#' If tstar_type="time", this is the time point (in minutes) after which all frames
-#' with midpoints later than this time are included. This value can be estimated using \code{refPatlak_tstar}.
-#' @param tstar_type Either "frames" (default) or "time", specifying how to interpret tstar.
-#' @param tstarIncludedFrames Deprecated. Use 'tstar' with 'tstar_type="frames"' instead.
-#' @param weights Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
-#' if not included, it is added. If not specified, uniform weights will be used.
+#'   this is the number of frames from the end to include (e.g., 10 means last
+#'   10 frames). If tstar_type="time", this is the time point (in minutes) after
+#'   which all frames with midpoints later than this time are included. This
+#'   value can be estimated using \code{refPatlak_tstar}.
+#' @param tstar_type Either "frames" (default) or "time", specifying how to
+#'   interpret tstar.
+#' @param tstarIncludedFrames Deprecated. Use 'tstar' with 'tstar_type="frames"'
+#'   instead.
+#' @param weights Optional. Numeric vector of the weights assigned to each frame
+#'   in the fitting. We include zero at time zero: if not included, it is added.
+#'   If not specified, uniform weights will be used.
 #' @param dur Optional. Numeric vector of the time durations of the frames. If
-#' not included, the integrals will be calculated using trapezoidal integration.
-#' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
-#' This can be used to assess time stability for example.
-#' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
+#'   not included, the integrals will be calculated using trapezoidal
+#'   integration.
+#' @param frameStartEnd Optional: This allows one to specify the beginning and
+#'   final frame to use for modelling, e.g. c(1,20). This can be used to assess
+#'   time stability for example.
+#' @param timeStartEnd Optional. This allows one to specify the beginning and
+#'   end time point instead of defining the frame numbers using frameStartEnd.
+#'   This function will restrict the model to all time frames whose t_tac is
+#'   between the values, i.e. c(0,5) will select all frames with midtimes during
+#'   the first 5 minutes.
 #'
-#' @return A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit}, a dataframe
-#' containing the TACs of the data \code{out$tacs}, a dataframe containing the TACs of the fitted values \code{out$fitvals},
-#' a vector of the weights \code{out$weights}, and the specified tstarIncludedFrames value \code{out$tstarIncludedFrames}
+#' @return A list with a data frame of the fitted parameters \code{out$par},
+#'   their percentage standard errors (scaled so that 1 represents 100\%)
+#'   \code{out$par.se}, the model fit object \code{out$fit}, a dataframe
+#'   containing the TACs of the data \code{out$tacs}, a dataframe containing the
+#'   TACs of the fitted values \code{out$fitvals}, a vector of the weights
+#'   \code{out$weights}, and the specified tstarIncludedFrames value
+#'   \code{out$tstarIncludedFrames}
 #'
 #' @examples
 #' # Note: Reference region models, and irreversible binding models, should not
@@ -37,10 +55,12 @@
 #' roitac <- pbr28$tacs[[2]]$STR
 #' weights <- pbr28$tacs[[2]]$Weights
 #'
-#' fit <- refPatlak(t_tac, reftac, roitac, tstarIncludedFrames = 10, weights = weights)
+#' fit <- refPatlak(t_tac, reftac, roitac, tstar = 10, weights = weights)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
-#' @references Patlak CS, Blasberg RG. Graphical evaluation of blood-to-brain transfer constants from multiple-time uptake data. Generalizations. Journal of Cerebral Blood Flow & Metabolism. 1985 Dec 1;5(4):584-90.
+#' @references Patlak CS, Blasberg RG. Graphical evaluation of blood-to-brain
+#'   transfer constants from multiple-time uptake data. Generalizations. Journal
+#'   of Cerebral Blood Flow & Metabolism. 1985 Dec 1;5(4):584-90.
 #'
 #' @export
 
@@ -121,7 +141,12 @@ refPatlak <- function(t_tac, reftac, roitac, tstar, weights = NULL,
 
   # Output
 
-  par <- as.data.frame(list(K = as.numeric(patlak_model$coefficients[2])))
+  par <- as.data.frame(list(Kiref = as.numeric(patlak_model$coefficients[2])))
+
+  par.se <- par
+  names(par.se) <- paste0(names(par.se), ".se")
+  par.se$Kiref.se <- get_se(patlak_model, "patlak_equil_ref")
+
   fit <- patlak_model
 
   tacs <- data.frame(Time = t_tac, Reference = reftac, Target = roitac )
@@ -133,8 +158,9 @@ refPatlak <- function(t_tac, reftac, roitac, tstar, weights = NULL,
   fitvals <- data.frame(Patlak_ROI = patlak_roi, Patlak_Ref = patlak_ref)
 
   out <- list(
-    par = par, fit = fit, tacs = tacs, fitvals = fitvals, weights = weights,
-    tstarIncludedFrames = tstarIncludedFrames, model = "refPatlak"
+    par = par, par.se = par.se, fit = fit, tacs = tacs, fitvals = fitvals,
+    weights = weights, tstarIncludedFrames = tstarIncludedFrames,
+    model = "refPatlak"
   )
 
   class(out) <- c("refPatlak", "kinfit")
@@ -162,7 +188,7 @@ refPatlak <- function(t_tac, reftac, roitac, tstar, weights = NULL,
 #' roitac <- pbr28$tacs[[2]]$STR
 #' weights <- pbr28$tacs[[2]]$Weights
 #'
-#' fit <- refPatlak(t_tac, reftac, roitac, tstarIncludedFrames = 10, weights = weights)
+#' fit <- refPatlak(t_tac, reftac, roitac, tstar = 10, weights = weights)
 #'
 #' plot_refPatlakfit(fit)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
@@ -270,9 +296,9 @@ refPatlak_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename = N
   k_df <- data.frame(Frames = tstarInclFrames, Time = t_tac[ tstarInclFrames ], Low = zeros, Medium = zeros, High = zeros)
 
   for (i in 1:length(tstarInclFrames)) {
-    lowfit <- refPatlak(t_tac, reftac, lowroi, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
-    medfit <- refPatlak(t_tac, reftac, medroi, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
-    highfit <- refPatlak(t_tac, reftac, highroi, tstarIncludedFrames = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    lowfit <- refPatlak(t_tac, reftac, lowroi, tstar = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    medfit <- refPatlak(t_tac, reftac, medroi, tstar = tstarInclFrames[i], frameStartEnd = frameStartEnd)
+    highfit <- refPatlak(t_tac, reftac, highroi, tstar = tstarInclFrames[i], frameStartEnd = frameStartEnd)
 
     r2_df$Low[i] <- summary(lowfit$fit)$r.squared
     r2_df$Medium[i] <- summary(medfit$fit)$r.squared
@@ -282,9 +308,9 @@ refPatlak_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename = N
     maxperc_df$Medium[i] <- maxpercres(medfit)
     maxperc_df$High[i] <- maxpercres(highfit)
 
-    k_df$Low[i] <- lowfit$par$K
-    k_df$Medium[i] <- medfit$par$K
-    k_df$High[i] <- highfit$par$K
+    k_df$Low[i] <- lowfit$par$Kiref
+    k_df$Medium[i] <- medfit$par$Kiref
+    k_df$High[i] <- highfit$par$Kiref
   }
 
   xlabel <- "Number of Included Frames"
@@ -322,12 +348,12 @@ refPatlak_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename = N
   tacplot <- ggplot(tacplotdf, aes(x = Time, y = Radioactivity, colour = Region)) + geom_point() + geom_line() + colScale
 
 
-  # K Plot
+  # Kiref Plot
 
-  kplotdf <- tidyr::gather(k_df, key = Region, value = K, -Frames, -Time)
+  kplotdf <- tidyr::gather(k_df, key = Region, value = Kiref, -Frames, -Time)
   kplotdf$Region <- forcats::fct_rev(forcats::fct_inorder(factor(kplotdf$Region)))
 
-  kplot <- ggplot(kplotdf, aes(x = Frames, y = K, colour = Region)) + geom_point() + geom_line() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + ylab(expression(K[i])) + colScale
+  kplot <- ggplot(kplotdf, aes(x = Frames, y = Kiref, colour = Region)) + geom_point() + geom_line() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + ylab(expression(K[i]^{ref})) + colScale
 
 
   # Output

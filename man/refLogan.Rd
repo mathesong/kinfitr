@@ -19,46 +19,66 @@ refLogan(
 )
 }
 \arguments{
-\item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
-zero. If a time zero frame is not included, it will be added.}
+\item{t_tac}{Numeric vector of times for each frame in minutes. We use the
+time halfway through the frame as well as a zero. If a time zero frame is
+not included, it will be added.}
 
-\item{reftac}{Numeric vector of radioactivity concentrations in the reference tissue for each frame. We include zero at
-time zero: if not included, it is added.}
+\item{reftac}{Numeric vector of radioactivity concentrations in the reference
+tissue for each frame. We include zero at time zero: if not included, it is
+added.}
 
-\item{roitac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
-zero: if not included, it is added.}
+\item{roitac}{Numeric vector of radioactivity concentrations in the target
+tissue for each frame. We include zero at time zero: if not included, it is
+added.}
 
-\item{k2prime}{Value of k2prime to be used for the fitting, i.e. the average tissue-to-plasma clearance rate. This can be
-obtained from another model, or set at a specified value. If using SRTM to estimate this value, it is equal to k2 / R1.}
+\item{k2prime}{Value of k2prime to be used for the fitting, i.e. the average
+tissue-to-plasma clearance rate. This can be obtained from another model,
+or set at a specified value. If using SRTM to estimate this value, it is
+equal to k2 / R1.}
 
 \item{tstar}{The t* specification for regression. If tstar_type="frames",
-this is the number of frames from the end to include (e.g., 10 means last 10 frames).
-If tstar_type="time", this is the time point (in minutes) after which all frames
-with midpoints later than this time are included. This value can be estimated using \code{refLogan_tstar}.}
+this is the number of frames from the end to include (e.g., 10 means last
+10 frames). If tstar_type="time", this is the time point (in minutes) after
+which all frames with midpoints later than this time are included. This
+value can be estimated using \code{refLogan_tstar}.}
 
-\item{weights}{Optional. Numeric vector of the weights assigned to each frame in the fitting. We include zero at time zero:
-if not included, it is added. If not specified, uniform weights will be used.}
+\item{weights}{Optional. Numeric vector of the weights assigned to each frame
+in the fitting. We include zero at time zero: if not included, it is added.
+If not specified, uniform weights will be used.}
 
 \item{dur}{Optional. Numeric vector of the time durations of the frames. If
-not included, the integrals will be calculated using trapezoidal integration.}
+not included, the integrals will be calculated using trapezoidal
+integration.}
 
-\item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
-This can be used to assess time stability for example.}
+\item{frameStartEnd}{Optional: This allows one to specify the beginning and
+final frame to use for modelling, e.g. c(1,20). This can be used to assess
+time stability for example.}
 
-\item{timeStartEnd}{Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.}
+\item{timeStartEnd}{Optional. This allows one to specify the beginning and
+end time point instead of defining the frame numbers using frameStartEnd.
+This function will restrict the model to all time frames whose t_tac is
+between the values, i.e. c(0,5) will select all frames with midtimes during
+the first 5 minutes.}
 
-\item{tstar_type}{Either "frames" (default) or "time", specifying how to interpret tstar.}
+\item{tstar_type}{Either "frames" (default) or "time", specifying how to
+interpret tstar.}
 
-\item{tstarIncludedFrames}{Deprecated. Use 'tstar' with 'tstar_type="frames"' instead.}
+\item{tstarIncludedFrames}{Deprecated. Use 'tstar' with 'tstar_type="frames"'
+instead.}
 }
 \value{
-A list with a data frame of the fitted parameters \code{out$par}, the model fit object \code{out$fit}, a dataframe
-containing the TACs of the data \code{out$tacs}, a dataframe containing the TACs of the fitted values \code{out$fitvals},
-a vector of the weights \code{out$weights}, the specified k2prime value \code{out$k2prime}, and the specified
-tstarIncludedFrames value \code{out$tstarIncludedFrames}
+A list with a data frame of the fitted parameters \code{out$par},
+  their percentage standard errors (scaled so that 1 represents 100\%)
+  \code{out$par.se}, the
+  model fit object \code{out$fit}, a dataframe containing the TACs of the
+  data \code{out$tacs}, a dataframe containing the TACs of the fitted values
+  \code{out$fitvals}, a vector of the weights \code{out$weights}, the
+  specified k2prime value \code{out$k2prime}, and the specified
+  tstarIncludedFrames value \code{out$tstarIncludedFrames}
 }
 \description{
-Function to fit the non-invasive Logan plot model of Logan et al. (1996) to data.
+Function to fit the non-invasive Logan plot model of Logan et al. (1996) to
+data.
 }
 \examples{
 
@@ -69,10 +89,13 @@ reftac <- simref$tacs[[2]]$Reference
 roitac <- simref$tacs[[2]]$ROI1
 weights <- simref$tacs[[2]]$Weights
 
-fit <- refLogan(t_tac, reftac, roitac, k2prime = 0.1, tstarIncludedFrames = 15, weights = weights)
+fit <- refLogan(t_tac, reftac, roitac, k2prime = 0.1, tstar = 15, weights = weights)
 }
 \references{
-Logan J, Fowler JS, Volkow ND, Wang GJ, Ding YS, Alexoff DL. Distribution volume ratios without blood sampling from graphical analysis of PET data. Journal of Cerebral Blood Flow & Metabolism. 1996 Sep 1;16(5):834-40.
+Logan J, Fowler JS, Volkow ND, Wang GJ, Ding YS, Alexoff DL.
+  Distribution volume ratios without blood sampling from graphical analysis
+  of PET data. Journal of Cerebral Blood Flow & Metabolism. 1996 Sep
+  1;16(5):834-40.
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}

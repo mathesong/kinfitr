@@ -68,7 +68,7 @@ reftac <- simref$tacs[[2]]$Reference
 roitac <- simref$tacs[[2]]$ROI1
 weights <- simref$tacs[[2]]$Weights
 
-fit <- refmlLogan(t_tac, reftac, roitac, k2prime = 0.1, tstarIncludedFrames = 10, weights = weights)
+fit <- refmlLogan(t_tac, reftac, roitac, k2prime = 0.1, tstar = 10, weights = weights)
 }
 \references{
 Turkheimer FE, Aston JA, Banati RB, Riddell C, Cunningham VJ. A linear wavelet filter for parametric imaging with dynamic PET. IEEE transactions on medical imaging. 2003 Mar;22(3):289-301.

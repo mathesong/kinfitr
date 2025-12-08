@@ -306,7 +306,7 @@ tidyinput_art <- function(t_tac, tac, weights, frameStartEnd) {
 #' roitac <- pbr28$tacs[[2]]$STR
 #' weights <- pbr28$tacs[[2]]$Weights
 #'
-#' refloganout <- refLogan(t_tac, reftac, roitac, 0.1, tstarIncludedFrames = 9)
+#' refloganout <- refLogan(t_tac, reftac, roitac, 0.1, tstar = 9)
 #'
 #' maxpercres(refloganout)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
