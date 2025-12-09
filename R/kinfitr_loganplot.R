@@ -126,7 +126,10 @@ Loganplot <- function(t_tac, tac, input, tstar, weights = NULL,
   }
 
   # Transform weights for graphical analysis (if provided)
-  if (!is.null(weights) && !all(weights == weights[1])) {
+  # Check if real weights were provided (more than just 0s and 1s from tidyinput)
+  unique_weights <- unique(weights[is.finite(weights)])
+  real_weights_provided <- length(setdiff(unique_weights, c(0, 1))) > 0
+  if (!is.null(weights) && real_weights_provided) {
     if (!is.null(dur)) {
       weights <- weights_Logan_transform(t_tac, dur, tac, weights)
       # Center weights so mean of equilibrium weights equals 1

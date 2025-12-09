@@ -119,7 +119,10 @@ refPatlak <- function(t_tac, reftac, roitac, tstar, weights = NULL,
   }
 
   # Transform weights for graphical analysis (if provided)
-  if (!is.null(weights) && !all(weights == weights[1])) {
+  # Check if real weights were provided (more than just 0s and 1s from tidyinput)
+  unique_weights <- unique(weights[is.finite(weights)])
+  real_weights_provided <- length(setdiff(unique_weights, c(0, 1))) > 0
+  if (!is.null(weights) && real_weights_provided) {
     weights <- weights_refPatlak_transform(t_tac, reftac, roitac, weights)
     # Center weights so mean of equilibrium weights equals 1
     equil_weights <- tail(weights, tstarIncludedFrames)
