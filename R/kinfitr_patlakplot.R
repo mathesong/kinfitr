@@ -20,9 +20,11 @@
 #'   interpret tstar.
 #' @param tstarIncludedFrames Deprecated. Use 'tstar' with 'tstar_type="frames"'
 #'   instead.
-#' @param weights Optional. Numeric vector of the weights assigned to each frame
-#'   in the fitting. We include zero at time zero: if not included, it is added.
-#'   If not specified, uniform weights will be used.
+#' @param weights Optional. Numeric vector of the conventional frame-wise weights
+#'   assigned to each frame. If not specified, uniform weights will be used.
+#'   Specified weights are internally transformed to account for the dependent
+#'   variable transformation in the Patlak plot. We include zero at time zero:
+#'   if not included, it is added.
 #' @param inpshift Optional. The number of minutes by which to shift the timing
 #'   of the input data frame forwards or backwards. If not specified, this will
 #'   be set to 0. This can be fitted using 1TCM or 2TCM.
@@ -146,6 +148,23 @@ Patlakplot <- function(t_tac, tac, input, tstar, weights = NULL,
   tac_uncor <- tac
   tac <- pracma::interp1(interptime, i_tac, t_tac, method = "linear")
 
+  # Transform weights for graphical analysis (if provided)
+  # Check if real weights were provided (more than just 0s and 1s from tidyinput)
+  unique_weights <- unique(weights[is.finite(weights)])
+  real_weights_provided <- length(setdiff(unique_weights, c(0, 1))) > 0
+  if (!is.null(weights) && real_weights_provided) {
+    weights <- weights_Patlak_transform(t_tac, tac, newvals$input, weights)
+    # Center weights so mean of equilibrium weights equals 1
+    equil_weights <- tail(weights, tstarIncludedFrames)
+    equil_mean <- mean(equil_weights[is.finite(equil_weights)])
+    if (is.finite(equil_mean) && equil_mean > 0) {
+      weights <- weights / equil_mean
+    }
+    # Set pre-equilibrium weights to 1
+    pre_equil_idx <- seq_len(length(weights) - tstarIncludedFrames)
+    weights[pre_equil_idx] <- 1
+  }
+
   patlak_roi <- i_tac / aif
   patlak_plasma <- as.numeric((pracma::cumtrapz(interptime, aif)) / aif)
 
@@ -230,6 +249,9 @@ plot_Patlakfit <- function(patlakout, roiname = NULL) {
 
   plotdf$Equilibrium <- as.character(plotdf$Equilibrium)
   plotdf$Equilibrium [ (nrow(plotdf) - (patlakout$tstarIncludedFrames - 1)):nrow(plotdf)  ] <- "After"
+
+  # Set pre-tstar weights to 1 for display (so points are visible but don't affect scale)
+  plotdf$Weights[plotdf$Equilibrium == "Before"] <- 1
 
   plotdf$Equilibrium <- forcats::fct_inorder(factor(plotdf$Equilibrium))
 

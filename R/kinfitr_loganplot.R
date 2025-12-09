@@ -17,9 +17,12 @@
 #'   with midpoints later than this time are included. This value can be estimated using \code{Logan_tstar}.
 #' @param tstar_type Either "frames" (default) or "time", specifying how to interpret tstar.
 #' @param tstarIncludedFrames Deprecated. Use 'tstar' with 'tstar_type="frames"' instead.
-#' @param weights Optional. Numeric vector of the weights assigned to each frame
-#'   in the fitting. We include zero at time zero: if not included, it is added.
-#'   If not specified, uniform weights will be used.
+#' @param weights Optional. Numeric vector of the conventional frame-wise weights
+#'   assigned to each frame. If not specified, uniform weights will be used.
+#'   Specified weights are internally transformed to account for the dependent
+#'   variable transformation in the Logan plot. If \code{dur} is not provided,
+#'   weights cannot be transformed and uniform weights will be used. We include
+#'   zero at time zero: if not included, it is added.
 #' @param inpshift Optional. The number of minutes by which to shift the timing
 #'   of the input data frame forwards or backwards. If not specified, this will
 #'   be set to 0. This can be fitted using 1TCM or 2TCM.
@@ -58,7 +61,7 @@
 #'   t_parentfrac = 1, parentfrac = 1
 #' )
 #'
-#' fit1 <- Loganplot(t_tac, tac, input, 10, weights)
+#' fit1 <- Loganplot(t_tac, tac, input, 10)
 #' fit2 <- Loganplot(t_tac, tac, input, 10, weights, inpshift = 0.1, vB = 0.05)
 #' fit3 <- Loganplot(t_tac, tac, input, 10, weights, inpshift = 0.1, vB = 0.05, dur = dur)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
@@ -120,6 +123,29 @@ Loganplot <- function(t_tac, tac, input, tstar, weights = NULL,
     tstarIncludedFrames <- length(frames_after_tstar)
   } else {
     tstarIncludedFrames <- tstar
+  }
+
+  # Transform weights for graphical analysis (if provided)
+  # Check if real weights were provided (more than just 0s and 1s from tidyinput)
+  unique_weights <- unique(weights[is.finite(weights)])
+  real_weights_provided <- length(setdiff(unique_weights, c(0, 1))) > 0
+  if (!is.null(weights) && real_weights_provided) {
+    if (!is.null(dur)) {
+      weights <- weights_Logan_transform(t_tac, dur, tac, weights)
+      # Center weights so mean of equilibrium weights equals 1
+      equil_weights <- tail(weights, tstarIncludedFrames)
+      equil_mean <- mean(equil_weights[is.finite(equil_weights)])
+      if (is.finite(equil_mean) && equil_mean > 0) {
+        weights <- weights / equil_mean
+      }
+      # Set pre-equilibrium weights to 1
+      pre_equil_idx <- seq_len(length(weights) - tstarIncludedFrames)
+      weights[pre_equil_idx] <- 1
+    } else {
+      message("Weights provided but dur is NULL. Frame durations are required for ",
+              "weight transformation in the Logan plot. Using uniform weights.")
+      weights <- rep(1, length(t_tac))
+    }
   }
 
   newvals <- shift_timings(
@@ -246,6 +272,9 @@ plot_Loganfit <- function(loganout, roiname = NULL) {
 
   plotdf$Equilibrium <- as.character(plotdf$Equilibrium)
   plotdf$Equilibrium [ (nrow(plotdf) - (loganout$tstarIncludedFrames - 1)):nrow(plotdf)  ] <- "After"
+
+  # Set pre-tstar weights to 1 for display (so points are visible but don't affect scale)
+  plotdf$Weights[plotdf$Equilibrium == "Before"] <- 1
 
   plotdf$Equilibrium <- forcats::fct_inorder(factor(plotdf$Equilibrium))
 

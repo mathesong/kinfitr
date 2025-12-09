@@ -37,9 +37,12 @@ this is the number of frames from the end to include (e.g., 10 means last 10 fra
 If tstar_type="time", this is the time point (in minutes) after which all frames
 with midpoints later than this time are included. This value can be estimated using \code{Logan_tstar}.}
 
-\item{weights}{Optional. Numeric vector of the weights assigned to each frame
-in the fitting. We include zero at time zero: if not included, it is added.
-If not specified, uniform weights will be used.}
+\item{weights}{Optional. Numeric vector of the conventional frame-wise weights
+assigned to each frame. If not specified, uniform weights will be used.
+Specified weights are internally transformed to account for the dependent
+variable transformation in the Logan plot. If \code{dur} is not provided,
+weights cannot be transformed and uniform weights will be used. We include
+zero at time zero: if not included, it is added.}
 
 \item{inpshift}{Optional. The number of minutes by which to shift the timing
 of the input data frame forwards or backwards. If not specified, this will
@@ -91,7 +94,7 @@ input <- blood_interp(
   t_parentfrac = 1, parentfrac = 1
 )
 
-fit1 <- Loganplot(t_tac, tac, input, 10, weights)
+fit1 <- Loganplot(t_tac, tac, input, 10)
 fit2 <- Loganplot(t_tac, tac, input, 10, weights, inpshift = 0.1, vB = 0.05)
 fit3 <- Loganplot(t_tac, tac, input, 10, weights, inpshift = 0.1, vB = 0.05, dur = dur)
 }
