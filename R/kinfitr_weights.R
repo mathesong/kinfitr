@@ -194,139 +194,206 @@ weights_create_bids <- function(petinfo, tac, method=2,
 }
 
 
-#' #' Visualise weights
-#' #'
-#' #' This allows one to visualise the set of weights described to evaluate
-#' #' whether they seem sensible.
-#' #'
-#' #' @param t_start The starting times of the frames in minutes.
-#' #' @param t_end The end times of the frames in minutes.
-#' #' @param tac The time activity curve.
-#' #' @param radioisotope The radioisotope.
-#' #' @param method Which method should be used? 1 represents duration^2 /
-#' #'   (tac_uncorrected). 2 represents sqrt(durations*tac_uncorrected). 3
-#' #'   represents duration / tac. 4 represents sqrt(durations). 5 represents
-#' #'   durations * exp((-ln(2)) / halflife ). 6 represents durations /
-#' #'   tac. 7 represents durations. Uncorrected refers to decay correction.
-#' #' @param minweight The minimum weight. Weights will be calculated as a fraction
-#' #'   between this value and 1. A zero frame with duration=0 will be set to 0
-#' #'   though.
-#' #' @param minweight_risetopeak Should there be a linear rise of the minimum weight to
-#' #'   the peak weight value? This means that values before the maximum weight can
-#' #'   be below the minweight specified. This is helpful for downweighting noisy
-#' #'   values towards the start of the TAC. Defaults to FALSE.
-#' #' @param weight_checkn The number of values of the weights to check to make
-#' #'   sure that things haven't gone terribly wrong. It will check that this
-#' #'   number of weights are all above half of the maximum weight.
-#' #' @param se_meanperk Visualise the standard error under the assumption that the
-#' #'   noise in the data
-#' #'
-#' #' @return The vector of weights.
-#' #'
-#' #' @author Granville J Matheson, \email{mathesong@@gmail.com}
-#' #'
-#' #' @import ggplot2
-#' #'
-#' #' @export
-#' #'
-#' #' @examples
-#' #' data(pbr28)
-#' #' s1 <- pbr28$tacs[[1]]
-#' #'
-#' #' weights_vis(
-#' #'   t_start = s1$StartTime/60,
-#' #'   t_end = (s1$StartTime + s1$Duration)/60,
-#' #'   tac = s1$WB,
-#' #'   radioisotope = "C11",
-#' #'   minweight_risetopeak=TRUE)
-#' weights_vis <- function(t_start, t_end, tac,
-#'                            radioisotope = c("C11", "O15", "F18"),
-#'                            method = 2,
-#'                            minweight = 0.67,
-#'                            minweight_risetopeak = FALSE,
-#'                            weight_checkn = 5,
-#'                            se_meanperc = 5) {
+weights_to_var <- function(weights) {
+  var_est <- rep(NA_real_, length(weights))
+  valid   <- is.finite(weights) & weights > 0
+  var_est[valid] <- 1 / weights[valid]
+  var_est
+}
+
+
+#' Transform weights for Logan plot
 #'
-#'   radioisotope <- match.arg(radioisotope, c("C11", "O15", "F18"))
+#' Transforms original TAC weights to weights appropriate for Logan plot
+#' regression using the delta method. The Logan plot Y-axis is
+#' integral(TAC)/TAC, so the variance propagation accounts for the cumulative
+#' integral in the numerator and the TAC value in the denominator.
 #'
-#'   tac_uncor <- decay_uncorrect(t_start, t_end, tac, radioisotope)
-#'   durations <- t_end - t_start
-#'   t_tac <- t_start + durations/2
+#' @param t_tac Numeric vector of times for each frame in minutes.
+#' @param dur Numeric vector of the time durations of the frames in minutes.
+#' @param tac Numeric vector of radioactivity concentrations in the target
+#'   tissue for each frame.
+#' @param weights_original Numeric vector of the original weights assigned to
+#'   each frame.
 #'
-#'   hl <- dplyr::case_when(
-#'     radioisotope == "C11" ~ 20.4,
-#'     radioisotope == "O15" ~ 2.05,
-#'     radioisotope == "F18" ~ 109.8
-#'   )
+#' @return A numeric vector of transformed weights suitable for Logan plot
+#'   regression. NA values indicate frames that cannot be weighted (e.g., first
+#'   frame, zero TAC values).
 #'
-#'   calcweights <- dplyr::case_when(
-#'     method == 1 ~ durations^2 / (tac_uncor),
-#'     method == 2 ~ sqrt(durations*tac_uncor),
-#'     method == 3 ~ sqrt(durations) / tac,
-#'     method == 4 ~ sqrt(durations),
-#'     method == 5 ~ durations * exp( (-1*log(2)) / hl ),
-#'     method == 6 ~ durations / tac,
-#'     method == 7 ~ durations
-#'   )
+#' @details This function uses the delta method to propagate variance from the
+#'   original TAC measurements to the transformed Y values (integral(TAC)/TAC).
+#'   This function can be used for both Logan and refLogan models since the
+#'   Y-axis transformation is identical.
 #'
-#'   # Fixing before checking
-#'   calcweights[durations==0] <- 0
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
-#'   # Check to make sure things don't go horribly wrong
-#'   maxweight  <- max(calcweights)
-#'   maxweights <- tail(calcweights[order(calcweights)], weight_checkn)
+weights_Logan_transform <- function(t_tac, dur, tac, weights_original) {
+
+  stopifnot(length(t_tac) == length(dur),
+            length(tac)   == length(weights_original),
+            length(tac)   == length(t_tac))
+
+  n_frames <- length(tac)
+
+  # Var(tac) up to common scale factor; invalid NLS weights -> NA
+  var_tac <- weights_to_var(weights_original)
+
+  # Integral of tissue TAC
+  integ     <- cumsum(tac * dur)          # ∫_0^{t_i} tac(τ) dτ
+  integ_lag <- c(0, integ[-n_frames])     # integral up to previous frame
+
+  weights_logan <- rep(NA_real_, n_frames)
+
+  for (i in seq_len(n_frames)) {
+    # First point or invalid tac -> no meaningful Logan weight
+    if (i == 1L || !is.finite(tac[i]) || tac[i] == 0) {
+      weights_logan[i] <- NA_real_
+      next
+    }
+
+    idx_up_to_i <- seq_len(i)
+    usable_idx  <- idx_up_to_i[is.finite(var_tac[idx_up_to_i])]
+
+    if (length(usable_idx) == 0L) {
+      weights_logan[i] <- NA_real_
+      next
+    }
+
+    # Delta-method derivatives:
+    # For j < i:  dy_i / d tac_j = dur_j / tac_i
+    # For j = i:  dy_i / d tac_i = -integ_lag[i] / tac_i^2
+    deriv_y_wrt_tac <- dur[usable_idx] / tac[i]
+
+    if (i %in% usable_idx) {
+      idx_current <- which(usable_idx == i)
+      deriv_y_wrt_tac[idx_current] <- -integ_lag[i] / (tac[i]^2)
+    }
+
+    var_y_i <- sum((deriv_y_wrt_tac^2) * var_tac[usable_idx])
+
+    weights_logan[i] <- if (is.finite(var_y_i) && var_y_i > 0) 1 / var_y_i else NA_real_
+  }
+
+  return(weights_logan)
+}
+
+
+#' Transform weights for reference Patlak plot
 #'
-#'   if( min(maxweights) < 0.5*maxweight ) {
-#'     maxweight <- median(maxweights)
-#'   }
+#' Transforms original TAC weights to weights appropriate for reference Patlak
+#' plot regression using the delta method. The refPatlak Y-axis is ROI/REF.
 #'
-#'   calcweights[calcweights > maxweight] <- maxweight
-#'   calcweights <- calcweights/maxweight
+#' @param t_tac Numeric vector of times for each frame in minutes.
+#' @param reftac Numeric vector of radioactivity concentrations in the reference
+#'   tissue for each frame.
+#' @param roitac Numeric vector of radioactivity concentrations in the target
+#'   tissue for each frame.
+#' @param weights_original Numeric vector of the original weights assigned to
+#'   each frame.
 #'
-#'   # Apply scaling factor
-#'   minweights <- rep(minweight, length(calcweights))
+#' @return A numeric vector of transformed weights suitable for reference Patlak
+#'   plot regression. NA values indicate frames that cannot be weighted (e.g.,
+#'   zero reference TAC values).
 #'
-#'   if( minweight_risetopeak ) {
-#'     # TAC midtimes
-#'     t_tac <- t_start + 0.5*(t_end - t_start)
+#' @details This function uses the delta method to propagate variance from the
+#'   original TAC measurements to the transformed Y values (ROI/REF). The
+#'   reference TAC is treated as noise-free.
 #'
-#'     # Find the maximum TAC weight
-#'     t_weightpeak <- t_tac[which.max(calcweights)]
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
-#'     # Assign times a fraction of the peaktime
-#'     t_peakfrac <- t_tac / t_weightpeak
-#'     t_peakfrac[t_peakfrac > 1] <- 1
+weights_refPatlak_transform <- function(t_tac, reftac, roitac,
+                                        weights_original) {
+
+  stopifnot(length(t_tac) == length(reftac),
+            length(roitac) == length(reftac),
+            length(roitac) == length(weights_original))
+
+  n_frames <- length(roitac)
+
+  # Var(roitac) up to a common scale factor; invalid weights -> NA
+  var_roitac <- weights_to_var(weights_original)
+
+  weights_refpatlak <- rep(NA_real_, n_frames)
+
+  for (i in seq_len(n_frames)) {
+
+    # Need finite roitac, reftac, and variance
+    if (!is.finite(roitac[i]) || !is.finite(reftac[i]) ||
+        reftac[i] == 0 || !is.finite(var_roitac[i]) || var_roitac[i] <= 0) {
+      weights_refpatlak[i] <- NA_real_
+      next
+    }
+
+    # y_i = roitac_i / reftac_i
+    # dy_i / d roitac_i = 1 / reftac_i   (reftac treated as noise-free)
+    dy_droitac <- 1 / reftac[i]
+
+    var_y_i <- (dy_droitac^2) * var_roitac[i]
+
+    weights_refpatlak[i] <- if (is.finite(var_y_i) && var_y_i > 0) 1 / var_y_i else NA_real_
+  }
+
+  return(weights_refpatlak)
+}
+
+
+#' Transform weights for Patlak plot
 #'
-#'     # Define a rising minimum to the peak, and then minweight
-#'     minweights <- minweights * t_peakfrac
-#'     minweights[durations==0] <- 0
-#'   }
+#' Transforms original TAC weights to weights appropriate for Patlak plot
+#' regression using the delta method. The Patlak Y-axis is TAC/AIF.
 #'
-#'   if( any(calcweights < minweights) ) {
+#' @param t_tac Numeric vector of times for each frame in minutes.
+#' @param tac Numeric vector of radioactivity concentrations in the target
+#'   tissue for each frame.
+#' @param input Data frame containing the blood, plasma, and parent fraction
+#'   concentrations over time. This can be generated using the
+#'   \code{blood_interp} function. The AIF column will be interpolated to
+#'   match t_tac times.
+#' @param weights_original Numeric vector of the original weights assigned to
+#'   each frame.
 #'
-#'     min_calcweight <- min(calcweights[durations!=0])
+#' @return A numeric vector of transformed weights suitable for Patlak plot
+#'   regression. NA values indicate frames that cannot be weighted (e.g.,
+#'   zero AIF values).
 #'
-#'     # scale 0 - 1
-#'     calcweights <- calcweights - min_calcweight / (1- min_calcweight)
+#' @details This function uses the delta method to propagate variance from the
+#'   original TAC measurements to the transformed Y values (TAC/AIF). The
+#'   arterial input function is treated as noise-free.
 #'
-#'     # proportion
-#'     calcweights <- minweights + calcweights * (1-minweights)
-#'   }
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
-#'   # Any dur=0 shouldn't have the scaling factor
-#'   calcweights[durations==0] <- 0
-#'
-#'
-#'
-#'   # Visualise
-#'
-#'   weightdata <- data.frame(
-#'     weights = calcweights,
-#'     minweights = minweights,
-#'     tac = tac / max(tac),
-#'     tac_uncor = tac_uncor / max(tac)
-#'   )
-#'
-#'   ggplot()
-#'
-#' }
+weights_Patlak_transform <- function(t_tac, tac, input, weights_original) {
+
+  stopifnot(length(tac) == length(t_tac),
+            length(tac) == length(weights_original))
+
+  n_frames <- length(tac)
+
+  # Interpolate AIF to TAC times
+  aif <- pracma::interp1(input$Time, input$AIF, t_tac, method = "linear")
+
+  # Var(tac) up to a common scale factor; invalid weights -> NA
+  var_tac <- weights_to_var(weights_original)
+
+  weights_patlak <- rep(NA_real_, n_frames)
+
+  for (i in seq_len(n_frames)) {
+
+    # Need finite tac, aif, and variance
+    if (!is.finite(tac[i]) || !is.finite(aif[i]) ||
+        aif[i] == 0 || !is.finite(var_tac[i]) || var_tac[i] <= 0) {
+      weights_patlak[i] <- NA_real_
+      next
+    }
+
+    # y_i = tac_i / aif_i
+    # dy_i / d tac_i = 1 / aif_i   (aif treated as noise-free)
+    dy_dtac <- 1 / aif[i]
+
+    var_y_i <- (dy_dtac^2) * var_tac[i]
+
+    weights_patlak[i] <- if (is.finite(var_y_i) && var_y_i > 0) 1 / var_y_i else NA_real_
+  }
+
+  return(weights_patlak)
+}

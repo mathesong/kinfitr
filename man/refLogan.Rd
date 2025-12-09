@@ -42,9 +42,12 @@ this is the number of frames from the end to include (e.g., 10 means last
 which all frames with midpoints later than this time are included. This
 value can be estimated using \code{refLogan_tstar}.}
 
-\item{weights}{Optional. Numeric vector of the weights assigned to each frame
-in the fitting. We include zero at time zero: if not included, it is added.
-If not specified, uniform weights will be used.}
+\item{weights}{Optional. Numeric vector of the conventional frame-wise weights
+assigned to each frame. If not specified, uniform weights will be used.
+Specified weights are internally transformed to account for the dependent
+variable transformation in the Logan plot. If \code{dur} is not provided,
+weights cannot be transformed and uniform weights will be used. We include
+zero at time zero: if not included, it is added.}
 
 \item{dur}{Optional. Numeric vector of the time durations of the frames. If
 not included, the integrals will be calculated using trapezoidal

@@ -21,9 +21,11 @@
 #'   interpret tstar.
 #' @param tstarIncludedFrames Deprecated. Use 'tstar' with 'tstar_type="frames"'
 #'   instead.
-#' @param weights Optional. Numeric vector of the weights assigned to each frame
-#'   in the fitting. We include zero at time zero: if not included, it is added.
-#'   If not specified, uniform weights will be used.
+#' @param weights Optional. Numeric vector of the conventional frame-wise weights
+#'   assigned to each frame. If not specified, uniform weights will be used.
+#'   Specified weights are internally transformed to account for the dependent
+#'   variable transformation in the Patlak plot. We include zero at time zero:
+#'   if not included, it is added.
 #' @param dur Optional. Numeric vector of the time durations of the frames. If
 #'   not included, the integrals will be calculated using trapezoidal
 #'   integration.
@@ -114,6 +116,20 @@ refPatlak <- function(t_tac, reftac, roitac, tstar, weights = NULL,
     tstarIncludedFrames <- length(frames_after_tstar)
   } else {
     tstarIncludedFrames <- tstar
+  }
+
+  # Transform weights for graphical analysis (if provided)
+  if (!is.null(weights) && !all(weights == weights[1])) {
+    weights <- weights_refPatlak_transform(t_tac, reftac, roitac, weights)
+    # Center weights so mean of equilibrium weights equals 1
+    equil_weights <- tail(weights, tstarIncludedFrames)
+    equil_mean <- mean(equil_weights[is.finite(equil_weights)])
+    if (is.finite(equil_mean) && equil_mean > 0) {
+      weights <- weights / equil_mean
+    }
+    # Set pre-equilibrium weights to 1
+    pre_equil_idx <- seq_len(length(weights) - tstarIncludedFrames)
+    weights[pre_equil_idx] <- 1
   }
 
   # Parameters
@@ -208,6 +224,9 @@ plot_refPatlakfit <- function(refpatlakout, roiname = NULL) {
 
   plotdf$Equilibrium <- as.character(plotdf$Equilibrium)
   plotdf$Equilibrium [ (nrow(plotdf) - (refpatlakout$tstarIncludedFrames - 1)):nrow(plotdf)  ] <- "After"
+
+  # Set pre-tstar weights to 1 for display (so points are visible but don't affect scale)
+  plotdf$Weights[plotdf$Equilibrium == "Before"] <- 1
 
   plotdf$Equilibrium <- forcats::fct_inorder(factor(plotdf$Equilibrium))
 

@@ -37,9 +37,11 @@ this is the number of frames from the end to include (e.g., 10 means last
 which all frames with midpoints later than this time are included. This
 value can be estimated using \code{Patlak_tstar}.}
 
-\item{weights}{Optional. Numeric vector of the weights assigned to each frame
-in the fitting. We include zero at time zero: if not included, it is added.
-If not specified, uniform weights will be used.}
+\item{weights}{Optional. Numeric vector of the conventional frame-wise weights
+assigned to each frame. If not specified, uniform weights will be used.
+Specified weights are internally transformed to account for the dependent
+variable transformation in the Patlak plot. We include zero at time zero:
+if not included, it is added.}
 
 \item{inpshift}{Optional. The number of minutes by which to shift the timing
 of the input data frame forwards or backwards. If not specified, this will
