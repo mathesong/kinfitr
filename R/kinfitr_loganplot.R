@@ -296,6 +296,27 @@ plot_Loganfit <- function(loganout, roiname = NULL) {
                              "C", phantom()[{ paste("T") }],"(",tau,")d",tau, " / ",
                              "C", phantom()[{ paste("T") }],"(t)"))
 
+
+  # Fix limits
+
+  after_equil <- plotdf %>%
+    dplyr::filter(Equilibrium == "After")
+
+  meanval_x <- mean(after_equil$Logan_Plasma, na.rm = T)
+  meanval_y <- mean(after_equil$Logan_ROI, na.rm = T)
+
+  minval_x <- min(after_equil$Logan_Plasma, na.rm = T)
+  xmin <- min(0, minval_x - (0.1 * meanval_x))
+  maxval_x <- max(after_equil$Logan_Plasma, na.rm = T)
+  xmax <- maxval_x + (0.1 * meanval_x)
+
+  minval_y <- min(after_equil$Logan_ROI, na.rm = T)
+  ymin <- min(0, minval_y - (0.1 * meanval_y))
+  maxval_y <- max(after_equil$Logan_ROI, na.rm = T)
+  ymax <- maxval_y + (0.1 * meanval_y)
+
+  # Plot
+
   outplot <- ggplot(data = plotdf, aes(x = Logan_Plasma, y = Logan_ROI, colour = Equilibrium)) +
     geom_point(aes(shape = "a", size = Weights)) +
     geom_abline(
@@ -303,7 +324,10 @@ plot_Loganfit <- function(loganout, roiname = NULL) {
       intercept = as.numeric(loganout$fit$coefficients[1])
     ) +
     xlab(xlabel) + ylab(ylabel) + xlim(xlimits) + colScale +
-    guides(shape = "none", color = guide_legend(order = 1)) + scale_size(range = c(1, 3))
+    guides(shape = "none", color = guide_legend(order = 1)) +
+    scale_size(range = c(1, 3)) +
+    coord_cartesian(xlim=c(xmin, xmax),
+                    ylim=c(ymin, ymax))
 
   return(outplot)
 }
