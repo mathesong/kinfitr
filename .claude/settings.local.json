@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la /home/granville/Repositories/kinfitr/ | grep -E \"^d|\\\\.md|\\\\.yml|Makefile|\\\\.R$\")",
+      "Bash(grep -l \"tidyinput_ref\\\\|tidyinput_art\" /home/granville/Repositories/kinfitr/R/*.R)",
+      "Bash(grep:*)"
+    ]
+  }
+}

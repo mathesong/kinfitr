@@ -10,7 +10,16 @@ input <- pbr28$input[[meas]]
 weights <- pbr28$tacs[[meas]]$Weights
 inpshift <- 0.1438066
 
-tacdf <- dplyr::select(pbr28$tacs[[1]], FC:CBL)
+sime_long <- pbr28$tacs[[1]] %>%
+  dplyr::select(Times, Weights, FC:CBL) %>%
+  dplyr::mutate(Times = Times / 60) %>%
+  tidyr::pivot_longer(cols = -c(Times, Weights),
+                      names_to = "region", values_to = "tac")
+
+sime_t_tac <- sime_long$Times
+sime_tac <- sime_long$tac
+sime_region <- sime_long$region
+sime_weights <- sime_long$Weights
 Vndgrid <- seq(from = 0, to = 2, by = 0.5)
 
 set.seed(42)
@@ -334,8 +343,8 @@ test_that("2TCM1k with fitted delay & multstart works", {
 # SIME
 
 test_that("SIME works", {
-  SIMEout <- SIME(t_tac, tacdf, input, Vndgrid,
-    weights = weights,
+  SIMEout <- SIME(sime_t_tac, sime_tac, sime_region, input, Vndgrid,
+    weights = sime_weights,
     inpshift = 0.1, vB = 0.05
   )
   expect_gt(SIMEout$par$Vnd, 0.5)
@@ -344,12 +353,12 @@ test_that("SIME works", {
 })
 
 test_that("SIME with frameStartEnd works", {
-  SIMEout <- SIME(t_tac, tacdf, input, Vndgrid,
-    weights = weights,
+  SIMEout <- SIME(sime_t_tac, sime_tac, sime_region, input, Vndgrid,
+    weights = sime_weights,
     inpshift = 0.1, vB = 0.05, frameStartEnd = c(1, 33)
   )
   expect_gt(SIMEout$par$Vnd, 0.5)
   expect_lt(SIMEout$par$Vnd, 2)
-  expect_lt(max(SIMEout$tacs$Time), max(t_tac))
+  expect_lt(max(SIMEout$tacs$Time), max(sime_t_tac))
   expect_true(any(class(plot_kinfit(SIMEout)) == "ggplot"))
 })

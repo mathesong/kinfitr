@@ -6,7 +6,8 @@
 \usage{
 SIME(
   t_tac,
-  tacdf,
+  tac,
+  region,
   input,
   Vndgrid,
   weights = NULL,
@@ -29,12 +30,14 @@ SIME(
 )
 }
 \arguments{
-\item{t_tac}{Numeric vector of times for each frame in minutes. We use the
-time halfway through the frame as well as a zero. If a time zero frame is
-not included, it will be added.}
+\item{t_tac}{Numeric vector of times for each frame in minutes (repeated for
+each region). We use the time halfway through the frame as well as a zero.
+If a time zero frame is not included, it will be added.}
 
-\item{tacdf}{Named dataframe of TACs in wide format, i.e. each TAC should be
-a column.}
+\item{tac}{Numeric vector of radioactivity concentrations for each frame,
+stacked across regions.}
+
+\item{region}{Character vector identifying the region for each observation.}
 
 \item{input}{Data frame containing the blood, plasma, and parent fraction
 concentrations over time.  This can be generated using the
@@ -44,11 +47,15 @@ concentrations over time.  This can be generated using the
 has the best fit.}
 
 \item{weights}{Optional. Numeric vector of the weights assigned to each frame
-in the fitting. We include zero at time zero: if not included, it is added.
-If not specified, uniform weights will be used.}
+in the fitting. Can be the same length as \code{tac} (one weight per
+observation) or the same length as the number of frames per region (weights
+are recycled for each region). If not specified, uniform weights will be
+used.}
 
-\item{roiweights}{Optional. Numeric vector of the weights assigned to each
-ROI in the fitting. If not specified, uniform weights will be used.}
+\item{roiweights}{Optional. Named numeric vector of the weights assigned to
+each ROI in the fitting, keyed by region name (e.g.,
+\code{c(FC=1, STR=0.8)}). If unnamed, matched by position against unique
+regions. If not specified, uniform weights will be used.}
 
 \item{inpshift}{Optional. The number of minutes by which to shift the timing
 of the input data frame forwards or backwards. If not specified, this will
@@ -57,17 +64,18 @@ be set to 0. This can be fitted using 1TCM or 2TCM.}
 \item{vB}{Optional. The blood volume fraction.  If not specified, this will
 be set to 0.05. This can be fitted using 1TCM or 2TCM.}
 
-\item{twotcmstart}{Optional. The function can fit a 2TCM model to one of the
-ROIs and use the estimated k2, k3 and k4 as starting parameters for the
-rest of the fits. If left alone, these parameters will be specified as
-below. If one wishes to run the 2TCM to start off, use a numeric value to
-specify which column of \code{tacdf} to use for fitting this: best to use
-the largest ROI.}
+\item{twotcmstart}{Optional. Region name string specifying which region to
+use for fitting a 2TCM model to obtain starting parameters for k2, k3 and
+k4 (e.g., \code{"FC"}). Best to use the largest ROI.}
 
 \item{frameStartEnd}{Optional: This allows one to specify the beginning and
-final frame to use for modelling, e.g. c(1,20). This can be used to assess time stability for example.}
+final frame to use for modelling, e.g. c(1,20). Applied per region.}
 
-\item{timeStartEnd}{Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.}
+\item{timeStartEnd}{Optional. This allows one to specify the beginning and
+end time point instead of defining the frame numbers using frameStartEnd.
+This function will restrict the model to all time frames whose t_tac is
+between the values, i.e. c(0,5) will select all frames with midtimes
+during the first 5 minutes.}
 
 \item{k2.start}{Optional. Starting parameter for fitting of k2. Default is
 0.1.}
@@ -95,8 +103,9 @@ proportion of ROIs failed be included? Default is 0.5, i.e. 50% should have
 successfully fitted.}
 }
 \value{
-A list with a data frame of the fitted parameter \code{out$par}, the
-  dataframe containing the times and TACs \code{out$tacs}, the mean cost
+A list with a data frame of the fitted parameter \code{out$par}, a
+  long-format data frame containing the times, regions and TACs
+  \code{out$tacs} (with columns Time, Region, Radioactivity), the mean cost
   values after fitting (after ROI weighting) \code{out$fitvals}, the ROI cost
   values after fitting (before ROI weighting) \code{out$roifits}, the blood
   input data frame after time shifting \code{input}, a vector of the weights
@@ -106,15 +115,17 @@ A list with a data frame of the fitted parameter \code{out$par}, the
 }
 \description{
 Function to fit the SIME Model of Ogden et al (2015) to data to estimate Vnd
-for a set of TACs.
+for a set of TACs using long-format input data.
 }
 \examples{
 \dontrun{
 data(pbr28)
 
-t_tac <- pbr28$tacs[[2]]$Times / 60
-tacdf <- dplyr::select(pbr28$tacs[[2]], FC:CBL)
-weights <- pbr28$tacs[[2]]$Weights
+sime_long <- pbr28$tacs[[2]] \%>\%
+  dplyr::select(Times, Weights, FC:CBL) \%>\%
+  dplyr::mutate(Times = Times / 60) \%>\%
+  tidyr::pivot_longer(cols = -c(Times, Weights),
+                      names_to = "region", values_to = "tac")
 
 input <- blood_interp(
   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
@@ -123,8 +134,9 @@ input <- blood_interp(
 )
 
 Vndgrid <- seq(from = 0, to = 3, by = 0.5)
-SIMEout <- SIME(t_tac, tacdf, input, Vndgrid,
-  weights = weights,
+SIMEout <- SIME(sime_long$Times, sime_long$tac, sime_long$region,
+  input, Vndgrid,
+  weights = sime_long$Weights,
   inpshift = 0.1, vB = 0.05
 )
 }

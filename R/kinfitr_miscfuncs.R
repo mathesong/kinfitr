@@ -796,6 +796,104 @@ coef_kinfit <- function(x, ...) {
   return(out)
 }
 
+#' Tidy Up for Long-Format Multi-TAC Models
+#'
+#' Function to tidy up the input argument vectors for models using long-format
+#' multi-region TAC data.
+#'
+#' @param t_tac Numeric vector of times for each frame in minutes (repeated for
+#'   each region).
+#' @param tac Numeric vector of radioactivity concentrations for each frame
+#'   (stacked across regions).
+#' @param region Character vector identifying the region for each observation.
+#' @param weights Optional. Numeric vector of the weights assigned to each
+#'   frame. Can be either the same length as \code{tac} (one weight per
+#'   observation) or the same length as the number of frames per region (weights
+#'   are recycled for each region). If not specified, uniform weights will be
+#'   used.
+#' @param frameStartEnd Optional. This allows one to specify the beginning and
+#'   final frame to use for modelling, e.g. c(1,20). Applied per region.
+#'
+#' @return A data frame containing the tidied up t_tac, tac, region and weights
+#'   ready for modelling.
+#'
+#' @details This function i) adds uniform weights if weights are not specified,
+#'   ii) handles smart weight expansion if weights match the per-region frame
+#'   count, iii) validates that all vectors are the same length, iv) applies
+#'   frameStartEnd per region, v) prepends a zero time point per region if
+#'   missing, and vi) checks that times are in minutes and not in seconds.
+#'
+#' @examples
+#' data(pbr28)
+#'
+#' sime_long <- pbr28$tacs[[1]] %>%
+#'   dplyr::select(Times, Weights, FC:CBL) %>%
+#'   dplyr::mutate(Times = Times / 60) %>%
+#'   tidyr::pivot_longer(cols = -c(Times, Weights),
+#'                       names_to = "region", values_to = "tac")
+#'
+#' tidyinput_long(sime_long$Times, sime_long$tac, sime_long$region,
+#'                sime_long$Weights, frameStartEnd = c(1, 10))
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @export
+tidyinput_long <- function(t_tac, tac, region, weights = NULL, frameStartEnd = NULL) {
+  region <- as.character(region)
+  regions <- unique(region)
+  n_regions <- length(regions)
+  n_total <- length(tac)
+  n_per_region <- n_total / n_regions
+
+  # Handle weights
+
+if (is.null(weights)) {
+    weights <- rep(1, n_total)
+  } else if (length(weights) == n_per_region && n_per_region != n_total) {
+    # Smart weights: repeat per-region weights for each region
+    weights <- rep(weights, times = n_regions)
+  } else if (length(weights) != n_total) {
+    stop("weights must be NULL, length(tac), or the number of frames per region")
+  }
+
+  # Validate lengths
+  lengths <- c(length(t_tac), length(tac), length(region), length(weights))
+  if (!all(lengths == lengths[1])) {
+    stop("The lengths of t_tac, tac, region and/or weights are not equal")
+  }
+
+  # Build data frame
+  df <- data.frame(t_tac = t_tac, tac = tac, region = region,
+                   weights = weights, stringsAsFactors = FALSE)
+
+  # Apply frameStartEnd per region
+  if (!is.null(frameStartEnd)) {
+    df <- do.call(rbind, lapply(regions, function(r) {
+      rd <- df[df$region == r, ]
+      rd[frameStartEnd[1]:frameStartEnd[2], ]
+    }))
+  }
+
+  # Prepend zero time point per region if needed
+  df <- do.call(rbind, lapply(regions, function(r) {
+    rd <- df[df$region == r, ]
+    if (min(rd$t_tac) > 0) {
+      zero_row <- data.frame(t_tac = 0, tac = 0, region = r,
+                             weights = 0, stringsAsFactors = FALSE)
+      rd <- rbind(zero_row, rd)
+    }
+    rd
+  }))
+
+  rownames(df) <- NULL
+
+  if (max(df$t_tac) > 300) {
+    warning("\n      ******************************************************************************\n          It looks like you have included seconds instead of minutes for time:\n          this can cause wrong/weird results, and should be avoided. Ignore this\n          warning if you just have really long measurements (over 300 minutes).\n      ******************************************************************************")
+  }
+
+  return(df)
+}
+
+
 interpends <- function(x, y, xi, method = "linear", yzero = NULL) {
   if (is.null(yzero)) { # start point
     yzero <- head(y, 1)
