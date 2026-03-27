@@ -283,8 +283,6 @@ plot_Loganfit <- function(loganout, roiname = NULL) {
   colScale <- scale_colour_manual(name = paste0(roiname, "\nLinear"),
                                   values = myColors)
 
-  xlimits <- c(0, tail(plotdf$Logan_Plasma, 1))
-
   # xlabel <- "Integ(C_Plasma)/C_Tissue"
   # ylabel <- "Integ(C_Tissue)/C_Tissue"
 
@@ -302,18 +300,26 @@ plot_Loganfit <- function(loganout, roiname = NULL) {
   after_equil <- plotdf %>%
     dplyr::filter(Equilibrium == "After")
 
-  meanval_x <- mean(after_equil$Logan_Plasma, na.rm = T)
-  meanval_y <- mean(after_equil$Logan_ROI, na.rm = T)
+  finite_x <- after_equil$Logan_Plasma[is.finite(after_equil$Logan_Plasma)]
+  finite_y <- after_equil$Logan_ROI[is.finite(after_equil$Logan_ROI)]
 
-  minval_x <- min(after_equil$Logan_Plasma, na.rm = T)
-  xmin <- min(0, minval_x - (0.1 * meanval_x))
-  maxval_x <- max(after_equil$Logan_Plasma, na.rm = T)
-  xmax <- maxval_x + (0.1 * meanval_x)
+  if (length(finite_x) > 0 && length(finite_y) > 0) {
+    meanval_x <- mean(finite_x)
+    meanval_y <- mean(finite_y)
 
-  minval_y <- min(after_equil$Logan_ROI, na.rm = T)
-  ymin <- min(0, minval_y - (0.1 * meanval_y))
-  maxval_y <- max(after_equil$Logan_ROI, na.rm = T)
-  ymax <- maxval_y + (0.1 * meanval_y)
+    minval_x <- min(finite_x)
+    xmin <- min(0, minval_x - (0.1 * abs(meanval_x)))
+    maxval_x <- max(finite_x)
+    xmax <- maxval_x + (0.1 * abs(meanval_x))
+
+    minval_y <- min(finite_y)
+    ymin <- min(0, minval_y - (0.1 * abs(meanval_y)))
+    maxval_y <- max(finite_y)
+    ymax <- maxval_y + (0.1 * abs(meanval_y))
+  } else {
+    xmin <- NULL; xmax <- NULL
+    ymin <- NULL; ymax <- NULL
+  }
 
   # Plot
 
@@ -323,7 +329,7 @@ plot_Loganfit <- function(loganout, roiname = NULL) {
       slope = as.numeric(loganout$fit$coefficients[2]),
       intercept = as.numeric(loganout$fit$coefficients[1])
     ) +
-    xlab(xlabel) + ylab(ylabel) + xlim(xlimits) + colScale +
+    xlab(xlabel) + ylab(ylabel) + colScale +
     guides(shape = "none", color = guide_legend(order = 1)) +
     scale_size(range = c(1, 3)) +
     coord_cartesian(xlim=c(xmin, xmax),

@@ -261,18 +261,26 @@ plot_refLoganfit <- function(refloganout, roiname = NULL) {
   after_equil <- plotdf %>%
     dplyr::filter(Equilibrium == "After")
 
-  meanval_x <- mean(after_equil$Logan_ref, na.rm = T)
-  meanval_y <- mean(after_equil$Logan_roi, na.rm = T)
+  finite_x <- after_equil$Logan_ref[is.finite(after_equil$Logan_ref)]
+  finite_y <- after_equil$Logan_roi[is.finite(after_equil$Logan_roi)]
 
-  minval_x <- min(after_equil$Logan_ref, na.rm = T)
-  xmin <- min(0, minval_x - (0.1 * meanval_x))
-  maxval_x <- max(after_equil$Logan_ref, na.rm = T)
-  xmax <- maxval_x + (0.1 * meanval_x)
+  if (length(finite_x) > 0 && length(finite_y) > 0) {
+    meanval_x <- mean(finite_x)
+    meanval_y <- mean(finite_y)
 
-  minval_y <- min(after_equil$Logan_roi, na.rm = T)
-  ymin <- min(0, minval_y - (0.1 * meanval_y))
-  maxval_y <- max(after_equil$Logan_roi, na.rm = T)
-  ymax <- maxval_y + (0.1 * meanval_y)
+    minval_x <- min(finite_x)
+    xmin <- min(0, minval_x - (0.1 * abs(meanval_x)))
+    maxval_x <- max(finite_x)
+    xmax <- maxval_x + (0.1 * abs(meanval_x))
+
+    minval_y <- min(finite_y)
+    ymin <- min(0, minval_y - (0.1 * abs(meanval_y)))
+    maxval_y <- max(finite_y)
+    ymax <- maxval_y + (0.1 * abs(meanval_y))
+  } else {
+    xmin <- NULL; xmax <- NULL
+    ymin <- NULL; ymax <- NULL
+  }
 
   # Plot
 
