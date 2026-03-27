@@ -19,10 +19,13 @@
 #'   observation) or the same length as the number of frames per region (weights
 #'   are recycled for each region). If not specified, uniform weights will be
 #'   used.
-#' @param roiweights Optional. Named numeric vector of the weights assigned to
-#'   each ROI in the fitting, keyed by region name (e.g.,
-#'   \code{c(FC=1, STR=0.8)}). If unnamed, matched by position against unique
-#'   regions. If not specified, uniform weights will be used.
+#' @param roiweights Optional. Numeric vector of ROI weights. Can be a named
+#'   vector (one per region), an unnamed vector of the same length as the
+#'   number of regions, or a long vector the same length as \code{tac}
+#'   (one per observation; the first value per region is used). ROI size or
+#'   relative size is a useful quantity to supply here, as larger regions
+#'   provide more precise mean TAC estimates. Normalised internally so the
+#'   maximum is 1. If not specified, uniform weights will be used.
 #' @param inpshift Optional. The number of minutes by which to shift the timing
 #'   of the input data frame forwards or backwards. If not specified, this will
 #'   be set to 0. This can be fitted using 1TCM or 2TCM.
@@ -127,25 +130,13 @@ SIME <- function(t_tac, tac, region, input, Vndgrid,
   regions <- unique(region)
 
   # ROI weights
-  if (is.null(roiweights)) {
-    roiweights <- rep(1, length(regions))
-    names(roiweights) <- regions
-  } else if (!is.null(names(roiweights))) {
-    roiweights <- roiweights[regions]
-  } else {
-    names(roiweights) <- regions
-  }
-  roiweights <- roiweights / max(roiweights)
+  roiweights <- .nested_roiweights(roiweights, region, regions)
 
   Regions <- data.frame(
     Region = regions,
     roiweights = as.numeric(roiweights[regions]),
     stringsAsFactors = FALSE
   )
-
-  if (length(roiweights) != length(regions)) {
-    stop("The number of ROIs and roiweights do not match")
-  }
 
   # Shift timings
   newvals <- shift_timings_long(t_tac, tac, region, input, inpshift)
@@ -198,7 +189,7 @@ SIME <- function(t_tac, tac, region, input, Vndgrid,
     Time = t_tac,
     Region = region,
     Radioactivity = tac,
-    weights = rep(weights_per_region, times = length(regions)),
+    weights = weights,
     stringsAsFactors = FALSE
   )
 
@@ -207,7 +198,7 @@ SIME <- function(t_tac, tac, region, input, Vndgrid,
   tidytacs <- tidytacs[rep(1:nrow(tidytacs), times = length(Vndgrid)), ]
   tidytacs$Vnd <- rep(Vndgrid, each = frames)
 
-  tidytacs_nested <- tidyr::nest(tidytacs, tacs = c(-Region, -Vnd))
+  tidytacs_nested <- tidyr::nest(tidytacs, tacs = c(Time, Radioactivity, weights))
 
   fit_SIMEroi <- function(tacs, input, Vnd, vB, start, upper, lower) {
     tac <- tacs$Radioactivity

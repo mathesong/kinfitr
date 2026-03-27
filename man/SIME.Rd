@@ -52,10 +52,13 @@ observation) or the same length as the number of frames per region (weights
 are recycled for each region). If not specified, uniform weights will be
 used.}
 
-\item{roiweights}{Optional. Named numeric vector of the weights assigned to
-each ROI in the fitting, keyed by region name (e.g.,
-\code{c(FC=1, STR=0.8)}). If unnamed, matched by position against unique
-regions. If not specified, uniform weights will be used.}
+\item{roiweights}{Optional. Numeric vector of ROI weights. Can be a named
+vector (one per region), an unnamed vector of the same length as the
+number of regions, or a long vector the same length as \code{tac}
+(one per observation; the first value per region is used). ROI size or
+relative size is a useful quantity to supply here, as larger regions
+provide more precise mean TAC estimates. Normalised internally so the
+maximum is 1. If not specified, uniform weights will be used.}
 
 \item{inpshift}{Optional. The number of minutes by which to shift the timing
 of the input data frame forwards or backwards. If not specified, this will

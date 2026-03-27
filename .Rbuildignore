@@ -6,5 +6,6 @@
 ^README.Rmd
 ^data-raw
 ^CLAUDE\.md$
+^\.claude$
 ^LICENSE\.md$
 ^docker*

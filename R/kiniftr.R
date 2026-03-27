@@ -1,4 +1,4 @@
-#' @importFrom stats AIC as.formula coef fitted lag lm median na.omit pgamma predict residuals start time weights
+#' @importFrom stats AIC as.formula coef fitted lag lm median na.omit optim pgamma predict residuals start time weights
 #' @importFrom utils data head modifyList read.delim tail
 #' @importFrom grDevices dev.off jpeg
 #' @importFrom graphics lines
@@ -22,5 +22,6 @@ utils::globalVariables(c(
   "sampleStartTime", "ses", "start", "starts_with", "success", "tactimes",
   "task", "time", "trc", "tsvdata", "update_blooddata_bids", "value",
   "whole_blood_radioactivity", "ROI.fitted", "ROI.measured", "ROI_measured",
-  "Reference", "Target.fitted", "Target.measured", "Measure", "Ki", "Kiref"
+  "Reference", "Target.fitted", "Target.measured", "Measure", "Ki", "Kiref",
+  "Type"
 ))
