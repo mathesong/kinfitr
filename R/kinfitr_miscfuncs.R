@@ -180,6 +180,17 @@ plot_residuals <- function(outputobject) {
 #' @export
 
 tidyinput_ref <- function(t_tac, reftac, roitac, weights, frameStartEnd) {
+  empty <- c(t_tac = length(t_tac) == 0,
+             reftac = length(reftac) == 0,
+             roitac = length(roitac) == 0)
+  if (any(empty)) {
+    stop("The following input(s) are empty or NULL: ",
+         paste(names(empty)[empty], collapse = ", "),
+         ". This is often caused by referencing a column that does not exist ",
+         "in a data frame (e.g. `df$tac` when the column is named `TAC`), ",
+         "which silently returns NULL.")
+  }
+
   if (is.null(weights) == T) {
     weights <- rep(1, length(reftac))
   }
@@ -247,6 +258,16 @@ tidyinput_ref <- function(t_tac, reftac, roitac, weights, frameStartEnd) {
 #' @export
 
 tidyinput_art <- function(t_tac, tac, weights, frameStartEnd) {
+  empty <- c(t_tac = length(t_tac) == 0,
+             tac = length(tac) == 0)
+  if (any(empty)) {
+    stop("The following input(s) are empty or NULL: ",
+         paste(names(empty)[empty], collapse = ", "),
+         ". This is often caused by referencing a column that does not exist ",
+         "in a data frame (e.g. `df$tac` when the column is named `TAC`), ",
+         "which silently returns NULL.")
+  }
+
   if (is.null(weights)) {
     weights <- rep(1, length(tac))
   }
