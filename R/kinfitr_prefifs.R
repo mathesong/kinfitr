@@ -219,10 +219,11 @@ pRefIFS_1tcm <- function(t_tac, reftac, roitac,
 #' Recover the scaled pRef-IFS input function
 #'
 #' Standalone helper that runs the pRef-IFS recovery (smooth the pRef TAC,
-#' compute its derivative, form \code{dC_T'/dt + k2' * C_T'}, and scale by
-#' matching the early AUC of an image-derived blood TAC). Returns the
-#' constructed input object alongside the unscaled and scaled curves so the
-#' shape can be inspected separately from the 1TC fit.
+#' compute its derivative, form
+#' \eqn{dC_T'(t)/dt + k_2' \cdot C_T'(t)}, and scale by matching the early
+#' AUC of an image-derived blood TAC). Returns the constructed input object
+#' alongside the unscaled and scaled curves so the shape can be inspected
+#' separately from the 1TC fit.
 #'
 #' @inheritParams pRefIFS_1tcm
 #' @param interpPoints Integer. Number of points in the uniform fine time grid
