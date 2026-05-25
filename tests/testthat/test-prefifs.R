@@ -109,6 +109,18 @@ test_that("pRefIFS_shape produces nearly identical input to pRefIFS_1tcm", {
               peak, 5e-3)
 })
 
+test_that("multstart_iter > 1 fit runs (regression: modelweights lookup)", {
+  fit <- pRefIFS_1tcm(
+    t_tac, tac_pref, tac_tgt,
+    t_blood = t_blood, blood = blood,
+    k2prime = k2prime_val,
+    weights = weights,
+    multstart_iter = 3
+  )
+  expect_s3_class(fit, "pRefIFS_1tcm")
+  expect_true(all(is.finite(unlist(fit$par))))
+})
+
 test_that("Vt from pRefIFS_1tcm is in the same ballpark as onetcm with measured AIF", {
   fit <- pRefIFS_1tcm(
     t_tac, tac_pref, tac_tgt,

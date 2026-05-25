@@ -162,12 +162,15 @@ pRefIFS_1tcm <- function(t_tac, reftac, roitac,
       trace = printvals
     )
   } else {
+    # nls.multstart evaluates `modelweights` as a symbol inside `data`, so we
+    # must hand it the name of a column in `modeldata` (here, `weights`, which
+    # tidyinput_art() guarantees is present and length-matched).
     output <- nls.multstart::nls_multstart(
       formula, data = modeldata,
       supp_errors = "Y",
       start_lower = multstart_lower, start_upper = multstart_upper,
       iter = multstart_iter, convergence_count = FALSE,
-      lower = lower, upper = upper, modelweights = weights_full
+      lower = lower, upper = upper, modelweights = weights
     )
   }
 
