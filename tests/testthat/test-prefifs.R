@@ -15,9 +15,15 @@ k2prime_val <- 0.05
 
 set.seed(42)
 
+# Fit the Feng+1TC smoother to the pseudo-reference TAC once and reuse the
+# parameters across every test below (matches real workflows where many
+# target ROIs share one pRef).
+pref_fit <- feng_1tc_tac(t_tac, tac_pref, weights)
+pref_par <- pref_fit$par
+
 test_that("pRefIFS_1tcm runs and returns sensible parameters", {
   fit <- pRefIFS_1tcm(
-    t_tac, tac_pref, tac_tgt,
+    t_tac, pref_par, tac_tgt,
     t_blood = t_blood, blood = blood,
     k2prime = k2prime_val,
     weights = weights
@@ -35,22 +41,46 @@ test_that("pRefIFS_1tcm runs and returns sensible parameters", {
   expect_true(any(class(plot(fit)) == "ggplot"))
 })
 
+test_that("pRefIFS_1tcm accepts a feng_1tc_tac fit object directly", {
+  fit_a <- pRefIFS_1tcm(
+    t_tac, pref_par, tac_tgt,
+    t_blood = t_blood, blood = blood,
+    k2prime = k2prime_val, weights = weights
+  )
+  fit_b <- pRefIFS_1tcm(
+    t_tac, pref_fit, tac_tgt,
+    t_blood = t_blood, blood = blood,
+    k2prime = k2prime_val, weights = weights
+  )
+  expect_equal(fit_a$par$Vt, fit_b$par$Vt)
+})
+
+test_that("pref_par missing required columns errors clearly", {
+  bad <- data.frame(A = 1, B = 1)  # missing C, alpha, beta, gamma, Ph1, Th1
+  expect_error(
+    pRefIFS_1tcm(t_tac, bad, tac_tgt,
+                 t_blood = t_blood, blood = blood,
+                 k2prime = k2prime_val, weights = weights),
+    "missing required column"
+  )
+})
+
 test_that("k2prime is required", {
   expect_error(
-    pRefIFS_1tcm(t_tac, tac_pref, tac_tgt,
+    pRefIFS_1tcm(t_tac, pref_par, tac_tgt,
                  t_blood = t_blood, blood = blood,
                  weights = weights),
     "k2prime must be supplied"
   )
   expect_error(
-    pRefIFS_1tcm(t_tac, tac_pref, tac_tgt,
+    pRefIFS_1tcm(t_tac, pref_par, tac_tgt,
                  t_blood = t_blood, blood = blood,
                  k2prime = c(0.05, 0.1),
                  weights = weights),
     "single positive numeric"
   )
   expect_error(
-    pRefIFS_1tcm(t_tac, tac_pref, tac_tgt,
+    pRefIFS_1tcm(t_tac, pref_par, tac_tgt,
                  t_blood = t_blood, blood = blood,
                  k2prime = -1,
                  weights = weights),
@@ -59,13 +89,8 @@ test_that("k2prime is required", {
 })
 
 test_that("analytical and symbolic derivatives are numerically equivalent", {
-  shape <- pRefIFS_shape(
-    t_tac, tac_pref,
-    t_blood = t_blood, blood = blood,
-    k2prime = k2prime_val,
-    weights = weights
-  )
-  coefs <- as.list(coef(shape$pref_fit$fit))
+  coefs <- as.list(pref_par)
+  if (is.null(coefs$t0)) coefs$t0 <- 0
   grid <- seq(0, max(t_tac), length.out = 6000)
   d_an <- feng_1tc_tac_deriv(grid, coefs, method = "analytical")
   d_sy <- feng_1tc_tac_deriv(grid, coefs, method = "symbolic")
@@ -74,10 +99,9 @@ test_that("analytical and symbolic derivatives are numerically equivalent", {
 
 test_that("scaling matches early blood AUC by construction", {
   shape <- pRefIFS_shape(
-    t_tac, tac_pref,
+    t_tac, pref_par,
     t_blood = t_blood, blood = blood,
     k2prime = k2prime_val,
-    weights = weights,
     scale_time = 5
   )
   sub <- shape$input$Time <= shape$scale_time
@@ -88,30 +112,27 @@ test_that("scaling matches early blood AUC by construction", {
   expect_lt(abs(auc_aif - auc_blood) / auc_blood, 1e-6)
 })
 
-test_that("pRefIFS_shape produces nearly identical input to pRefIFS_1tcm", {
-  # The pRef smoother uses random multistart so two independent runs differ
-  # slightly; check agreement to within tight relative tolerance rather than
-  # bit-equality.
+test_that("pRefIFS_shape produces the same input used by pRefIFS_1tcm", {
+  # With the refactor the smoother is no longer re-fit, so two calls with
+  # the same pref_par should be bitwise identical.
   fit <- pRefIFS_1tcm(
-    t_tac, tac_pref, tac_tgt,
+    t_tac, pref_par, tac_tgt,
     t_blood = t_blood, blood = blood,
     k2prime = k2prime_val, weights = weights
   )
   shape <- pRefIFS_shape(
-    t_tac, tac_pref,
+    t_tac, pref_par,
     t_blood = t_blood, blood = blood,
-    k2prime = k2prime_val, weights = weights
+    k2prime = k2prime_val
   )
-  expect_equal(fit$scale_factor, shape$scale_factor, tolerance = 1e-2)
-  peak <- max(abs(shape$input$AIF))
-  expect_lt(max(abs(fit$input$AIF - shape$input$AIF)) / peak, 5e-3)
-  expect_lt(max(abs(fit$pRefIFS$pRefIFS_scaled - shape$pRefIFS$pRefIFS_scaled)) /
-              peak, 5e-3)
+  expect_equal(fit$scale_factor, shape$scale_factor)
+  expect_equal(fit$input$AIF, shape$input$AIF)
+  expect_equal(fit$pRefIFS$pRefIFS_scaled, shape$pRefIFS$pRefIFS_scaled)
 })
 
 test_that("multstart_iter > 1 fit runs (regression: modelweights lookup)", {
   fit <- pRefIFS_1tcm(
-    t_tac, tac_pref, tac_tgt,
+    t_tac, pref_par, tac_tgt,
     t_blood = t_blood, blood = blood,
     k2prime = k2prime_val,
     weights = weights,
@@ -123,7 +144,7 @@ test_that("multstart_iter > 1 fit runs (regression: modelweights lookup)", {
 
 test_that("Vt from pRefIFS_1tcm is in the same ballpark as onetcm with measured AIF", {
   fit <- pRefIFS_1tcm(
-    t_tac, tac_pref, tac_tgt,
+    t_tac, pref_par, tac_tgt,
     t_blood = t_blood, blood = blood,
     k2prime = k2prime_val, weights = weights
   )

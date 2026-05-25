@@ -6,15 +6,11 @@
 \usage{
 pRefIFS_shape(
   t_tac,
-  reftac,
+  pref_par,
   t_blood,
   blood,
   k2prime,
-  weights = NULL,
   scale_time = 5,
-  frameStartEnd = NULL,
-  fit_t0 = TRUE,
-  pref_multstart_iter = 500,
   derivative = c("analytical", "symbolic"),
   interpPoints = 6000
 )
@@ -24,8 +20,14 @@ pRefIFS_shape(
 time halfway through the frame. If a time-zero frame is not included it
 will be added.}
 
-\item{reftac}{Numeric vector of radioactivity concentrations in the
-pseudo-reference region for each frame.}
+\item{pref_par}{The fitted parameters of a \code{\link{feng_1tc_tac}}
+smoother applied to the pseudo-reference TAC. Either the 1-row data frame
+returned in \code{$par} or the full fit object (in which case \code{$par}
+is extracted automatically). Must contain the columns \code{A, B, C,
+alpha, beta, gamma, Ph1, Th1}; \code{t0} is optional and defaults to 0 if
+absent. Fitting the smoother once externally and re-using \code{pref_par}
+across many target ROIs avoids re-fitting the (expensive) smoother for
+every ROI in a brain.}
 
 \item{t_blood}{Numeric vector of times for each early blood sample in
 minutes. Used for the scaling step.}
@@ -37,19 +39,8 @@ image-derived blood TAC).}
 either estimated externally via SRTM/SRTMC or supplied as a
 population-average value.}
 
-\item{weights}{Optional. Numeric vector of weights for each frame in the
-fitting. Defaults to uniform.}
-
 \item{scale_time}{Numeric. Upper limit (minutes) of the early window over
 which the scale factor is computed (paper default is 5 minutes).}
-
-\item{frameStartEnd}{Optional. First and last frame indices to use.}
-
-\item{fit_t0}{Should a t0 parameter be fitted in the pRef smoother? Passed
-through to \code{\link{feng_1tc_tac}}.}
-
-\item{pref_multstart_iter}{Number of starting parameter iterations for the
-pRef smoothing step.}
 
 \item{derivative}{Method for computing \eqn{dC_T'(t)/dt}. Either
 "analytical" (default; uses the 1TC ODE directly:
@@ -67,7 +58,7 @@ A list with elements:
   \itemize{
     \item \code{input} — tibble with Time, Blood, Plasma, ParentFraction, AIF
     \item \code{pRefIFS} — data frame with Time, pRefIFS_unscaled, pRefIFS_scaled
-    \item \code{pref_fit} — the underlying \code{feng_1tc_tac} fit
+    \item \code{pref_par} — the smoother parameters used (echoed back)
     \item \code{scale_factor}, \code{scale_time}, \code{k2prime},
       \code{derivative_method}
   }

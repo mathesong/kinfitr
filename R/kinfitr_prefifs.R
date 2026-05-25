@@ -13,8 +13,14 @@
 #' @param t_tac Numeric vector of times for each frame in minutes. We use the
 #'   time halfway through the frame. If a time-zero frame is not included it
 #'   will be added.
-#' @param reftac Numeric vector of radioactivity concentrations in the
-#'   pseudo-reference region for each frame.
+#' @param pref_par The fitted parameters of a \code{\link{feng_1tc_tac}}
+#'   smoother applied to the pseudo-reference TAC. Either the 1-row data frame
+#'   returned in \code{$par} or the full fit object (in which case \code{$par}
+#'   is extracted automatically). Must contain the columns \code{A, B, C,
+#'   alpha, beta, gamma, Ph1, Th1}; \code{t0} is optional and defaults to 0 if
+#'   absent. Fitting the smoother once externally and re-using \code{pref_par}
+#'   across many target ROIs avoids re-fitting the (expensive) smoother for
+#'   every ROI in a brain.
 #' @param roitac Numeric vector of radioactivity concentrations in the target
 #'   region for each frame.
 #' @param t_blood Numeric vector of times for each early blood sample in
@@ -25,10 +31,11 @@
 #'   either estimated externally via SRTM/SRTMC or supplied as a
 #'   population-average value.
 #' @param weights Optional. Numeric vector of weights for each frame in the
-#'   fitting. Defaults to uniform.
+#'   target 1TC fit. Defaults to uniform.
 #' @param scale_time Numeric. Upper limit (minutes) of the early window over
 #'   which the scale factor is computed (paper default is 5 minutes).
-#' @param frameStartEnd Optional. First and last frame indices to use.
+#' @param frameStartEnd Optional. First and last frame indices to use in the
+#'   target 1TC fit.
 #' @param timeStartEnd Optional. First and last times (in minutes) to use.
 #' @param K1.start,K1.lower,K1.upper Starting value and bounds for K1.
 #' @param k2.start,k2.lower,k2.upper Starting value and bounds for k2.
@@ -36,10 +43,6 @@
 #'   fit. See \code{\link[nls.multstart]{nls_multstart}}.
 #' @param multstart_lower,multstart_upper Optional named lists for multstart
 #'   starting bounds.
-#' @param fit_t0 Should a t0 parameter be fitted in the pRef smoother? Passed
-#'   through to \code{\link{feng_1tc_tac}}.
-#' @param pref_multstart_iter Number of starting parameter iterations for the
-#'   pRef smoothing step.
 #' @param derivative Method for computing \eqn{dC_T'(t)/dt}. Either
 #'   "analytical" (default; uses the 1TC ODE directly:
 #'   \eqn{dC_T'/dt = Ph_1 \cdot Feng\_AIF(t) - Th_1 \cdot C_T'(t)}) or
@@ -57,7 +60,7 @@
 #'     \item \code{input} — the constructed input tibble (Time, Blood, Plasma,
 #'       ParentFraction, AIF)
 #'     \item \code{pRefIFS} — Time, unscaled and scaled pRef-IFS curves
-#'     \item \code{pref_fit} — the \code{feng_1tc_tac} result for the pRef TAC
+#'     \item \code{pref_par} — the smoother parameters used (echoed back)
 #'     \item \code{k2prime}, \code{scale_factor}, \code{scale_time},
 #'       \code{derivative_method}, \code{weights}, \code{model}
 #'   }
@@ -71,8 +74,12 @@
 #' weights  <- pbr28$tacs[[1]]$Weights
 #' bd       <- pbr28$procblood[[1]]
 #'
+#' # Fit the smoother on the pseudo-reference TAC once
+#' pref_par <- feng_1tc_tac(t_tac, tac_pref, weights)$par
+#'
+#' # ... and reuse for any number of target ROIs
 #' fit <- pRefIFS_1tcm(
-#'   t_tac, tac_pref, tac_tgt,
+#'   t_tac, pref_par, tac_tgt,
 #'   t_blood = bd$Time / 60, blood = bd$Cbl_dispcorr,
 #'   k2prime = 0.05, weights = weights
 #' )
@@ -86,7 +93,7 @@
 #'   function for PET kinetic modeling. J Cereb Blood Flow Metab. 2026;46(5):1238-1252.
 #'
 #' @export
-pRefIFS_1tcm <- function(t_tac, reftac, roitac,
+pRefIFS_1tcm <- function(t_tac, pref_par, roitac,
                          t_blood, blood,
                          k2prime,
                          weights = NULL,
@@ -96,8 +103,6 @@ pRefIFS_1tcm <- function(t_tac, reftac, roitac,
                          k2.start = 0.1, k2.lower = 0.0001, k2.upper = 0.5,
                          multstart_iter = 1,
                          multstart_lower = NULL, multstart_upper = NULL,
-                         fit_t0 = TRUE,
-                         pref_multstart_iter = 500,
                          derivative = c("analytical", "symbolic"),
                          printvals = FALSE) {
 
@@ -115,16 +120,12 @@ pRefIFS_1tcm <- function(t_tac, reftac, roitac,
                        tail(which(t_tac <= timeStartEnd[2]), 1))
   }
 
-  # 1. Build the scaled pRef-IFS input function from the pRef TAC and early blood
+  # 1. Build the scaled pRef-IFS input function from the pre-fit smoother and blood
   shape <- pRefIFS_shape(
-    t_tac = t_tac, reftac = reftac,
+    t_tac = t_tac, pref_par = pref_par,
     t_blood = t_blood, blood = blood,
     k2prime = k2prime,
-    weights = weights,
     scale_time = scale_time,
-    frameStartEnd = frameStartEnd,
-    fit_t0 = fit_t0,
-    pref_multstart_iter = pref_multstart_iter,
     derivative = derivative
   )
 
@@ -206,7 +207,7 @@ pRefIFS_1tcm <- function(t_tac, reftac, roitac,
     tacs = tacs,
     input = input,
     pRefIFS = shape$pRefIFS,
-    pref_fit = shape$pref_fit,
+    pref_par = shape$pref_par,
     k2prime = k2prime,
     scale_factor = shape$scale_factor,
     scale_time = shape$scale_time,
@@ -237,47 +238,36 @@ pRefIFS_1tcm <- function(t_tac, reftac, roitac,
 #'   \itemize{
 #'     \item \code{input} — tibble with Time, Blood, Plasma, ParentFraction, AIF
 #'     \item \code{pRefIFS} — data frame with Time, pRefIFS_unscaled, pRefIFS_scaled
-#'     \item \code{pref_fit} — the underlying \code{feng_1tc_tac} fit
+#'     \item \code{pref_par} — the smoother parameters used (echoed back)
 #'     \item \code{scale_factor}, \code{scale_time}, \code{k2prime},
 #'       \code{derivative_method}
 #'   }
 #' @export
-pRefIFS_shape <- function(t_tac, reftac,
+pRefIFS_shape <- function(t_tac, pref_par,
                           t_blood, blood,
                           k2prime,
-                          weights = NULL,
                           scale_time = 5,
-                          frameStartEnd = NULL,
-                          fit_t0 = TRUE,
-                          pref_multstart_iter = 500,
                           derivative = c("analytical", "symbolic"),
                           interpPoints = 6000) {
 
   if (missing(k2prime) || is.null(k2prime)) {
-    stop("k2prime must be supplied (e.g. from SRTM/SRTMC or a population value).")
+    stop("k2prime must be supplied (e.g. from SRTM/1TC or a population value).")
   }
   if (length(k2prime) != 1 || !is.finite(k2prime) || k2prime <= 0) {
     stop("k2prime must be a single positive numeric value.")
   }
   derivative <- match.arg(derivative)
 
-  # 1. Smooth the pRef TAC
-  pref_fit <- feng_1tc_tac(
-    t_tac = t_tac, tac = reftac, weights = weights,
-    fit_t0 = fit_t0,
-    frameStartEnd = frameStartEnd,
-    multstart_iter = pref_multstart_iter
-  )
+  coefs <- coerce_pref_par(pref_par)
 
-  # 2. Build a uniform fine time grid spanning the TAC
+  # Build a uniform fine time grid spanning the TAC
   t_max <- max(t_tac)
   grid <- seq(0, t_max, length.out = interpPoints)
 
-  # 3. Predict smoothed C_T'(t) and dC_T'/dt on the grid
-  coefs <- as.list(coef(pref_fit$fit))
-  if (is.null(coefs$t0)) coefs$t0 <- 0    # fit_t0 = FALSE case
-
-  Ct_grid  <- predict(pref_fit$fit, newdata = list(t_tac = grid))
+  # Evaluate the smoothed C_T'(t) and dC_T'/dt on the grid directly from coefs
+  Ct_grid <- with(coefs, feng_1tc_tac_model(
+    grid, t0, A, B, C, alpha, beta, gamma, Ph1, Th1
+  ))
   dCt_grid <- feng_1tc_tac_deriv(grid, coefs, method = derivative)
 
   # 4. Unscaled pRef-IFS
@@ -336,12 +326,50 @@ pRefIFS_shape <- function(t_tac, reftac,
       pRefIFS_unscaled  = prefifs_unscaled,
       pRefIFS_scaled    = prefifs_scaled
     ),
-    pref_fit = pref_fit,
+    pref_par = as.data.frame(coefs),
     scale_factor = SF,
     scale_time = early_end,
     k2prime = k2prime,
     derivative_method = derivative
   )
+}
+
+
+# Internal: coerce a user-supplied `pref_par` into a named list of coefficients
+# for the feng_1tc_tac smoother. Accepts either a `feng_1tc_tac` fit object
+# (extracts $par) or a data.frame / named list with the required columns.
+# Defaults `t0` to 0 if absent (the fit_t0 = FALSE case in feng_1tc_tac).
+coerce_pref_par <- function(pref_par) {
+  if (missing(pref_par) || is.null(pref_par)) {
+    stop("pref_par must be supplied (the $par data frame from feng_1tc_tac).")
+  }
+  if (inherits(pref_par, "kinfit") || inherits(pref_par, "feng_1tc_tac")) {
+    if (is.null(pref_par$par)) {
+      stop("pref_par looks like a kinfit object but has no $par element.")
+    }
+    pref_par <- pref_par$par
+  }
+  if (is.data.frame(pref_par)) {
+    if (nrow(pref_par) != 1) {
+      stop("pref_par must be a 1-row data frame (one fitted smoother).")
+    }
+    coefs <- as.list(pref_par)
+  } else if (is.list(pref_par)) {
+    coefs <- pref_par
+  } else {
+    stop("pref_par must be a data frame, a named list, or a feng_1tc_tac fit object.")
+  }
+
+  required <- c("A", "B", "C", "alpha", "beta", "gamma", "Ph1", "Th1")
+  missing_cols <- setdiff(required, names(coefs))
+  if (length(missing_cols) > 0) {
+    stop("pref_par is missing required column(s): ",
+         paste(missing_cols, collapse = ", "), ".")
+  }
+  if (is.null(coefs$t0)) coefs$t0 <- 0     # fit_t0 = FALSE smoothers
+  # Flatten any 1-length vectors to scalars (data.frame cols come through as length-1)
+  coefs <- lapply(coefs, function(x) if (length(x) == 1) as.numeric(x) else x)
+  coefs
 }
 
 

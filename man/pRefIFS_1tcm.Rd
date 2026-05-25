@@ -6,7 +6,7 @@
 \usage{
 pRefIFS_1tcm(
   t_tac,
-  reftac,
+  pref_par,
   roitac,
   t_blood,
   blood,
@@ -24,8 +24,6 @@ pRefIFS_1tcm(
   multstart_iter = 1,
   multstart_lower = NULL,
   multstart_upper = NULL,
-  fit_t0 = TRUE,
-  pref_multstart_iter = 500,
   derivative = c("analytical", "symbolic"),
   printvals = FALSE
 )
@@ -35,8 +33,14 @@ pRefIFS_1tcm(
 time halfway through the frame. If a time-zero frame is not included it
 will be added.}
 
-\item{reftac}{Numeric vector of radioactivity concentrations in the
-pseudo-reference region for each frame.}
+\item{pref_par}{The fitted parameters of a \code{\link{feng_1tc_tac}}
+smoother applied to the pseudo-reference TAC. Either the 1-row data frame
+returned in \code{$par} or the full fit object (in which case \code{$par}
+is extracted automatically). Must contain the columns \code{A, B, C,
+alpha, beta, gamma, Ph1, Th1}; \code{t0} is optional and defaults to 0 if
+absent. Fitting the smoother once externally and re-using \code{pref_par}
+across many target ROIs avoids re-fitting the (expensive) smoother for
+every ROI in a brain.}
 
 \item{roitac}{Numeric vector of radioactivity concentrations in the target
 region for each frame.}
@@ -52,12 +56,13 @@ either estimated externally via SRTM/SRTMC or supplied as a
 population-average value.}
 
 \item{weights}{Optional. Numeric vector of weights for each frame in the
-fitting. Defaults to uniform.}
+target 1TC fit. Defaults to uniform.}
 
 \item{scale_time}{Numeric. Upper limit (minutes) of the early window over
 which the scale factor is computed (paper default is 5 minutes).}
 
-\item{frameStartEnd}{Optional. First and last frame indices to use.}
+\item{frameStartEnd}{Optional. First and last frame indices to use in the
+target 1TC fit.}
 
 \item{timeStartEnd}{Optional. First and last times (in minutes) to use.}
 
@@ -70,12 +75,6 @@ fit. See \code{\link[nls.multstart]{nls_multstart}}.}
 
 \item{multstart_lower, multstart_upper}{Optional named lists for multstart
 starting bounds.}
-
-\item{fit_t0}{Should a t0 parameter be fitted in the pRef smoother? Passed
-through to \code{\link{feng_1tc_tac}}.}
-
-\item{pref_multstart_iter}{Number of starting parameter iterations for the
-pRef smoothing step.}
 
 \item{derivative}{Method for computing \eqn{dC_T'(t)/dt}. Either
 "analytical" (default; uses the 1TC ODE directly:
@@ -96,7 +95,7 @@ A list of class \code{c("pRefIFS_1tcm", "kinfit")} containing:
     \item \code{input} — the constructed input tibble (Time, Blood, Plasma,
       ParentFraction, AIF)
     \item \code{pRefIFS} — Time, unscaled and scaled pRef-IFS curves
-    \item \code{pref_fit} — the \code{feng_1tc_tac} result for the pRef TAC
+    \item \code{pref_par} — the smoother parameters used (echoed back)
     \item \code{k2prime}, \code{scale_factor}, \code{scale_time},
       \code{derivative_method}, \code{weights}, \code{model}
   }
@@ -121,8 +120,12 @@ t_tac    <- pbr28$tacs[[1]]$Times / 60
 weights  <- pbr28$tacs[[1]]$Weights
 bd       <- pbr28$procblood[[1]]
 
+# Fit the smoother on the pseudo-reference TAC once
+pref_par <- feng_1tc_tac(t_tac, tac_pref, weights)$par
+
+# ... and reuse for any number of target ROIs
 fit <- pRefIFS_1tcm(
-  t_tac, tac_pref, tac_tgt,
+  t_tac, pref_par, tac_tgt,
   t_blood = bd$Time / 60, blood = bd$Cbl_dispcorr,
   k2prime = 0.05, weights = weights
 )
