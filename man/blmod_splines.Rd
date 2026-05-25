@@ -12,12 +12,15 @@ blmod_splines(
   Method_weights = TRUE,
   taper_weights = TRUE,
   weightscheme = 2,
-  bs_before = "cr",
+  bs_before = "mpi",
   bs_after_c = "cr",
   bs_after_d = "cr",
   k_before = -1,
   k_after_c = -1,
-  k_after_d = -1
+  k_after_d = -1,
+  t0.lower = 0,
+  t0.upper = NULL,
+  t0_use_monotonic = FALSE
 )
 }
 \arguments{
@@ -39,18 +42,28 @@ gradually trade off between the continuous and discrete samples after the
 peak?}
 
 \item{weightscheme}{If no weights provided, which weighting scheme should be
-used before accommodating Method_divide and taper_weights? 1 represents a
-uniform weighting before accommodating Method_divide and taper_weights. 2
-represents time/AIF as used by Columbia PET Centre. Default is 2.}
+used before accommodating Method_divide and taper_weights? Options are: 1
+= uniform weighting; 2 = time/AIF as used by Columbia PET Centre; 3 =
+absolute value of activity (weights proportional to the measured
+radioactivity); 4 = square root of the absolute value of activity; 5 =
+squared activity. Schemes 3-5 make weights rise with activity, the
+opposite of variance-stabilising weighting. Default is 2.}
 
 \item{bs_before}{Optional. Defines the basis function for the points before
-the peak.}
+the peak. The default is \code{"mpi"}, the monotone-increasing basis from
+the \code{scam} package, which constrains the pre-peak rise to be
+non-decreasing and works well with the t0 estimation below. Any
+\code{mgcv} basis name (e.g. \code{"cr"}) is also valid; \code{"mpi"} and
+\code{"mpd"} dispatch to \code{scam::scam}, all others to
+\code{mgcv::gam}.}
 
 \item{bs_after_c}{Optional. Defines the basis function for the continuous
-points after the peak.}
+points after the peak. Default is \code{"cr"}. Set to \code{"mpd"} to
+enforce a monotone-decreasing tail.}
 
 \item{bs_after_d}{Optional. Defines the basis function for the discrete
-points after the peak.}
+points after the peak. Default is \code{"cr"}. Set to \code{"mpd"} to
+enforce a monotone-decreasing tail.}
 
 \item{k_before}{Optional. Defines the dimension of the basis for the points
 before the peak.}
@@ -60,6 +73,24 @@ continuous points after the peak.}
 
 \item{k_after_d}{Optional. Defines the dimension of the basis for the
 discrete points after the peak.}
+
+\item{t0.lower}{Lower bound for the fitted t0 onset time (in seconds, the
+units of \code{time}). Predictions for \code{time < t0} are forced to
+zero. Default 0.}
+
+\item{t0.upper}{Upper bound for the fitted t0 onset time (in seconds). If
+\code{NULL} (default), it is set to \code{peaktime} since t0 must be no
+later than the peak by construction.}
+
+\item{t0_use_monotonic}{Logical. When \code{FALSE} (default), the t0 search
+uses \code{mgcv::gam} with \code{bs = "cr"} regardless of
+\code{bs_before}, because the inner fit runs dozens of times inside
+\code{stats::optimize} and \code{scam::scam} is much slower per fit. The
+final spline at the estimated t0 still uses the user's \code{bs_before}.
+When \code{TRUE}, the t0 search uses \code{bs_before} (so the monotone
+constraint applies during onset search if \code{bs_before} is a scam
+basis like \code{"mpi"}) — slower, but the monotone constraint can in
+some cases yield a better-defined onset.}
 }
 \value{
 A model fit including all of the individual models of class
