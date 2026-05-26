@@ -116,6 +116,11 @@ pRefIFS_1tcm <- function(t_tac, pref_par, roitac,
 
   # Convert timeStartEnd to frameStartEnd if needed
   if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
+    if (timeStartEnd[1] > max(t_tac) || timeStartEnd[2] < min(t_tac)) {
+      stop("timeStartEnd = c(", timeStartEnd[1], ", ", timeStartEnd[2],
+           ") lies outside the t_tac range [", min(t_tac), ", ", max(t_tac),
+           "]. Did you mix up seconds and minutes?")
+    }
     frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1],
                        tail(which(t_tac <= timeStartEnd[2]), 1))
   }
@@ -201,6 +206,17 @@ pRefIFS_1tcm <- function(t_tac, pref_par, roitac,
   par$Vt <- par$K1 / par$k2
   par.se$Vt.se <- get_se(output, "K1/k2")
 
+  # Diagnostic: AUC of the target TAC over the same early window used for
+  # scaling. Lets the user eyeball whether the scaled AIF is the right
+  # magnitude relative to the tissue uptake (useful when SF looks suspect).
+  early_tac_idx <- tacs$Time <= shape$scale_time
+  if (sum(early_tac_idx) >= 2) {
+    auc_target_early <- pracma::trapz(tacs$Time[early_tac_idx],
+                                      tacs$Target[early_tac_idx])
+  } else {
+    auc_target_early <- NA_real_
+  }
+
   out <- list(
     par = par, par.se = par.se,
     fit = output,
@@ -211,6 +227,10 @@ pRefIFS_1tcm <- function(t_tac, pref_par, roitac,
     k2prime = k2prime,
     scale_factor = shape$scale_factor,
     scale_time = shape$scale_time,
+    auc_blood_early  = shape$auc_blood_early,
+    auc_pref_early   = shape$auc_pref_early,
+    auc_target_early = auc_target_early,
+    frac_clamped     = shape$frac_clamped,
     derivative_method = derivative,
     weights = weights_full,
     model = "pRefIFS_1tcm"
@@ -258,6 +278,23 @@ pRefIFS_shape <- function(t_tac, pref_par,
   }
   derivative <- match.arg(derivative)
 
+  # Strip NA pairs from the blood data (cryptic 'missing value where TRUE/FALSE
+  # needed' downstream otherwise).
+  lengths_match <- length(t_blood) == length(blood)
+  if (!lengths_match) {
+    stop("t_blood and blood must have the same length (",
+         length(t_blood), " vs ", length(blood), ").")
+  }
+  na_pairs <- !is.finite(t_blood) | !is.finite(blood)
+  if (any(na_pairs)) {
+    warning(sum(na_pairs), " NA/non-finite sample(s) in t_blood / blood were dropped.")
+    t_blood <- t_blood[!na_pairs]
+    blood   <- blood[!na_pairs]
+  }
+  if (length(t_blood) < 2) {
+    stop("After dropping NA samples, t_blood / blood has fewer than 2 points.")
+  }
+
   coefs <- coerce_pref_par(pref_par)
 
   # Build a uniform fine time grid spanning the TAC
@@ -289,15 +326,32 @@ pRefIFS_shape <- function(t_tac, pref_par,
          "Check t_blood and scale_time.")
   }
 
+  # Pad with (t=0, blood=0) before approx() so that grid times below
+  # min(t_blood) interpolate from zero rather than flat-extrapolating the
+  # first sample (which would inflate auc_blood when the BTAC starts post-zero
+  # on the rising edge). Keep rule=2 so the LATE end still uses the last
+  # observed value (extrapolating to zero on the tail would be wrong).
+  if (min(t_blood) > 0) {
+    t_blood_pad <- c(0, t_blood)
+    blood_pad   <- c(0, blood)
+  } else {
+    t_blood_pad <- t_blood
+    blood_pad   <- blood
+  }
   blood_on_grid_early <- stats::approx(
-    x = t_blood, y = blood,
+    x = t_blood_pad, y = blood_pad,
     xout = grid[early_idx],
-    rule = 2  # extrapolate flat at the ends
+    rule = 2
   )$y
 
   auc_blood <- pracma::trapz(grid[early_idx], blood_on_grid_early)
   auc_pref  <- pracma::trapz(grid[early_idx], prefifs_unscaled[early_idx])
 
+  if (!is.finite(auc_blood) || auc_blood <= 0) {
+    stop("Computed early AUC of the supplied blood is non-positive (",
+         signif(auc_blood, 3), "); cannot derive a scale factor. ",
+         "Inspect the blood TAC over [0, scale_time].")
+  }
   if (!is.finite(auc_pref) || auc_pref <= 0) {
     stop("Computed early AUC of the unscaled pRef-IFS is non-positive (",
          signif(auc_pref, 3), "); cannot derive a scale factor. ",
@@ -306,6 +360,23 @@ pRefIFS_shape <- function(t_tac, pref_par,
   SF <- auc_blood / auc_pref
 
   prefifs_scaled <- SF * prefifs_unscaled
+
+  # Clamp negatives. Under the 1T assumption (Volpi et al. eq. 1) the bracketed
+  # term dC_T'/dt + k2' * C_T' is K1' * C_p(t) and so must be non-negative;
+  # negatives only appear when the smoother's Th1 differs materially from the
+  # user-supplied k2prime. Inform the user how much was clamped so they can
+  # judge whether k2prime is compatible with the smoother fit.
+  neg_idx <- prefifs_scaled < 0
+  if (any(neg_idx)) {
+    frac_neg <- mean(neg_idx)
+    if (frac_neg > 0.01) {
+      message(sprintf(
+        "pRefIFS_shape: %.1f%% of grid points had negative pRef-IFS values and were clamped to 0. This usually means k2prime (%.4g) differs from the smoother's Th1 (%.4g) more than the 1T assumption tolerates.",
+        100 * frac_neg, k2prime, coefs$Th1
+      ))
+    }
+    prefifs_scaled[neg_idx] <- 0
+  }
 
   # 6. Build the input object. vB = 0 in this implementation, but we still
   # populate the Blood column with the scaled pRef-IFS so that a future
@@ -329,6 +400,9 @@ pRefIFS_shape <- function(t_tac, pref_par,
     pref_par = as.data.frame(coefs),
     scale_factor = SF,
     scale_time = early_end,
+    auc_blood_early = auc_blood,
+    auc_pref_early  = auc_pref,
+    frac_clamped    = if (any(neg_idx)) mean(neg_idx) else 0,
     k2prime = k2prime,
     derivative_method = derivative
   )
@@ -366,7 +440,10 @@ coerce_pref_par <- function(pref_par) {
     stop("pref_par is missing required column(s): ",
          paste(missing_cols, collapse = ", "), ".")
   }
-  if (is.null(coefs$t0)) coefs$t0 <- 0     # fit_t0 = FALSE smoothers
+  if (is.null(coefs$t0)) {
+    message("coerce_pref_par: no `t0` column in pref_par; defaulting to t0 = 0.")
+    coefs$t0 <- 0
+  }
   # Flatten any 1-length vectors to scalars (data.frame cols come through as length-1)
   coefs <- lapply(coefs, function(x) if (length(x) == 1) as.numeric(x) else x)
   coefs
@@ -441,12 +518,14 @@ feng_1tc_tac_deriv_symbolic_expr <- local({
 
 #' Plot the fit of a pRef-IFS 1TC model
 #'
-#' Two panels stacked: (top) the pRef TAC with its Feng+1TC smoother; (bottom)
-#' the target TAC with its 1TC fit, alongside the recovered scaled pRef-IFS.
+#' Single-panel plot showing the measured target TAC, the 1TC-fitted target
+#' curve, and the recovered scaled pRef-IFS used as the input function. The
+#' y-axis is capped a little above the target peak so the target fit is easy
+#' to inspect; the scaled pRef-IFS typically peaks well above this cap by
+#' construction (it is matched to early blood AUC, not to tissue uptake).
 #'
 #' @param pRefIFS_1tcmout The output object from \code{\link{pRefIFS_1tcm}}.
 #' @param roiname Optional. Display name for the target region.
-#' @param refname Optional. Display name for the pseudo-reference region.
 #'
 #' @return A ggplot2 object.
 #'
@@ -455,12 +534,9 @@ feng_1tc_tac_deriv_symbolic_expr <- local({
 #' @import ggplot2
 #' @export
 plot_pRefIFS_1tcmfit <- function(pRefIFS_1tcmout,
-                                 roiname = NULL,
-                                 refname = NULL) {
+                                 roiname = NULL) {
   if (is.null(roiname)) roiname <- "ROI"
-  if (is.null(refname)) refname <- "pRef"
 
-  # Bottom panel data (target + AIF)
   measured <- data.frame(
     Time = pRefIFS_1tcmout$tacs$Time,
     Radioactivity = pRefIFS_1tcmout$tacs$Target,
@@ -468,25 +544,33 @@ plot_pRefIFS_1tcmfit <- function(pRefIFS_1tcmout,
     Region = paste0(roiname, ".Measured")
   )
 
+  # Restrict the fine-grid curves (AIF and fitted) to the fit window so that
+  # frameStartEnd / timeStartEnd subsets plot correctly (the fine grid in
+  # input$Time spans the full t_tac, but tacs$Time only spans the fit subset).
+  fit_window <- range(measured$Time)
+  fine_idx   <- pRefIFS_1tcmout$input$Time >= fit_window[1] &
+                pRefIFS_1tcmout$input$Time <= fit_window[2]
+  fine_time  <- pRefIFS_1tcmout$input$Time[fine_idx]
+  fine_aif   <- pRefIFS_1tcmout$input$AIF[fine_idx]
+
   aifdf <- data.frame(
-    Time = pRefIFS_1tcmout$input$Time,
-    Radioactivity = pRefIFS_1tcmout$input$AIF,
+    Time = fine_time,
+    Radioactivity = fine_aif,
     Weights = 1,
     Region = "pRefIFS (scaled)"
   )
 
+  # Re-predict the fitted curve on the (clipped) fine grid. The formula's
+  # response variable `tac` is not actually used by predict() — only RHS
+  # variables matter — but the captured-data nls predict still requires the
+  # symbol to resolve, so we pass a same-length dummy.
   i_fit <- predict(pRefIFS_1tcmout$fit, newdata = list(
-    t_tac = pRefIFS_1tcmout$input$Time,
-    tac = pracma::interp1(
-      pRefIFS_1tcmout$tacs$Time,
-      pRefIFS_1tcmout$tacs$Target,
-      pRefIFS_1tcmout$input$Time,
-      method = "linear"
-    )
+    t_tac = fine_time,
+    tac   = rep(0, length(fine_time))
   ))
 
   fitdf <- data.frame(
-    Time = pRefIFS_1tcmout$input$Time,
+    Time = fine_time,
     Radioactivity = i_fit,
     Weights = 1,
     Region = paste0(roiname, ".Fitted")
@@ -510,5 +594,5 @@ plot_pRefIFS_1tcmfit <- function(pRefIFS_1tcmout,
     ) +
     guides(shape = "none", color = guide_legend(order = 1)) +
     scale_size(range = c(1, 3)) +
-    coord_cartesian(ylim = c(0, max(measured$Radioactivity) * 1.5))
+    coord_cartesian(ylim = c(0, max(measured$Radioactivity) * 1.3))
 }
