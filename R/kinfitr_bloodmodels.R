@@ -126,10 +126,9 @@ blmod_tidyinput <- function(time, activity, Method = NULL, weights = NULL) {
 #' @param weightscheme If no weights provided, which weighting scheme should be
 #'   used before accommodating Method_divide and taper_weights? Options are: 1
 #'   = uniform weighting; 2 = time/AIF as used by Columbia PET Centre; 3 =
-#'   absolute value of activity (weights proportional to the measured
-#'   radioactivity); 4 = square root of the absolute value of activity; 5 =
-#'   squared activity. Schemes 3-5 make weights rise with activity, the
-#'   opposite of variance-stabilising weighting. Default is 2.
+#'   absolute value of activity (weights rise with activity, emphasising the
+#'   peak); 4 = 1/abs(activity) (weights fall with activity, the
+#'   variance-stabilising direction for Poisson-like noise). Default is 2.
 #' @param bs_before Optional. Defines the basis function for the points before
 #'   the peak. The default is \code{"mpi"}, the monotone-increasing basis from
 #'   the \code{scam} package, which constrains the pre-peak rise to be
@@ -734,9 +733,11 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
 #'   gradually trade off between the continuous and discrete samples after the
 #'   peak?
 #' @param weightscheme If no weights provided, which weighting scheme should be
-#'   used before accommodating Method_divide and taper_weights? 1 represents a
-#'   uniform weighting before accommodating Method_divide and taper_weights. 2
-#'   represents time/AIF as used by Columbia PET Centre. Default is 2.
+#'   used before accommodating Method_divide and taper_weights? Options are: 1
+#'   = uniform weighting; 2 = time/AIF as used by Columbia PET Centre; 3 =
+#'   absolute value of activity (weights rise with activity, emphasising the
+#'   peak); 4 = 1/abs(activity) (weights fall with activity, the
+#'   variance-stabilising direction for Poisson-like noise). Default is 2.
 #' @param check_startpars Optional. Return only the starting parameters. Useful
 #'   for debugging fits which do not work.
 #' @param expdecay_props What proportions of the decay should be used for
@@ -1636,9 +1637,11 @@ blmod_feng_startpars <- function(time, activity,
 #'   gradually trade off between the continuous and discrete samples after the
 #'   peak?
 #' @param weightscheme If no weights provided, which weighting scheme should be
-#'   used before accommodating Method_divide and taper_weights? 1 represents a
-#'   uniform weighting before accommodating Method_divide and taper_weights. 2
-#'   represents time/AIF as used by Columbia PET Centre. Default is 2.
+#'   used before accommodating Method_divide and taper_weights? Options are: 1
+#'   = uniform weighting; 2 = time/AIF as used by Columbia PET Centre; 3 =
+#'   absolute value of activity (weights rise with activity, emphasising the
+#'   peak); 4 = 1/abs(activity) (weights fall with activity, the
+#'   variance-stabilising direction for Poisson-like noise). Default is 2.
 #' @param check_startpars Optional. Return only the starting parameters. Useful
 #'   for debugging fits which do not work.
 #' @param expdecay_props What proportions of the decay should be used for
@@ -1966,9 +1969,11 @@ predict_blood_feng <- function(object, newdata = NULL) {
 #'   gradually trade off between the continuous and discrete samples after the
 #'   peak?
 #' @param weightscheme If no weights provided, which weighting scheme should be
-#'   used before accommodating Method_divide and taper_weights? 1 represents a
-#'   uniform weighting before accommodating Method_divide and taper_weights. 2
-#'   represents time/AIF as used by Columbia PET Centre. Default is 2.
+#'   used before accommodating Method_divide and taper_weights? Options are: 1
+#'   = uniform weighting; 2 = time/AIF as used by Columbia PET Centre; 3 =
+#'   absolute value of activity (weights rise with activity, emphasising the
+#'   peak); 4 = 1/abs(activity) (weights fall with activity, the
+#'   variance-stabilising direction for Poisson-like noise). Default is 2.
 #' @param check_startpars Optional. Return only the starting parameters. Useful
 #'   for debugging fits which do not work.
 #' @param expdecay_props What proportions of the decay should be used for
@@ -2379,9 +2384,11 @@ predict_blood_fengconv <- function(object, newdata = NULL) {
 #'   gradually trade off between the continuous and discrete samples after the
 #'   peak?
 #' @param weightscheme If no weights provided, which weighting scheme should be
-#'   used before accommodating Method_divide and taper_weights? 1 represents a
-#'   uniform weighting before accommodating Method_divide and taper_weights. 2
-#'   represents time/AIF as used by Columbia PET Centre. Default is 2.
+#'   used before accommodating Method_divide and taper_weights? Options are: 1
+#'   = uniform weighting; 2 = time/AIF as used by Columbia PET Centre; 3 =
+#'   absolute value of activity (weights rise with activity, emphasising the
+#'   peak); 4 = 1/abs(activity) (weights fall with activity, the
+#'   variance-stabilising direction for Poisson-like noise). Default is 2.
 #' @param check_startpars Optional. Return only the starting parameters. Useful
 #'   for debugging fits which do not work.
 #' @param expdecay_props What proportions of the decay should be used for
