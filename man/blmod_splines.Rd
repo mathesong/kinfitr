@@ -44,10 +44,9 @@ peak?}
 \item{weightscheme}{If no weights provided, which weighting scheme should be
 used before accommodating Method_divide and taper_weights? Options are: 1
 = uniform weighting; 2 = time/AIF as used by Columbia PET Centre; 3 =
-absolute value of activity (weights proportional to the measured
-radioactivity); 4 = square root of the absolute value of activity; 5 =
-squared activity. Schemes 3-5 make weights rise with activity, the
-opposite of variance-stabilising weighting. Default is 2.}
+absolute value of activity (weights rise with activity, emphasising the
+peak); 4 = 1/abs(activity) (weights fall with activity, the
+variance-stabilising direction for Poisson-like noise). Default is 2.}
 
 \item{bs_before}{Optional. Defines the basis function for the points before
 the peak. The default is \code{"mpi"}, the monotone-increasing basis from

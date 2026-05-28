@@ -21,15 +21,15 @@ set.seed(42)
 pref_fit <- feng_1tc_tac(t_tac, tac_pref, weights)
 pref_par <- pref_fit$par
 
-test_that("pRefIFS_1tcm runs and returns sensible parameters", {
-  fit <- pRefIFS_1tcm(
+test_that("prefifs_1tcm runs and returns sensible parameters", {
+  fit <- prefifs_1tcm(
     t_tac, pref_par, tac_tgt,
     t_blood = t_blood, blood = blood,
     k2prime = k2prime_val,
     weights = weights
   )
 
-  expect_s3_class(fit, "pRefIFS_1tcm")
+  expect_s3_class(fit, "prefifs_1tcm")
   expect_s3_class(fit, "kinfit")
   expect_true(all(c("K1", "k2", "Vt") %in% names(fit$par)))
   expect_true(all(is.finite(unlist(fit$par))))
@@ -41,13 +41,13 @@ test_that("pRefIFS_1tcm runs and returns sensible parameters", {
   expect_true(any(class(plot(fit)) == "ggplot"))
 })
 
-test_that("pRefIFS_1tcm accepts a feng_1tc_tac fit object directly", {
-  fit_a <- pRefIFS_1tcm(
+test_that("prefifs_1tcm accepts a feng_1tc_tac fit object directly", {
+  fit_a <- prefifs_1tcm(
     t_tac, pref_par, tac_tgt,
     t_blood = t_blood, blood = blood,
     k2prime = k2prime_val, weights = weights
   )
-  fit_b <- pRefIFS_1tcm(
+  fit_b <- prefifs_1tcm(
     t_tac, pref_fit, tac_tgt,
     t_blood = t_blood, blood = blood,
     k2prime = k2prime_val, weights = weights
@@ -58,7 +58,7 @@ test_that("pRefIFS_1tcm accepts a feng_1tc_tac fit object directly", {
 test_that("pref_par missing required columns errors clearly", {
   bad <- data.frame(A = 1, B = 1)  # missing C, alpha, beta, gamma, Ph1, Th1
   expect_error(
-    pRefIFS_1tcm(t_tac, bad, tac_tgt,
+    prefifs_1tcm(t_tac, bad, tac_tgt,
                  t_blood = t_blood, blood = blood,
                  k2prime = k2prime_val, weights = weights),
     "missing required column"
@@ -67,20 +67,20 @@ test_that("pref_par missing required columns errors clearly", {
 
 test_that("k2prime is required", {
   expect_error(
-    pRefIFS_1tcm(t_tac, pref_par, tac_tgt,
+    prefifs_1tcm(t_tac, pref_par, tac_tgt,
                  t_blood = t_blood, blood = blood,
                  weights = weights),
     "k2prime must be supplied"
   )
   expect_error(
-    pRefIFS_1tcm(t_tac, pref_par, tac_tgt,
+    prefifs_1tcm(t_tac, pref_par, tac_tgt,
                  t_blood = t_blood, blood = blood,
                  k2prime = c(0.05, 0.1),
                  weights = weights),
     "single positive numeric"
   )
   expect_error(
-    pRefIFS_1tcm(t_tac, pref_par, tac_tgt,
+    prefifs_1tcm(t_tac, pref_par, tac_tgt,
                  t_blood = t_blood, blood = blood,
                  k2prime = -1,
                  weights = weights),
@@ -103,7 +103,7 @@ test_that("scaling is SF = auc_blood / auc_pref by construction", {
   # AIF AUC over [0, scale_time] generally exceeds auc_blood. The mathematical
   # invariant of the construction is SF = auc_blood / auc_pref, and that is
   # what the diagnostic fields should match.
-  shape <- pRefIFS_shape(
+  shape <- prefifs_shape(
     t_tac, pref_par,
     t_blood = t_blood, blood = blood,
     k2prime = k2prime_val,
@@ -119,38 +119,38 @@ test_that("scaling is SF = auc_blood / auc_pref by construction", {
                tolerance = 1e-10)
 })
 
-test_that("pRefIFS_shape produces the same input used by pRefIFS_1tcm", {
+test_that("prefifs_shape produces the same input used by prefifs_1tcm", {
   # With the refactor the smoother is no longer re-fit, so two calls with
   # the same pref_par should be bitwise identical.
-  fit <- pRefIFS_1tcm(
+  fit <- prefifs_1tcm(
     t_tac, pref_par, tac_tgt,
     t_blood = t_blood, blood = blood,
     k2prime = k2prime_val, weights = weights
   )
-  shape <- pRefIFS_shape(
+  shape <- prefifs_shape(
     t_tac, pref_par,
     t_blood = t_blood, blood = blood,
     k2prime = k2prime_val
   )
   expect_equal(fit$scale_factor, shape$scale_factor)
   expect_equal(fit$input$AIF, shape$input$AIF)
-  expect_equal(fit$pRefIFS$pRefIFS_scaled, shape$pRefIFS$pRefIFS_scaled)
+  expect_equal(fit$prefifs$prefifs_scaled, shape$prefifs$prefifs_scaled)
 })
 
 test_that("multstart_iter > 1 fit runs (regression: modelweights lookup)", {
-  fit <- pRefIFS_1tcm(
+  fit <- prefifs_1tcm(
     t_tac, pref_par, tac_tgt,
     t_blood = t_blood, blood = blood,
     k2prime = k2prime_val,
     weights = weights,
     multstart_iter = 3
   )
-  expect_s3_class(fit, "pRefIFS_1tcm")
+  expect_s3_class(fit, "prefifs_1tcm")
   expect_true(all(is.finite(unlist(fit$par))))
 })
 
 test_that("plot(fit) works when frameStartEnd is used (regression)", {
-  fit <- pRefIFS_1tcm(
+  fit <- prefifs_1tcm(
     t_tac, pref_par, tac_tgt,
     t_blood = t_blood, blood = blood,
     k2prime = k2prime_val, weights = weights,
@@ -161,7 +161,7 @@ test_that("plot(fit) works when frameStartEnd is used (regression)", {
 
 test_that("timeStartEnd out of range errors clearly", {
   expect_error(
-    pRefIFS_1tcm(t_tac, pref_par, tac_tgt,
+    prefifs_1tcm(t_tac, pref_par, tac_tgt,
                  t_blood = t_blood, blood = blood,
                  k2prime = k2prime_val, weights = weights,
                  timeStartEnd = c(200, 300)),
@@ -171,7 +171,7 @@ test_that("timeStartEnd out of range errors clearly", {
 
 test_that("NA in t_blood or blood is dropped with a warning", {
   expect_warning(
-    pRefIFS_shape(t_tac, pref_par,
+    prefifs_shape(t_tac, pref_par,
                   t_blood = c(0, 1, NA, 5, 10),
                   blood = c(0, 5, 10, 8, 4),
                   k2prime = k2prime_val),
@@ -186,10 +186,10 @@ test_that("Early flat-extrapolation is replaced with zero padding when t_blood[1
   bd_late_t <- bd$Time[bd$Time > 0] / 60
   bd_late_v <- bd$Cbl_dispcorr[bd$Time > 0]
   bd_late_v[1] <- 30   # simulate peak-like first sample
-  shape_late <- pRefIFS_shape(t_tac, pref_par,
+  shape_late <- prefifs_shape(t_tac, pref_par,
                               t_blood = bd_late_t, blood = bd_late_v,
                               k2prime = k2prime_val)
-  shape_pad  <- pRefIFS_shape(t_tac, pref_par,
+  shape_pad  <- prefifs_shape(t_tac, pref_par,
                               t_blood = c(0, bd_late_t),
                               blood = c(0, bd_late_v),
                               k2prime = k2prime_val)
@@ -199,7 +199,7 @@ test_that("Early flat-extrapolation is replaced with zero padding when t_blood[1
 test_that("auc_blood guard fires when early blood AUC is non-positive", {
   zero_blood <- rep(0, length(t_blood))
   expect_error(
-    pRefIFS_shape(t_tac, pref_par,
+    prefifs_shape(t_tac, pref_par,
                   t_blood = t_blood, blood = zero_blood,
                   k2prime = k2prime_val),
     "AUC of the supplied blood is non-positive"
@@ -207,7 +207,7 @@ test_that("auc_blood guard fires when early blood AUC is non-positive", {
 })
 
 test_that("Output includes diagnostic AUC fields", {
-  fit <- pRefIFS_1tcm(
+  fit <- prefifs_1tcm(
     t_tac, pref_par, tac_tgt,
     t_blood = t_blood, blood = blood,
     k2prime = k2prime_val, weights = weights
@@ -225,7 +225,7 @@ test_that("Output includes diagnostic AUC fields", {
 test_that("Negative pRef-IFS values are clamped to zero in the AIF", {
   # Force the situation by passing k2prime much smaller than the smoother's Th1
   fit <- expect_message(
-    pRefIFS_1tcm(t_tac, pref_par, tac_tgt,
+    prefifs_1tcm(t_tac, pref_par, tac_tgt,
                  t_blood = t_blood, blood = blood,
                  k2prime = 0.005, weights = weights),
     "clamped to 0"
@@ -243,8 +243,8 @@ test_that("coerce_pref_par informs when t0 is defaulted", {
   )
 })
 
-test_that("Vt from pRefIFS_1tcm is in the same ballpark as onetcm with measured AIF", {
-  fit <- pRefIFS_1tcm(
+test_that("Vt from prefifs_1tcm is in the same ballpark as onetcm with measured AIF", {
+  fit <- prefifs_1tcm(
     t_tac, pref_par, tac_tgt,
     t_blood = t_blood, blood = blood,
     k2prime = k2prime_val, weights = weights
