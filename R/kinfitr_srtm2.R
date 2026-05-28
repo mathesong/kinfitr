@@ -202,7 +202,7 @@ srtm2 <- function(t_tac, reftac, roitac, k2prime=NULL, weights = NULL, frameStar
     par.se$k2a.se <- get_se(output, paste("(R1 * ",k2prime,") / (bp + 1)"))
 
     par$k2prime = k2prime
-    par.se$k2prime=0
+    par.se$k2prime.se=0
   } else {
     par.se$k2a.se <- get_se(output, "(R1 * k2prime) / (bp + 1)")
   }
