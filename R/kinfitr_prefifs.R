@@ -51,7 +51,7 @@
 #'   verification.
 #' @param printvals If \code{TRUE}, the fitter prints iteration values.
 #'
-#' @return A list of class \code{c("pRefIFS_1tcm", "kinfit")} containing:
+#' @return A list of class \code{c("prefifs_1tcm", "kinfit")} containing:
 #'   \itemize{
 #'     \item \code{par} — a data frame with K1, k2, Vt
 #'     \item \code{par.se} — percentage standard errors
@@ -59,7 +59,7 @@
 #'     \item \code{tacs} — Time, Target, Target_fitted
 #'     \item \code{input} — the constructed input tibble (Time, Blood, Plasma,
 #'       ParentFraction, AIF)
-#'     \item \code{pRefIFS} — Time, unscaled and scaled pRef-IFS curves
+#'     \item \code{prefifs} — Time, unscaled and scaled pRef-IFS curves
 #'     \item \code{pref_par} — the smoother parameters used (echoed back)
 #'     \item \code{k2prime}, \code{scale_factor}, \code{scale_time},
 #'       \code{derivative_method}, \code{weights}, \code{model}
@@ -78,7 +78,7 @@
 #' pref_par <- feng_1tc_tac(t_tac, tac_pref, weights)$par
 #'
 #' # ... and reuse for any number of target ROIs
-#' fit <- pRefIFS_1tcm(
+#' fit <- prefifs_1tcm(
 #'   t_tac, pref_par, tac_tgt,
 #'   t_blood = bd$Time / 60, blood = bd$Cbl_dispcorr,
 #'   k2prime = 0.05, weights = weights
@@ -93,7 +93,7 @@
 #'   function for PET kinetic modeling. J Cereb Blood Flow Metab. 2026;46(5):1238-1252.
 #'
 #' @export
-pRefIFS_1tcm <- function(t_tac, pref_par, roitac,
+prefifs_1tcm <- function(t_tac, pref_par, roitac,
                          t_blood, blood,
                          k2prime,
                          weights = NULL,
@@ -126,7 +126,7 @@ pRefIFS_1tcm <- function(t_tac, pref_par, roitac,
   }
 
   # 1. Build the scaled pRef-IFS input function from the pre-fit smoother and blood
-  shape <- pRefIFS_shape(
+  shape <- prefifs_shape(
     t_tac = t_tac, pref_par = pref_par,
     t_blood = t_blood, blood = blood,
     k2prime = k2prime,
@@ -222,7 +222,7 @@ pRefIFS_1tcm <- function(t_tac, pref_par, roitac,
     fit = output,
     tacs = tacs,
     input = input,
-    pRefIFS = shape$pRefIFS,
+    prefifs = shape$prefifs,
     pref_par = shape$pref_par,
     k2prime = k2prime,
     scale_factor = shape$scale_factor,
@@ -233,9 +233,9 @@ pRefIFS_1tcm <- function(t_tac, pref_par, roitac,
     frac_clamped     = shape$frac_clamped,
     derivative_method = derivative,
     weights = weights_full,
-    model = "pRefIFS_1tcm"
+    model = "prefifs_1tcm"
   )
-  class(out) <- c("pRefIFS_1tcm", "kinfit")
+  class(out) <- c("prefifs_1tcm", "kinfit")
   out
 }
 
@@ -249,7 +249,7 @@ pRefIFS_1tcm <- function(t_tac, pref_par, roitac,
 #' alongside the unscaled and scaled curves so the shape can be inspected
 #' separately from the 1TC fit.
 #'
-#' @inheritParams pRefIFS_1tcm
+#' @inheritParams prefifs_1tcm
 #' @param interpPoints Integer. Number of points in the uniform fine time grid
 #'   used for the derivative, scaling and convolution. Defaults to 6000 to
 #'   match \code{\link{blood_interp}}.
@@ -257,13 +257,13 @@ pRefIFS_1tcm <- function(t_tac, pref_par, roitac,
 #' @return A list with elements:
 #'   \itemize{
 #'     \item \code{input} — tibble with Time, Blood, Plasma, ParentFraction, AIF
-#'     \item \code{pRefIFS} — data frame with Time, pRefIFS_unscaled, pRefIFS_scaled
+#'     \item \code{prefifs} — data frame with Time, prefifs_unscaled, prefifs_scaled
 #'     \item \code{pref_par} — the smoother parameters used (echoed back)
 #'     \item \code{scale_factor}, \code{scale_time}, \code{k2prime},
 #'       \code{derivative_method}
 #'   }
 #' @export
-pRefIFS_shape <- function(t_tac, pref_par,
+prefifs_shape <- function(t_tac, pref_par,
                           t_blood, blood,
                           k2prime,
                           scale_time = 5,
@@ -371,7 +371,7 @@ pRefIFS_shape <- function(t_tac, pref_par,
     frac_neg <- mean(neg_idx)
     if (frac_neg > 0.01) {
       message(sprintf(
-        "pRefIFS_shape: %.1f%% of grid points had negative pRef-IFS values and were clamped to 0. This usually means k2prime (%.4g) differs from the smoother's Th1 (%.4g) more than the 1T assumption tolerates.",
+        "prefifs_shape: %.1f%% of grid points had negative pRef-IFS values and were clamped to 0. This usually means k2prime (%.4g) differs from the smoother's Th1 (%.4g) more than the 1T assumption tolerates.",
         100 * frac_neg, k2prime, coefs$Th1
       ))
     }
@@ -392,10 +392,10 @@ pRefIFS_shape <- function(t_tac, pref_par,
 
   list(
     input = input,
-    pRefIFS = data.frame(
+    prefifs = data.frame(
       Time              = grid,
-      pRefIFS_unscaled  = prefifs_unscaled,
-      pRefIFS_scaled    = prefifs_scaled
+      prefifs_unscaled  = prefifs_unscaled,
+      prefifs_scaled    = prefifs_scaled
     ),
     pref_par = as.data.frame(coefs),
     scale_factor = SF,
@@ -524,7 +524,7 @@ feng_1tc_tac_deriv_symbolic_expr <- local({
 #' to inspect; the scaled pRef-IFS typically peaks well above this cap by
 #' construction (it is matched to early blood AUC, not to tissue uptake).
 #'
-#' @param pRefIFS_1tcmout The output object from \code{\link{pRefIFS_1tcm}}.
+#' @param prefifs_1tcmout The output object from \code{\link{prefifs_1tcm}}.
 #' @param roiname Optional. Display name for the target region.
 #'
 #' @return A ggplot2 object.
@@ -533,14 +533,14 @@ feng_1tc_tac_deriv_symbolic_expr <- local({
 #'
 #' @import ggplot2
 #' @export
-plot_pRefIFS_1tcmfit <- function(pRefIFS_1tcmout,
+plot_prefifs_1tcmfit <- function(prefifs_1tcmout,
                                  roiname = NULL) {
   if (is.null(roiname)) roiname <- "ROI"
 
   measured <- data.frame(
-    Time = pRefIFS_1tcmout$tacs$Time,
-    Radioactivity = pRefIFS_1tcmout$tacs$Target,
-    Weights = weights(pRefIFS_1tcmout$fit),
+    Time = prefifs_1tcmout$tacs$Time,
+    Radioactivity = prefifs_1tcmout$tacs$Target,
+    Weights = weights(prefifs_1tcmout$fit),
     Region = paste0(roiname, ".Measured")
   )
 
@@ -548,10 +548,10 @@ plot_pRefIFS_1tcmfit <- function(pRefIFS_1tcmout,
   # frameStartEnd / timeStartEnd subsets plot correctly (the fine grid in
   # input$Time spans the full t_tac, but tacs$Time only spans the fit subset).
   fit_window <- range(measured$Time)
-  fine_idx   <- pRefIFS_1tcmout$input$Time >= fit_window[1] &
-                pRefIFS_1tcmout$input$Time <= fit_window[2]
-  fine_time  <- pRefIFS_1tcmout$input$Time[fine_idx]
-  fine_aif   <- pRefIFS_1tcmout$input$AIF[fine_idx]
+  fine_idx   <- prefifs_1tcmout$input$Time >= fit_window[1] &
+                prefifs_1tcmout$input$Time <= fit_window[2]
+  fine_time  <- prefifs_1tcmout$input$Time[fine_idx]
+  fine_aif   <- prefifs_1tcmout$input$AIF[fine_idx]
 
   aifdf <- data.frame(
     Time = fine_time,
@@ -564,7 +564,7 @@ plot_pRefIFS_1tcmfit <- function(pRefIFS_1tcmout,
   # response variable `tac` is not actually used by predict() — only RHS
   # variables matter — but the captured-data nls predict still requires the
   # symbol to resolve, so we pass a same-length dummy.
-  i_fit <- predict(pRefIFS_1tcmout$fit, newdata = list(
+  i_fit <- predict(prefifs_1tcmout$fit, newdata = list(
     t_tac = fine_time,
     tac   = rep(0, length(fine_time))
   ))

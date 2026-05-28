@@ -31,12 +31,10 @@ between the continuous and discrete samples after the peak?}
 \item{weightscheme}{Which weighting scheme should be used before
 accommodating Method_divide and taper_weights? Options are: 1 = uniform
 weighting; 2 = time/AIF as used by Columbia PET Centre; 3 = absolute value
-of activity (weights proportional to the measured radioactivity); 4 =
-square root of the absolute value of activity; 5 = squared activity. The
-latter three (3, 4, 5) make weights rise with activity (the opposite of
-variance-stabilising weighting) and are useful when fitting splines where
-the user wants weight proportional to the estimated/measured magnitude.
-Default is 2.}
+of activity (weights rise with activity, emphasising the peak); 4 =
+1/abs(activity) (weights fall with activity, the variance-stabilising
+direction for Poisson-like noise). A floor is applied to small activity
+values to prevent extreme weights. Default is 2.}
 }
 \value{
 A vector of model weights
