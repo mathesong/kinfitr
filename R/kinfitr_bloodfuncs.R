@@ -713,8 +713,9 @@ blood_weights_create <- function(time, activity,
                             no = blood$weights * blood$peakfrac)
   }
 
-  # Set a minimum value to prevent extreme weights
-  blood$activity[blood$activity < max(blood$activity / 1e4)] <-  max(blood$activity / 1e4)
+  # Floor low activity values at max/1e3 to keep schemes 2 and 4 well-defined
+  # near zero and bound the dynamic range of activity-derived weights.
+  blood$activity[blood$activity < max(blood$activity / 1e3)] <- max(blood$activity / 1e3)
 
   basicweights <- switch(
     as.character(weightscheme),
@@ -726,9 +727,7 @@ blood_weights_create <- function(time, activity,
          ". Must be one of 1, 2, 3, 4.")
   )
 
-  # Cap the dynamic range of basicweights so the largest is at most 500x the
-  # smallest. Matters mainly for scheme 4 (1/abs(activity)), where samples
-  # near the tail can otherwise dominate the fit.
+  # Cap the dynamic range of basicweights so the smallest is at least max/500.
   basicweights <- pmax(basicweights, max(basicweights) / 500)
 
   out <- basicweights * blood$weights
