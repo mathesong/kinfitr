@@ -126,10 +126,9 @@ blmod_tidyinput <- function(time, activity, Method = NULL, weights = NULL) {
 #' @param weightscheme If no weights provided, which weighting scheme should be
 #'   used before accommodating Method_divide and taper_weights? Options are: 1
 #'   = uniform weighting; 2 = time/AIF as used by Columbia PET Centre; 3 =
-#'   absolute value of activity (weights proportional to the measured
-#'   radioactivity); 4 = square root of the absolute value of activity; 5 =
-#'   squared activity. Schemes 3-5 make weights rise with activity, the
-#'   opposite of variance-stabilising weighting. Default is 2.
+#'   absolute value of activity (weights rise with activity, emphasising the
+#'   peak); 4 = 1/abs(activity) (weights fall with activity, the
+#'   variance-stabilising direction for Poisson-like noise). Default is 2.
 #' @param bs_before Optional. Defines the basis function for the points before
 #'   the peak. The default is \code{"mpi"}, the monotone-increasing basis from
 #'   the \code{scam} package, which constrains the pre-peak rise to be
@@ -248,13 +247,31 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL,
   before_peak$t_adj[ nrow(before_peak) ] <-
     before_peak$t_adj[ nrow(before_peak) ] - 0.001
 
-  # Check knots
-  if( nrow(before_peak) < 12 ) {
-    if(k_before == -1 || k_before > (nrow(before_peak) - 2)) {
-      warning("k_before reduced on account of few pre-peak samples")
-      k_before <- nrow(before_peak) - 2
+  # scam's monotone P-spline bases (mpi/mpd) require k >= 4. mgcv's cr is fine
+  # with k = 3. If the requested basis is monotone but the data are too sparse
+  # to support k = 4, fall back to "cr" with a warning so the fit still succeeds.
+  adjust_knots <- function(n, k, bs, segment) {
+    min_k <- if (bs %in% c("mpi", "mpd")) 4L else 3L
+    if (n < 12) {
+      if (k == -1 || k > (n - 2)) {
+        new_k <- n - 2L
+        if (new_k < min_k) {
+          warning(sprintf(
+            "%s: only %d samples available, too few for bs='%s' (needs k >= %d); falling back to bs='cr'",
+            segment, n, bs, min_k))
+          bs <- "cr"
+          new_k <- max(3L, new_k)
+        } else {
+          warning(sprintf("k_%s reduced on account of few %s samples", segment, segment))
+        }
+        k <- new_k
+      }
     }
+    list(k = k, bs = bs)
   }
+
+  bk <- adjust_knots(nrow(before_peak), k_before, bs_before, "before")
+  k_before <- bk$k; bs_before <- bk$bs
 
   after_peak <- dplyr::filter(blood, time >= peaktime)
 
@@ -263,21 +280,11 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL,
     after_peak_d <- dplyr::filter(after_peak, Method == "Discrete")
     after_peak_c <- dplyr::filter(after_peak, Method == "Continuous")
 
+    ad <- adjust_knots(nrow(after_peak_d), k_after_d, bs_after_d, "after_d")
+    k_after_d <- ad$k; bs_after_d <- ad$bs
 
-    # Check knots
-    if( nrow(after_peak_d) < 12 ) {
-      if(k_after_d == -1 || k_after_d > (nrow(after_peak_d) - 2)) {
-        warning("k_after_d reduced on account of few post-peak discrete samples")
-        k_after_d <- nrow(after_peak_d) - 2
-      }
-    }
-
-    if( nrow(after_peak_c) < 12 ) {
-      if(k_after_c == -1 || k_after_c > (nrow(after_peak_c) - 2)) {
-        warning("k_after_c reduced on account of few post-peak continuous samples")
-        k_after_c <- nrow(after_peak_c) - 2
-      }
-    }
+    ac <- adjust_knots(nrow(after_peak_c), k_after_c, bs_after_c, "after_c")
+    k_after_c <- ac$k; bs_after_c <- ac$bs
 
     # Fit
     before <- fit_spline(activity ~ s(t_adj, bs = bs_before, k=k_before),
@@ -298,13 +305,8 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL,
 
   } else { # i.e. no Continuous
 
-    # Check knots
-    if( nrow(after_peak) < 12 ) {
-      if(k_after_d == -1 || k_after_d > (nrow(after_peak) - 2)) {
-        warning("k_after_d reduced on account of few post-peak samples")
-        k_after_d <- nrow(after_peak) - 2
-      }
-    }
+    ad <- adjust_knots(nrow(after_peak), k_after_d, bs_after_d, "after_d")
+    k_after_d <- ad$k; bs_after_d <- ad$bs
 
     # Fit
     before <- fit_spline(activity ~ s(t_adj, bs = bs_before, k=k_before),
@@ -731,9 +733,11 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
 #'   gradually trade off between the continuous and discrete samples after the
 #'   peak?
 #' @param weightscheme If no weights provided, which weighting scheme should be
-#'   used before accommodating Method_divide and taper_weights? 1 represents a
-#'   uniform weighting before accommodating Method_divide and taper_weights. 2
-#'   represents time/AIF as used by Columbia PET Centre. Default is 2.
+#'   used before accommodating Method_divide and taper_weights? Options are: 1
+#'   = uniform weighting; 2 = time/AIF as used by Columbia PET Centre; 3 =
+#'   absolute value of activity (weights rise with activity, emphasising the
+#'   peak); 4 = 1/abs(activity) (weights fall with activity, the
+#'   variance-stabilising direction for Poisson-like noise). Default is 2.
 #' @param check_startpars Optional. Return only the starting parameters. Useful
 #'   for debugging fits which do not work.
 #' @param expdecay_props What proportions of the decay should be used for
@@ -1633,9 +1637,11 @@ blmod_feng_startpars <- function(time, activity,
 #'   gradually trade off between the continuous and discrete samples after the
 #'   peak?
 #' @param weightscheme If no weights provided, which weighting scheme should be
-#'   used before accommodating Method_divide and taper_weights? 1 represents a
-#'   uniform weighting before accommodating Method_divide and taper_weights. 2
-#'   represents time/AIF as used by Columbia PET Centre. Default is 2.
+#'   used before accommodating Method_divide and taper_weights? Options are: 1
+#'   = uniform weighting; 2 = time/AIF as used by Columbia PET Centre; 3 =
+#'   absolute value of activity (weights rise with activity, emphasising the
+#'   peak); 4 = 1/abs(activity) (weights fall with activity, the
+#'   variance-stabilising direction for Poisson-like noise). Default is 2.
 #' @param check_startpars Optional. Return only the starting parameters. Useful
 #'   for debugging fits which do not work.
 #' @param expdecay_props What proportions of the decay should be used for
@@ -1963,9 +1969,11 @@ predict_blood_feng <- function(object, newdata = NULL) {
 #'   gradually trade off between the continuous and discrete samples after the
 #'   peak?
 #' @param weightscheme If no weights provided, which weighting scheme should be
-#'   used before accommodating Method_divide and taper_weights? 1 represents a
-#'   uniform weighting before accommodating Method_divide and taper_weights. 2
-#'   represents time/AIF as used by Columbia PET Centre. Default is 2.
+#'   used before accommodating Method_divide and taper_weights? Options are: 1
+#'   = uniform weighting; 2 = time/AIF as used by Columbia PET Centre; 3 =
+#'   absolute value of activity (weights rise with activity, emphasising the
+#'   peak); 4 = 1/abs(activity) (weights fall with activity, the
+#'   variance-stabilising direction for Poisson-like noise). Default is 2.
 #' @param check_startpars Optional. Return only the starting parameters. Useful
 #'   for debugging fits which do not work.
 #' @param expdecay_props What proportions of the decay should be used for
@@ -2376,9 +2384,11 @@ predict_blood_fengconv <- function(object, newdata = NULL) {
 #'   gradually trade off between the continuous and discrete samples after the
 #'   peak?
 #' @param weightscheme If no weights provided, which weighting scheme should be
-#'   used before accommodating Method_divide and taper_weights? 1 represents a
-#'   uniform weighting before accommodating Method_divide and taper_weights. 2
-#'   represents time/AIF as used by Columbia PET Centre. Default is 2.
+#'   used before accommodating Method_divide and taper_weights? Options are: 1
+#'   = uniform weighting; 2 = time/AIF as used by Columbia PET Centre; 3 =
+#'   absolute value of activity (weights rise with activity, emphasising the
+#'   peak); 4 = 1/abs(activity) (weights fall with activity, the
+#'   variance-stabilising direction for Poisson-like noise). Default is 2.
 #' @param check_startpars Optional. Return only the starting parameters. Useful
 #'   for debugging fits which do not work.
 #' @param expdecay_props What proportions of the decay should be used for

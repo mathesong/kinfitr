@@ -8,3 +8,5 @@
 ^CLAUDE\.md$
 ^LICENSE\.md$
 ^docker*
+^\.positai$
+^\.claude$

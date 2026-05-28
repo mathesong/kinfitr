@@ -674,12 +674,10 @@ blood_smooth <- function(time, activity, iterations = 1) {
 #' @param weightscheme Which weighting scheme should be used before
 #'   accommodating Method_divide and taper_weights? Options are: 1 = uniform
 #'   weighting; 2 = time/AIF as used by Columbia PET Centre; 3 = absolute value
-#'   of activity (weights proportional to the measured radioactivity); 4 =
-#'   square root of the absolute value of activity; 5 = squared activity. The
-#'   latter three (3, 4, 5) make weights rise with activity (the opposite of
-#'   variance-stabilising weighting) and are useful when fitting splines where
-#'   the user wants weight proportional to the estimated/measured magnitude.
-#'   Default is 2.
+#'   of activity (weights rise with activity, emphasising the peak); 4 =
+#'   1/abs(activity) (weights fall with activity, the variance-stabilising
+#'   direction for Poisson-like noise). A floor is applied to small activity
+#'   values to prevent extreme weights. Default is 2.
 #'
 #' @return A vector of model weights
 #' @export
@@ -715,19 +713,22 @@ blood_weights_create <- function(time, activity,
                             no = blood$weights * blood$peakfrac)
   }
 
-  # Set a minimum value to prevent extreme weights
-  blood$activity[blood$activity < max(blood$activity / 1e4)] <-  max(blood$activity / 1e4)
+  # Floor low activity values at max/1e3 to keep schemes 2 and 4 well-defined
+  # near zero and bound the dynamic range of activity-derived weights.
+  blood$activity[blood$activity < max(blood$activity / 1e3)] <- max(blood$activity / 1e3)
 
   basicweights <- switch(
     as.character(weightscheme),
     "1" = rep(1, nrow(blood)),
     "2" = blood$time / blood$activity,
     "3" = abs(blood$activity),
-    "4" = sqrt(abs(blood$activity)),
-    "5" = blood$activity^2,
+    "4" = 1 / abs(blood$activity),
     stop("Unrecognised weightscheme: ", weightscheme,
-         ". Must be one of 1, 2, 3, 4, 5.")
+         ". Must be one of 1, 2, 3, 4.")
   )
+
+  # Cap the dynamic range of basicweights so the smallest is at least max/500.
+  basicweights <- pmax(basicweights, max(basicweights) / 500)
 
   out <- basicweights * blood$weights
 
