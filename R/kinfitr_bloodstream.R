@@ -81,6 +81,24 @@ bloodstream_import_inputfunctions <- function(blstream_folder) {
 
     }
 
+    # Anchor all curves at t = 0 so blood_interp's interpolation grid
+    # (which starts at 0) has a valid lower bound. blood_interp pads
+    # blood / plasma / parentfrac internally but not AIF, so an
+    # explicit AIF column whose first sample is at t > 0 would
+    # otherwise fall outside pracma::interp1's range.
+    if ("time" %in% colnames(blstream_data$tsvdata[[i]]) &&
+        nrow(blstream_data$tsvdata[[i]]) > 0 &&
+        min(blstream_data$tsvdata[[i]]$time, na.rm = TRUE) > 0) {
+      zero_row <- blstream_data$tsvdata[[i]][1, ]
+      zero_row$time <- 0
+      for (col in setdiff(colnames(zero_row), "time")) {
+        if (is.numeric(zero_row[[col]])) {
+          zero_row[[col]] <- if (col == "metabolite_parent_fraction") 1 else 0
+        }
+      }
+      blstream_data$tsvdata[[i]] <- rbind(zero_row, blstream_data$tsvdata[[i]])
+    }
+
   }
 
   blstream_data <- dplyr::mutate(blstream_data,
