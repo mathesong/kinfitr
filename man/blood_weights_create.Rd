@@ -29,9 +29,12 @@ continuous samples each get less weight). Default is TRUE.}
 between the continuous and discrete samples after the peak?}
 
 \item{weightscheme}{Which weighting scheme should be used before
-accommodating Method_divide and taper_weights? 1 represents a uniform
-weighting before accommodating Method_divide and taper_weights. 2
-represents time/AIF as used by Columbia PET Centre. Default is 2.}
+accommodating Method_divide and taper_weights? Options are: 1 = uniform
+weighting; 2 = time/AIF as used by Columbia PET Centre; 3 = absolute value
+of activity (weights rise with activity, emphasising the peak); 4 =
+1/abs(activity) (weights fall with activity, the variance-stabilising
+direction for Poisson-like noise). A floor is applied to small activity
+values to prevent extreme weights. Default is 2.}
 }
 \value{
 A vector of model weights

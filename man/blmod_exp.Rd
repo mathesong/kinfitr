@@ -88,9 +88,11 @@ gradually trade off between the continuous and discrete samples after the
 peak?}
 
 \item{weightscheme}{If no weights provided, which weighting scheme should be
-used before accommodating Method_divide and taper_weights? 1 represents a
-uniform weighting before accommodating Method_divide and taper_weights. 2
-represents time/AIF as used by Columbia PET Centre. Default is 2.}
+used before accommodating Method_divide and taper_weights? Options are: 1
+= uniform weighting; 2 = time/AIF as used by Columbia PET Centre; 3 =
+absolute value of activity (weights rise with activity, emphasising the
+peak); 4 = 1/abs(activity) (weights fall with activity, the
+variance-stabilising direction for Poisson-like noise). Default is 2.}
 
 \item{check_startpars}{Optional. Return only the starting parameters. Useful
 for debugging fits which do not work.}

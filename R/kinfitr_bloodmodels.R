@@ -1,3 +1,27 @@
+# Internal: detect a scam-only basis name. Currently only mpi (monotone
+# increasing) and mpd (monotone decreasing) are supported via blmod_splines.
+is_scam_basis <- function(bs) {
+  bs %in% c("mpi", "mpd")
+}
+
+# Internal: fit dispatcher. Routes scam bases to scam::scam, otherwise mgcv::gam.
+# Both engines accept the same s(x, bs=..., k=...) formula and both have predict
+# methods that dispatch on object class, so downstream code is unchanged.
+# scam::scam crashes on exactly-zero weights (mgcv tolerates them), so for the
+# scam branch we filter zero-weight rows before fitting.
+fit_spline <- function(formula, data, weights, bs) {
+  if (is_scam_basis(bs)) {
+    keep <- weights > 0
+    do.call(scam::scam,
+            list(formula = formula,
+                 data = data[keep, , drop = FALSE],
+                 weights = weights[keep]))
+  } else {
+    mgcv::gam(formula, data = data, weights = weights)
+  }
+}
+
+
 #' Blood Model: Tidy inputs
 #'
 #' Tidies the inputs to blood models ready for modelling
@@ -100,21 +124,45 @@ blmod_tidyinput <- function(time, activity, Method = NULL, weights = NULL) {
 #'   gradually trade off between the continuous and discrete samples after the
 #'   peak?
 #' @param weightscheme If no weights provided, which weighting scheme should be
-#'   used before accommodating Method_divide and taper_weights? 1 represents a
-#'   uniform weighting before accommodating Method_divide and taper_weights. 2
-#'   represents time/AIF as used by Columbia PET Centre. Default is 2.
+#'   used before accommodating Method_divide and taper_weights? Options are: 1
+#'   = uniform weighting; 2 = time/AIF as used by Columbia PET Centre; 3 =
+#'   absolute value of activity (weights rise with activity, emphasising the
+#'   peak); 4 = 1/abs(activity) (weights fall with activity, the
+#'   variance-stabilising direction for Poisson-like noise). Default is 2.
 #' @param bs_before Optional. Defines the basis function for the points before
-#'   the peak.
+#'   the peak. The default is \code{"mpi"}, the monotone-increasing basis from
+#'   the \code{scam} package, which constrains the pre-peak rise to be
+#'   non-decreasing and works well with the t0 estimation below. Any
+#'   \code{mgcv} basis name (e.g. \code{"cr"}) is also valid; \code{"mpi"} and
+#'   \code{"mpd"} dispatch to \code{scam::scam}, all others to
+#'   \code{mgcv::gam}.
 #' @param bs_after_c Optional. Defines the basis function for the continuous
-#'   points after the peak.
+#'   points after the peak. Default is \code{"cr"}. Set to \code{"mpd"} to
+#'   enforce a monotone-decreasing tail.
 #' @param bs_after_d Optional. Defines the basis function for the discrete
-#'   points after the peak.
+#'   points after the peak. Default is \code{"cr"}. Set to \code{"mpd"} to
+#'   enforce a monotone-decreasing tail.
 #' @param k_before Optional. Defines the dimension of the basis for the points
 #'   before the peak.
 #' @param k_after_c Optional. Defines the dimension of the basis for the
 #'   continuous points after the peak.
 #' @param k_after_d Optional. Defines the dimension of the basis for the
 #'   discrete points after the peak.
+#' @param t0.lower Lower bound for the fitted t0 onset time (in seconds, the
+#'   units of \code{time}). Predictions for \code{time < t0} are forced to
+#'   zero. Default 0.
+#' @param t0.upper Upper bound for the fitted t0 onset time (in seconds). If
+#'   \code{NULL} (default), it is set to \code{peaktime} since t0 must be no
+#'   later than the peak by construction.
+#' @param t0_use_monotonic Logical. When \code{FALSE} (default), the t0 search
+#'   uses \code{mgcv::gam} with \code{bs = "cr"} regardless of
+#'   \code{bs_before}, because the inner fit runs dozens of times inside
+#'   \code{stats::optimize} and \code{scam::scam} is much slower per fit. The
+#'   final spline at the estimated t0 still uses the user's \code{bs_before}.
+#'   When \code{TRUE}, the t0 search uses \code{bs_before} (so the monotone
+#'   constraint applies during onset search if \code{bs_before} is a scam
+#'   basis like \code{"mpi"}) — slower, but the monotone constraint can in
+#'   some cases yield a better-defined onset.
 #'
 #' @return A model fit including all of the individual models of class
 #'   blood_splines.
@@ -131,8 +179,9 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL,
                           Method_weights = TRUE,
                           taper_weights = TRUE,
                           weightscheme=2,
-                          bs_before="cr", bs_after_c="cr", bs_after_d="cr",
-                          k_before=-1, k_after_c=-1, k_after_d=-1) {
+                          bs_before="mpi", bs_after_c="cr", bs_after_d="cr",
+                          k_before=-1, k_after_c=-1, k_after_d=-1,
+                          t0.lower=0, t0.upper=NULL, t0_use_monotonic=FALSE) {
 
   blood <- blmod_tidyinput(time, activity, Method, weights)
 
@@ -145,17 +194,84 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL,
 
   peaktime <- blood$time[blood$activity == max(blood$activity)]
 
-  before_peak <- dplyr::filter(blood, time <= peaktime)
-  before_peak$time [ nrow(before_peak) ] <-
-    before_peak$time [ nrow(before_peak) ] - 0.001 # predict until nearly there
-
-  # Check knots
-  if( nrow(before_peak) < 12 ) {
-    if(k_before == -1 || k_before > (nrow(before_peak) - 2)) {
-      warning("k_before reduced on account of few pre-peak samples")
-      k_before <- nrow(before_peak) - 2
-    }
+  # ---- Estimate t0: onset before which predicted activity is 0 ----
+  # Mirrors the strategy in spline_tac() (R/kinfitr_spline_tac.R). Only the
+  # before-peak segment is affected; the after-peak splines use log(time) and
+  # are independent of t0.
+  before_peak_full <- dplyr::filter(blood, time <= peaktime)
+  if ("Continuous" %in% Method) {
+    before_peak_full <- dplyr::filter(before_peak_full, Method == "Continuous")
   }
+
+  full_t <- before_peak_full$time
+  full_y <- before_peak_full$activity
+  full_w <- before_peak_full$weights
+
+  # The t0 search runs the inner spline fit dozens of times. By default we use
+  # mgcv::gam with bs="cr" here regardless of the user's bs_before — finding
+  # the onset doesn't require shape constraints, and scam::scam is much slower
+  # per fit. When t0_use_monotonic=TRUE the user's bs_before is used for the
+  # search instead (slower, but the monotone constraint can give a more
+  # well-defined onset). Either way the final fit at the estimated t0 uses
+  # bs_before.
+  bs_t0 <- if (t0_use_monotonic) bs_before else "cr"
+  t0_objective <- function(t0_val) {
+    mask <- full_t >= t0_val
+    if (sum(mask) < 3) return(1e10)
+    d <- data.frame(t_adj = full_t[mask] - t0_val,
+                    activity = full_y[mask])
+    k_t0 <- if (k_before == -1) -1 else min(k_before, sum(mask) - 2)
+    fit <- try(fit_spline(activity ~ s(t_adj, bs = bs_t0, k = k_t0),
+                          data = d, weights = full_w[mask], bs = bs_t0),
+               silent = TRUE)
+    if (inherits(fit, "try-error")) return(1e10)
+    pred <- rep(0, length(full_t))
+    pred[mask] <- pmax(0, as.numeric(predict(fit, newdata = d)))
+    sum((full_y - pred)^2)
+  }
+
+  t0_upper_use <- if (is.null(t0.upper)) peaktime else t0.upper
+  if (t0_upper_use > t0.lower) {
+    opt <- stats::optimize(t0_objective,
+                           interval = c(t0.lower, t0_upper_use),
+                           tol = 1e-4)
+    t0 <- opt$minimum
+  } else {
+    t0 <- t0.lower
+  }
+
+  # ---- Fit before-peak spline in t_adj = time - t0 coordinates ----
+  before_peak <- dplyr::filter(blood, time >= t0, time <= peaktime)
+  before_peak$t_adj <- before_peak$time - t0
+  # predict until nearly there: preserved from original behaviour
+  before_peak$t_adj[ nrow(before_peak) ] <-
+    before_peak$t_adj[ nrow(before_peak) ] - 0.001
+
+  # scam's monotone P-spline bases (mpi/mpd) require k >= 4. mgcv's cr is fine
+  # with k = 3. If the requested basis is monotone but the data are too sparse
+  # to support k = 4, fall back to "cr" with a warning so the fit still succeeds.
+  adjust_knots <- function(n, k, bs, segment) {
+    min_k <- if (bs %in% c("mpi", "mpd")) 4L else 3L
+    if (n < 12) {
+      if (k == -1 || k > (n - 2)) {
+        new_k <- n - 2L
+        if (new_k < min_k) {
+          warning(sprintf(
+            "%s: only %d samples available, too few for bs='%s' (needs k >= %d); falling back to bs='cr'",
+            segment, n, bs, min_k))
+          bs <- "cr"
+          new_k <- max(3L, new_k)
+        } else {
+          warning(sprintf("k_%s reduced on account of few %s samples", segment, segment))
+        }
+        k <- new_k
+      }
+    }
+    list(k = k, bs = bs)
+  }
+
+  bk <- adjust_knots(nrow(before_peak), k_before, bs_before, "before")
+  k_before <- bk$k; bs_before <- bk$bs
 
   after_peak <- dplyr::filter(blood, time >= peaktime)
 
@@ -164,34 +280,24 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL,
     after_peak_d <- dplyr::filter(after_peak, Method == "Discrete")
     after_peak_c <- dplyr::filter(after_peak, Method == "Continuous")
 
+    ad <- adjust_knots(nrow(after_peak_d), k_after_d, bs_after_d, "after_d")
+    k_after_d <- ad$k; bs_after_d <- ad$bs
 
-    # Check knots
-    if( nrow(after_peak_d) < 12 ) {
-      if(k_after_d == -1 || k_after_d > (nrow(after_peak_d) - 2)) {
-        warning("k_after_d reduced on account of few post-peak discrete samples")
-        k_after_d <- nrow(after_peak_d) - 2
-      }
-    }
-
-    if( nrow(after_peak_c) < 12 ) {
-      if(k_after_c == -1 || k_after_c > (nrow(after_peak_c) - 2)) {
-        warning("k_after_c reduced on account of few post-peak continuous samples")
-        k_after_c <- nrow(after_peak_c) - 2
-      }
-    }
+    ac <- adjust_knots(nrow(after_peak_c), k_after_c, bs_after_c, "after_c")
+    k_after_c <- ac$k; bs_after_c <- ac$bs
 
     # Fit
-    before <- mgcv::gam(activity ~ s(time, bs = bs_before, k=k_before),
-                        weights = weights,
-                        data = before_peak)
+    before <- fit_spline(activity ~ s(t_adj, bs = bs_before, k=k_before),
+                         data = before_peak, weights = before_peak$weights,
+                         bs = bs_before)
 
-    after_d <- mgcv::gam(activity ~ s(log(time), bs = bs_after_d, k=k_after_d),
-                         weights = weights,
-                         data = after_peak_d)
+    after_d <- fit_spline(activity ~ s(log(time), bs = bs_after_d, k=k_after_d),
+                          data = after_peak_d, weights = after_peak_d$weights,
+                          bs = bs_after_d)
 
-    after_c <- mgcv::gam(activity ~ s(log(time), bs = bs_after_c, k=k_after_c),
-                         weights = weights,
-                         data = after_peak_c)
+    after_c <- fit_spline(activity ~ s(log(time), bs = bs_after_c, k=k_after_c),
+                          data = after_peak_c, weights = after_peak_c$weights,
+                          bs = bs_after_c)
 
     start_overlap <- min(after_peak_d$time)
     stop_overlap <- max(after_peak_c$time)
@@ -199,26 +305,21 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL,
 
   } else { # i.e. no Continuous
 
-    # Check knots
-    if( nrow(after_peak) < 12 ) {
-      if(k_after_d == -1 || k_after_d > (nrow(after_peak) - 2)) {
-        warning("k_after_d reduced on account of few post-peak samples")
-        k_after_d <- nrow(after_peak) - 2
-      }
-    }
+    ad <- adjust_knots(nrow(after_peak), k_after_d, bs_after_d, "after_d")
+    k_after_d <- ad$k; bs_after_d <- ad$bs
 
     # Fit
-    before <- mgcv::gam(activity ~ s(time, bs = bs_before, k=k_before),
-                        weights = weights,
-                        data = before_peak)
+    before <- fit_spline(activity ~ s(t_adj, bs = bs_before, k=k_before),
+                         data = before_peak, weights = before_peak$weights,
+                         bs = bs_before)
 
-    after_d <- mgcv::gam(activity ~ s(log(time), bs = bs_after_d, k=k_after_d),
-                         weights = weights,
-                         data = after_peak)
+    after_d <- fit_spline(activity ~ s(log(time), bs = bs_after_d, k=k_after_d),
+                          data = after_peak, weights = after_peak$weights,
+                          bs = bs_after_d)
 
-    after_c <- mgcv::gam(activity ~ s(log(time), bs = bs_after_d, k=k_after_d),
-                         weights = weights,
-                         data = after_peak)
+    after_c <- fit_spline(activity ~ s(log(time), bs = bs_after_d, k=k_after_d),
+                          data = after_peak, weights = after_peak$weights,
+                          bs = bs_after_d)
 
     start_overlap <- peaktime
     stop_overlap <- max(after_peak$time)
@@ -231,6 +332,7 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL,
     peaktime = peaktime,
     start_overlap = start_overlap,
     stop_overlap = stop_overlap,
+    t0 = t0,
     time = blood$time
   )
 
@@ -261,11 +363,14 @@ blmod_splines <- function(time, activity, Method = NULL, weights = NULL,
 #' @export
 predict_blood_splines <- function(object, newdata = NULL) {
 
+  t0 <- if (!is.null(object$t0)) object$t0 else 0
+
   if (is.null(newdata)) {
     pred_before <- as.numeric(predict(object$before))
-    pred_x_before <- object$before$model$time
+    # before-spline is fit in t_adj = time - t0; back-transform to raw time
+    pred_x_before <- object$before$model$t_adj + t0
 
-    # Remove our extra point before the peak
+    # Remove our extra point before the peak (the -0.001 nudge sample)
     pred_before <- pred_before[-length(pred_before)]
     pred_x_before <- pred_x_before[-length(pred_x_before)]
 
@@ -289,9 +394,17 @@ predict_blood_splines <- function(object, newdata = NULL) {
   newdata_nozero$time <- ifelse(newdata_nozero$time < 0.00001,
                                 yes = 0.00001, no = newdata_nozero$time)
 
-  pred_before <-  as.numeric(predict(object$before, newdata = newdata))
+  # before-spline newdata uses t_adj coordinates (clip negatives to 0 so the
+  # spline isn't extrapolated below its fitted domain — predictions there are
+  # forced to 0 below anyway)
+  newdata_before <- list(t_adj = pmax(newdata$time - t0, 0))
+
+  pred_before <-  as.numeric(predict(object$before, newdata = newdata_before))
   pred_after_d <- as.numeric(predict(object$after_d, newdata = newdata_nozero))
   pred_after_c <- as.numeric(predict(object$after_c, newdata = newdata_nozero))
+
+  # Force pre-t0 predictions to zero
+  pred_before[newdata$time < t0] <- 0
 
   pred_before <- tibble::tibble(time = newdata$time,
                                 activity = pred_before)
@@ -336,6 +449,13 @@ predict_blood_splines <- function(object, newdata = NULL) {
   pred <- dplyr::bind_rows(pred_before, pred_after)
 
   preds <- dplyr::pull(pred, activity)
+
+  # Activity is bounded at zero — clip any negative predictions. This matches
+  # the spline_tac() pattern and the user's stated requirement that the spline
+  # never go negative in its estimated values. Negative predictions can arise
+  # from spline extrapolation/wiggle (especially with monotone bases on very
+  # noisy early data).
+  preds[preds < 0] <- 0
 
   return(preds)
 }
@@ -613,9 +733,11 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
 #'   gradually trade off between the continuous and discrete samples after the
 #'   peak?
 #' @param weightscheme If no weights provided, which weighting scheme should be
-#'   used before accommodating Method_divide and taper_weights? 1 represents a
-#'   uniform weighting before accommodating Method_divide and taper_weights. 2
-#'   represents time/AIF as used by Columbia PET Centre. Default is 2.
+#'   used before accommodating Method_divide and taper_weights? Options are: 1
+#'   = uniform weighting; 2 = time/AIF as used by Columbia PET Centre; 3 =
+#'   absolute value of activity (weights rise with activity, emphasising the
+#'   peak); 4 = 1/abs(activity) (weights fall with activity, the
+#'   variance-stabilising direction for Poisson-like noise). Default is 2.
 #' @param check_startpars Optional. Return only the starting parameters. Useful
 #'   for debugging fits which do not work.
 #' @param expdecay_props What proportions of the decay should be used for
@@ -1515,9 +1637,11 @@ blmod_feng_startpars <- function(time, activity,
 #'   gradually trade off between the continuous and discrete samples after the
 #'   peak?
 #' @param weightscheme If no weights provided, which weighting scheme should be
-#'   used before accommodating Method_divide and taper_weights? 1 represents a
-#'   uniform weighting before accommodating Method_divide and taper_weights. 2
-#'   represents time/AIF as used by Columbia PET Centre. Default is 2.
+#'   used before accommodating Method_divide and taper_weights? Options are: 1
+#'   = uniform weighting; 2 = time/AIF as used by Columbia PET Centre; 3 =
+#'   absolute value of activity (weights rise with activity, emphasising the
+#'   peak); 4 = 1/abs(activity) (weights fall with activity, the
+#'   variance-stabilising direction for Poisson-like noise). Default is 2.
 #' @param check_startpars Optional. Return only the starting parameters. Useful
 #'   for debugging fits which do not work.
 #' @param expdecay_props What proportions of the decay should be used for
@@ -1845,9 +1969,11 @@ predict_blood_feng <- function(object, newdata = NULL) {
 #'   gradually trade off between the continuous and discrete samples after the
 #'   peak?
 #' @param weightscheme If no weights provided, which weighting scheme should be
-#'   used before accommodating Method_divide and taper_weights? 1 represents a
-#'   uniform weighting before accommodating Method_divide and taper_weights. 2
-#'   represents time/AIF as used by Columbia PET Centre. Default is 2.
+#'   used before accommodating Method_divide and taper_weights? Options are: 1
+#'   = uniform weighting; 2 = time/AIF as used by Columbia PET Centre; 3 =
+#'   absolute value of activity (weights rise with activity, emphasising the
+#'   peak); 4 = 1/abs(activity) (weights fall with activity, the
+#'   variance-stabilising direction for Poisson-like noise). Default is 2.
 #' @param check_startpars Optional. Return only the starting parameters. Useful
 #'   for debugging fits which do not work.
 #' @param expdecay_props What proportions of the decay should be used for
@@ -2258,9 +2384,11 @@ predict_blood_fengconv <- function(object, newdata = NULL) {
 #'   gradually trade off between the continuous and discrete samples after the
 #'   peak?
 #' @param weightscheme If no weights provided, which weighting scheme should be
-#'   used before accommodating Method_divide and taper_weights? 1 represents a
-#'   uniform weighting before accommodating Method_divide and taper_weights. 2
-#'   represents time/AIF as used by Columbia PET Centre. Default is 2.
+#'   used before accommodating Method_divide and taper_weights? Options are: 1
+#'   = uniform weighting; 2 = time/AIF as used by Columbia PET Centre; 3 =
+#'   absolute value of activity (weights rise with activity, emphasising the
+#'   peak); 4 = 1/abs(activity) (weights fall with activity, the
+#'   variance-stabilising direction for Poisson-like noise). Default is 2.
 #' @param check_startpars Optional. Return only the starting parameters. Useful
 #'   for debugging fits which do not work.
 #' @param expdecay_props What proportions of the decay should be used for

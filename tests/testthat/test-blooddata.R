@@ -737,3 +737,44 @@ test_that("addfitted bpr with missing blood samples works", {
 
   expect_true(any(class(bdplot) == "ggplot"))
 })
+
+test_that("bloodstream_import_inputfunctions pads explicit AIF when first sample is after t=0", {
+  tmp <- tempfile("blstream-")
+  dir.create(tmp)
+  on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
+
+  base <- file.path(tmp, "sub-01_ses-baseline_inputfunction")
+
+  # First sample at 25.2 s (no t=0 row), mimicking PMOD .km -> BIDS output.
+  utils::write.table(
+    data.frame(
+      time = c(25.2, 60, 120, 300, 600),
+      whole_blood_radioactivity = c(10, 8, 6, 4, 2),
+      plasma_radioactivity = c(12, 10, 7, 5, 2),
+      metabolite_parent_fraction = c(1, 0.95, 0.85, 0.7, 0.5),
+      AIF = c(12, 9.5, 5.95, 3.5, 1)
+    ),
+    file = paste0(base, ".tsv"), sep = "\t",
+    row.names = FALSE, quote = FALSE
+  )
+
+  jsonlite::write_json(
+    list(
+      time = list(Units = "s"),
+      whole_blood_radioactivity = list(Units = "kBq"),
+      plasma_radioactivity = list(Units = "kBq"),
+      metabolite_parent_fraction = list(Units = "arbitrary"),
+      AIF = list(Units = "kBq")
+    ),
+    paste0(base, ".json"),
+    auto_unbox = TRUE, pretty = TRUE
+  )
+
+  result <- suppressWarnings(bloodstream_import_inputfunctions(tmp))
+
+  expect_equal(nrow(result), 1)
+  interp <- result$input[[1]]
+  expect_equal(interp$Time[1], 0)
+  expect_equal(interp$AIF[1], 0)
+  expect_false(any(is.na(interp$AIF)))
+})
