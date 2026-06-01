@@ -84,6 +84,12 @@ nested_2tcm <- function(
   # Convert timeStartEnd to frameStartEnd
   region <- as.character(region)
   regions_raw <- unique(region)
+
+  # Resolve roiweights against the original (pre-tidy) region vector, since a
+  # per-observation roiweights vector is sized to the input TACs. tidyinput_long
+  # may prepend a zero frame per region, which would otherwise make it too short.
+  roiweights <- .nested_roiweights(roiweights, region, regions_raw)
+
   if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
     t_first <- t_tac[region == regions_raw[1]]
     frameStartEnd <- c(which(t_first >= timeStartEnd[1])[1],
@@ -97,8 +103,6 @@ nested_2tcm <- function(
   region  <- tidied$region
   weights <- tidied$weights
   regions <- unique(region)
-
-  roiweights <- .nested_roiweights(roiweights, region, regions)
 
   weights_per_region <- weights[region == regions[1]]
 

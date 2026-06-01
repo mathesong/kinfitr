@@ -65,6 +65,11 @@ nested_srtm <- function(
   region <- as.character(region)
   regions_raw <- unique(region)
 
+  # Resolve roiweights against the original (pre-tidy) region vector, since a
+  # per-observation roiweights vector is sized to the input TACs. tidyinput_long
+  # may prepend a zero frame per region, which would otherwise make it too short.
+  roiweights <- .nested_roiweights(roiweights, region, regions_raw)
+
   # Handle reftac: if single vector, repeat for each region
   n_per_region <- length(roitac) / length(regions_raw)
   if (length(reftac) == n_per_region && length(reftac) != length(roitac)) {
@@ -86,8 +91,6 @@ nested_srtm <- function(
   region  <- tidied_roi$region
   weights <- tidied_roi$weights
   regions <- unique(region)
-
-  roiweights <- .nested_roiweights(roiweights, region, regions)
 
   weights_per_region <- weights[region == regions[1]]
 

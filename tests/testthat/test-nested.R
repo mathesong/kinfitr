@@ -188,3 +188,31 @@ test_that("nested_srtm works", {
   expect_true(is.numeric(preds))
   expect_equal(length(preds), nrow(out$tacs))
 })
+
+
+# --- roiweights with prepended zero point (regression) ---
+
+test_that("per-observation roiweights work when a zero frame is prepended", {
+  # Drop the t=0 frame so tidyinput_long must prepend one per region. A
+  # per-observation roiweights vector sized to the input TACs must still be
+  # accepted (previously it ended up one-per-region too short after the zero
+  # point was added).
+  nz <- long_data$t_tac > 0
+  ld <- long_data[nz, ]
+
+  roiw <- as.numeric(factor(ld$region, levels = selected_regions))  # one per obs
+
+  expect_false(any(ld$t_tac == 0))
+
+  out <- nested_2tcm(
+    ld$t_tac, ld$tac, ld$region, input,
+    vB = 0.05, roiweights = roiw
+  )
+
+  expect_true("nested_2tcm" %in% class(out))
+  expect_equal(nrow(out$par), length(selected_regions))
+  # roiweights collapse to one (normalised) value per region, in region order
+  expect_equal(length(out$roiweights), length(selected_regions))
+  expect_equal(names(out$roiweights), selected_regions)
+  expect_equal(max(out$roiweights), 1)
+})
