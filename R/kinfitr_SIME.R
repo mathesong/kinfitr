@@ -1,37 +1,46 @@
 #' Simultaneous Estimation of Non-Displaceable Binding (SIME)
 #'
 #' Function to fit the SIME Model of Ogden et al (2015) to data to estimate Vnd
-#' for a set of TACs.
+#' for a set of TACs using long-format input data.
 #'
-#' @param t_tac Numeric vector of times for each frame in minutes. We use the
-#'   time halfway through the frame as well as a zero. If a time zero frame is
-#'   not included, it will be added.
-#' @param tacdf Named dataframe of TACs in wide format, i.e. each TAC should be
-#'   a column.
+#' @param t_tac Numeric vector of times for each frame in minutes (repeated for
+#'   each region). We use the time halfway through the frame as well as a zero.
+#'   If a time zero frame is not included, it will be added.
+#' @param tac Numeric vector of radioactivity concentrations for each frame,
+#'   stacked across regions.
+#' @param region Character vector identifying the region for each observation.
 #' @param input Data frame containing the blood, plasma, and parent fraction
 #'   concentrations over time.  This can be generated using the
 #'   \code{blood_interp} function.
 #' @param Vndgrid The grid of Vnd values which will be tested to see which one
 #'   has the best fit.
 #' @param weights Optional. Numeric vector of the weights assigned to each frame
-#'   in the fitting. We include zero at time zero: if not included, it is added.
-#'   If not specified, uniform weights will be used.
-#' @param roiweights Optional. Numeric vector of the weights assigned to each
-#'   ROI in the fitting. If not specified, uniform weights will be used.
+#'   in the fitting. Can be the same length as \code{tac} (one weight per
+#'   observation) or the same length as the number of frames per region (weights
+#'   are recycled for each region). If not specified, uniform weights will be
+#'   used.
+#' @param roiweights Optional. Numeric vector of ROI weights. Can be a named
+#'   vector (one per region), an unnamed vector of the same length as the
+#'   number of regions, or a long vector the same length as \code{tac}
+#'   (one per observation; the first value per region is used). ROI size or
+#'   relative size is a useful quantity to supply here, as larger regions
+#'   provide more precise mean TAC estimates. Normalised internally so the
+#'   maximum is 1. If not specified, uniform weights will be used.
 #' @param inpshift Optional. The number of minutes by which to shift the timing
 #'   of the input data frame forwards or backwards. If not specified, this will
 #'   be set to 0. This can be fitted using 1TCM or 2TCM.
 #' @param vB Optional. The blood volume fraction.  If not specified, this will
 #'   be set to 0.05. This can be fitted using 1TCM or 2TCM.
-#' @param twotcmstart Optional. The function can fit a 2TCM model to one of the
-#'   ROIs and use the estimated k2, k3 and k4 as starting parameters for the
-#'   rest of the fits. If left alone, these parameters will be specified as
-#'   below. If one wishes to run the 2TCM to start off, use a numeric value to
-#'   specify which column of \code{tacdf} to use for fitting this: best to use
-#'   the largest ROI.
+#' @param twotcmstart Optional. Region name string specifying which region to
+#'   use for fitting a 2TCM model to obtain starting parameters for k2, k3 and
+#'   k4 (e.g., \code{"FC"}). Best to use the largest ROI.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and
-#'   final frame to use for modelling, e.g. c(1,20). This can be used to assess time stability for example.
-#' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
+#'   final frame to use for modelling, e.g. c(1,20). Applied per region.
+#' @param timeStartEnd Optional. This allows one to specify the beginning and
+#'   end time point instead of defining the frame numbers using frameStartEnd.
+#'   This function will restrict the model to all time frames whose t_tac is
+#'   between the values, i.e. c(0,5) will select all frames with midtimes
+#'   during the first 5 minutes.
 #' @param k2.start Optional. Starting parameter for fitting of k2. Default is
 #'   0.1.
 #' @param k2.lower Optional. Lower bound for the fitting of k2. Default is 0.
@@ -48,8 +57,9 @@
 #'   proportion of ROIs failed be included? Default is 0.5, i.e. 50% should have
 #'   successfully fitted.
 #'
-#' @return A list with a data frame of the fitted parameter \code{out$par}, the
-#'   dataframe containing the times and TACs \code{out$tacs}, the mean cost
+#' @return A list with a data frame of the fitted parameter \code{out$par}, a
+#'   long-format data frame containing the times, regions and TACs
+#'   \code{out$tacs} (with columns Time, Region, Radioactivity), the mean cost
 #'   values after fitting (after ROI weighting) \code{out$fitvals}, the ROI cost
 #'   values after fitting (before ROI weighting) \code{out$roifits}, the blood
 #'   input data frame after time shifting \code{input}, a vector of the weights
@@ -62,9 +72,11 @@
 #' \dontrun{
 #' data(pbr28)
 #'
-#' t_tac <- pbr28$tacs[[2]]$Times / 60
-#' tacdf <- dplyr::select(pbr28$tacs[[2]], FC:CBL)
-#' weights <- pbr28$tacs[[2]]$Weights
+#' sime_long <- pbr28$tacs[[2]] %>%
+#'   dplyr::select(Times, Weights, FC:CBL) %>%
+#'   dplyr::mutate(Times = Times / 60) %>%
+#'   tidyr::pivot_longer(cols = -c(Times, Weights),
+#'                       names_to = "region", values_to = "tac")
 #'
 #' input <- blood_interp(
 #'   pbr28$procblood[[2]]$Time / 60, pbr28$procblood[[2]]$Cbl_dispcorr,
@@ -73,8 +85,9 @@
 #' )
 #'
 #' Vndgrid <- seq(from = 0, to = 3, by = 0.5)
-#' SIMEout <- SIME(t_tac, tacdf, input, Vndgrid,
-#'   weights = weights,
+#' SIMEout <- SIME(sime_long$Times, sime_long$tac, sime_long$region,
+#'   input, Vndgrid,
+#'   weights = sime_long$Weights,
 #'   inpshift = 0.1, vB = 0.05
 #' )
 #' }
@@ -88,64 +101,57 @@
 #'
 #' @importFrom dplyr "%>%"
 
-SIME <- function(t_tac, tacdf, input, Vndgrid, weights = NULL, roiweights = NULL,
-                 inpshift = 0, vB = NULL, twotcmstart = NULL, frameStartEnd = NULL, timeStartEnd = NULL,
+SIME <- function(t_tac, tac, region, input, Vndgrid,
+                 weights = NULL, roiweights = NULL,
+                 inpshift = 0, vB = NULL, twotcmstart = NULL,
+                 frameStartEnd = NULL, timeStartEnd = NULL,
                  k2.start = 0.1, k2.lower = 0, k2.upper = 0.5,
                  k3.start = 0.1, k3.lower = 0, k3.upper = 0.5,
                  k4.start = 0.1, k4.lower = 0, k4.upper = 0.5,
                  success_cutoff = 0.5) {
 
+  region <- as.character(region)
+  regions <- unique(region)
+
   # Convert timeStartEnd to frameStartEnd if needed
   if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
-    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1], 
-                       tail(which(t_tac <= timeStartEnd[2]), 1))
+    # Use time vector from first region to determine frame indices
+    t_first <- t_tac[region == regions[1]]
+    frameStartEnd <- c(which(t_first >= timeStartEnd[1])[1],
+                       tail(which(t_first <= timeStartEnd[2]), 1))
   }
 
-  # Tidying
+  # Tidying via tidyinput_long
+  tidied <- tidyinput_long(t_tac, tac, region, weights, frameStartEnd)
+  t_tac <- tidied$t_tac
+  tac <- tidied$tac
+  region <- tidied$region
+  weights <- tidied$weights
+  regions <- unique(region)
 
-  if (is.null(weights)) {
-    weights <- rep(1, nrow(tacdf))
-  }
-
-  lengths <- c(length(t_tac), nrow(tacdf), length(weights))
-  if (!all(lengths == lengths[1])) {
-    stop("The lengths of the times, TACs and/or weights are not equal")
-  }
-
-  if (!is.null(frameStartEnd)) {
-    t_tac <- t_tac[ frameStartEnd[1]:frameStartEnd[2] ]
-    tacdf <- tacdf[ frameStartEnd[1]:frameStartEnd[2], ]
-    weights <- weights[ frameStartEnd[1]:frameStartEnd[2] ]
-  }
-
-  if (min(t_tac) < 0) {
-    stop("There are negative times in the TAC")
-  }
-
-  if (is.null(roiweights)) {
-    roiweights <- rep(1, ncol(tacdf))
-  }
-  roiweights <- roiweights / max(roiweights)
+  # ROI weights
+  roiweights <- .nested_roiweights(roiweights, region, regions)
 
   Regions <- data.frame(
-    Region = names(tacdf),
-    roiweights = roiweights, stringsAsFactors = F
+    Region = regions,
+    roiweights = as.numeric(roiweights[regions]),
+    stringsAsFactors = FALSE
   )
 
-  if (length(roiweights) != ncol(tacdf)) {
-    stop("The number of ROIs and roiweights do not match")
-  }
+  # Shift timings
+  newvals <- shift_timings_long(t_tac, tac, region, input, inpshift)
 
-  if (min(t_tac) > 0) {
-    t_tac <- c(0, t_tac)
-    tacdf <- rbind(0, tacdf)
-    weights <- c(0, weights)
-  }
-
-  newvals <- shift_timings_df(t_tac, tacdf, input, inpshift)
-
-  tacdf <- newvals$tacdf
+  t_tac <- newvals$t_tac
+  tac <- newvals$tac
+  region <- newvals$region
   input <- newvals$input
+  t_tac_unique <- newvals$t_tac_unique
+
+  # Extract per-region weights (from tidied data, matching shifted times)
+  # After shift_timings_long, the time vector may have changed, so we use
+
+  # the weights from the tidied data which has the same structure
+  weights_per_region <- weights[tidied$region == regions[1]]
 
 
   # Parameters
@@ -158,10 +164,11 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights = NULL, roiweights = NULL
   # 2tcm Starting Parameters
 
   if (!is.null(twotcmstart)) {
+    twotcm_tac <- tac[region == twotcmstart]
     twotcmout <- twotcm(
-      newvals$t_tac,
-      tac = tacdf[, twotcmstart], input,
-      weights = weights, inpshift = inpshift,
+      t_tac_unique,
+      tac = twotcm_tac, input,
+      weights = weights_per_region, inpshift = inpshift,
       vB = vB
     )
     start[1] <- twotcmout$par$k2
@@ -176,18 +183,22 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights = NULL, roiweights = NULL
     }
   }
 
-  # Solution
+  # Solution — build tidytacs directly in long format
 
-  tacdf$Time <- newvals$t_tac
-  tacdf$weights <- weights
+  tidytacs <- data.frame(
+    Time = t_tac,
+    Region = region,
+    Radioactivity = tac,
+    weights = weights,
+    stringsAsFactors = FALSE
+  )
 
-  tidytacs <- tidyr::gather(tacdf, key = Region, value = Radioactivity, -Time, -weights)
   frames <- nrow(tidytacs)
 
   tidytacs <- tidytacs[rep(1:nrow(tidytacs), times = length(Vndgrid)), ]
   tidytacs$Vnd <- rep(Vndgrid, each = frames)
 
-  tidytacs_nested <- tidyr::nest(tidytacs, tacs = c(-Region, -Vnd))
+  tidytacs_nested <- tidyr::nest(tidytacs, tacs = c(Time, Radioactivity, weights))
 
   fit_SIMEroi <- function(tacs, input, Vnd, vB, start, upper, lower) {
     tac <- tacs$Radioactivity
@@ -258,15 +269,19 @@ SIME <- function(t_tac, tacdf, input, Vndgrid, weights = NULL, roiweights = NULL
 
   par <- as.data.frame(list(Vnd = Vnd))
 
-  tacs <- data.frame(Time = t_tac)
-  tacs <- cbind(tacs, tacdf)
+  tacs <- data.frame(
+    Time = t_tac,
+    Region = region,
+    Radioactivity = tac,
+    stringsAsFactors = FALSE
+  )
 
   fitvals <- SSmean
 
   out <- list(
     par = par, tacs = tacs, fitvals = fitvals, roifits = tidypars, input = input,
-    weights = weights, roiweights = roiweights, inpshift = inpshift, vB = vB,
-    success_cutoff = success_cutoff, model = "SIME"
+    weights = weights_per_region, roiweights = roiweights, inpshift = inpshift,
+    vB = vB, success_cutoff = success_cutoff, model = "SIME"
   )
 
   class(out) <- c("SIME", "kinfit")

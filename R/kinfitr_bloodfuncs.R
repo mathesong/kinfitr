@@ -393,6 +393,70 @@ shift_timings_df <- function(t_tac, tacsdf, input, inpshift, shifttac = T) {
 }
 
 
+#' Shift timings of long-format TACs and Input
+#'
+#' Function to shift backwards and forwards the timings of long-format TAC data
+#' and the input data frame to make them consistent. Similar to
+#' \code{shift_timings_df} but for long-format (stacked) TAC data.
+#'
+#' @param t_tac Numeric vector of times for each frame in minutes (repeated for
+#'   each region).
+#' @param tac Numeric vector of radioactivity concentrations (stacked across
+#'   regions).
+#' @param region Character vector identifying the region for each observation.
+#' @param input Data frame containing the blood, plasma, and parent fraction
+#'   concentrations over time. This can be generated using the
+#'   \code{blood_interp} function.
+#' @param inpshift The number of minutes by which the times of the input data
+#'   frame should be adjusted.
+#'
+#' @return A list containing: \code{t_tac} (long-format shifted times),
+#'   \code{tac} (long-format shifted TAC values), \code{region} (region labels),
+#'   \code{input} (shifted input dataframe), \code{t_tac_unique} (the shared
+#'   time vector).
+#'
+#' @examples
+#' \dontrun{
+#' newvals <- shift_timings_long(t_tac, tac, region, input, inpshift = 0.1)
+#' }
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @export
+
+shift_timings_long <- function(t_tac, tac, region, input, inpshift) {
+  region <- as.character(region)
+  regions <- unique(region)
+
+  # Build wide-format data frame for shift_timings_df
+  first_region <- regions[1]
+  t_tac_unique <- t_tac[region == first_region]
+
+  tacsdf <- data.frame(sapply(regions, function(r) {
+    tac[region == r]
+  }, simplify = FALSE), check.names = FALSE)
+
+  # Use existing shift_timings_df
+  newvals <- shift_timings_df(t_tac_unique, tacsdf, input, inpshift)
+
+  # Convert back to long format
+  n_frames <- length(newvals$t_tac)
+  out_t_tac <- rep(newvals$t_tac, times = length(regions))
+  out_region <- rep(regions, each = n_frames)
+
+  tacdf_shifted <- newvals$tacdf
+  out_tac <- unlist(tacdf_shifted, use.names = FALSE)
+
+  list(
+    t_tac = out_t_tac,
+    tac = out_tac,
+    region = out_region,
+    input = newvals$input,
+    t_tac_unique = newvals$t_tac
+  )
+}
+
+
 #' Plot the Timings of the TAC and Arterial Input Function
 #'
 #' Function to compare the timings of the the TAC and the Arterial Input Function (AIF) to see whether they are aligned.
