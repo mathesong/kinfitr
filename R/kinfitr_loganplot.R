@@ -386,6 +386,8 @@ plot_Loganfit <- function(loganout, roiname = NULL) {
 #' @export
 
 Logan_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, inpshift = 0, vB = 0.05, frameStartEnd = NULL, timeStartEnd = NULL, gridbreaks = 2) {
+  frameStartEnd <- tstar_frameStartEnd(t_tac, frameStartEnd, timeStartEnd)
+
   frames <- length(t_tac)
   lowroi_fit <- Loganplot(t_tac, lowroi, input, tstar = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
   medroi_fit <- Loganplot(t_tac, medroi, input, tstar = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
@@ -411,89 +413,23 @@ Logan_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, 
   high_linplot <- qplot(highroi_fit$fitvals$Logan_Plasma, highroi_fit$fitvals$Logan_ROI) + ggtitle("High") + xlim(high_xlimits) + xlab(xlabel) + ylab(ylabel)
 
   tstarInclFrames <- 3:frames
-  zeros <- rep(0, length(tstarInclFrames))
 
-  r2_df <- data.frame(Frames = tstarInclFrames, Low = zeros, Medium = zeros, High = zeros)
-  maxperc_df <- data.frame(Frames = tstarInclFrames, Time = t_tac[ tstarInclFrames ], Low = zeros, Medium = zeros, High = zeros)
-  vt_df <- data.frame(Frames = tstarInclFrames, Time = t_tac[ tstarInclFrames ], Low = zeros, Medium = zeros, High = zeros)
-
-  for (i in 1:length(tstarInclFrames)) {
-    lowfit <- Loganplot(t_tac, lowroi, input, tstar = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
-    medfit <- Loganplot(t_tac, medroi, input, tstar = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
-    highfit <- Loganplot(t_tac, highroi, input, tstar = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
-
-    r2_df$Low[i] <- summary(lowfit$fit)$r.squared
-    r2_df$Medium[i] <- summary(medfit$fit)$r.squared
-    r2_df$High[i] <- summary(highfit$fit)$r.squared
-
-    maxperc_df$Low[i] <- maxpercres(lowfit)
-    maxperc_df$Medium[i] <- maxpercres(medfit)
-    maxperc_df$High[i] <- maxpercres(highfit)
-
-    vt_df$Low[i] <- lowfit$par$Vt
-    vt_df$Medium[i] <- medfit$par$Vt
-    vt_df$High[i] <- highfit$par$Vt
+  fitfunc <- function(roitac, tstar) {
+    Loganplot(t_tac, roitac, input, tstar = tstar, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
   }
 
-  xlabel <- "Number of Included Frames"
-  ylab_r2 <- expression(R^2)
-  ylab_mp <- "Maximum Percentage Deviation"
-
-
-  # R Squared plots
-
-  low_r2plot <- ggplot(r2_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
-  med_r2plot <- ggplot(r2_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
-  high_r2plot <- ggplot(r2_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
-
-
-  # Max Percentage Variation Plots
-
-  maxperc_df$inclmins <- rev(max(t_tac) - t_tac)[-c(1, 2)]
-  maxperc_df$tstar <- rev(t_tac)[-c(1, 2)]
-
-  low_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
-  med_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
-  high_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
-
-
-
-  # TAC Plot
-
-  tacplotdf <- data.frame(cbind(Time = lowroi_fit$tacs$Time, Low = lowroi_fit$tacs$Target, Medium = medroi_fit$tacs$Target, High = highroi_fit$tacs$Target))
-  tacplotdf <- tidyr::gather(tacplotdf, key = Region, value = Radioactivity, -Time)
-
-  tacplotdf$Region <- forcats::fct_rev(forcats::fct_inorder(factor(tacplotdf$Region)))
-
-  myColors <- RColorBrewer::brewer.pal(4, "Set1")
-  names(myColors) <- levels(tacplotdf$Region)
-  colScale <- scale_colour_manual(name = "Region", values = myColors)
-
-  tacplot <- ggplot(tacplotdf, aes(x = Time, y = Radioactivity, colour = Region)) + geom_point() + geom_line() + colScale
-
-
-  # Vt Plot
-
-  vtplotdf <- tidyr::gather(vt_df, key = Region, value = Vt, -Frames, -Time)
-  vtplotdf$Region <- forcats::fct_rev(forcats::fct_inorder(factor(vtplotdf$Region)))
-
-  vtplot <- ggplot(vtplotdf, aes(x = Frames, y = Vt, colour = Region)) + geom_point() + geom_line() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + ylab(expression(V[T])) + colScale
-
-
-  # Output
+  comp <- tstar_compute(t_tac, lowroi, medroi, highroi, fitfunc,
+                        function(f) f$par$Vt, tstarInclFrames)
 
   linrow <- cowplot::plot_grid(low_linplot, med_linplot, high_linplot, nrow = 1)
-  r2row <- cowplot::plot_grid(low_r2plot, med_r2plot, high_r2plot, nrow = 1)
-  mprow <- cowplot::plot_grid(low_mpplot, med_mpplot, high_mpplot, nrow = 1)
-  outrow <- cowplot::plot_grid(tacplot, vtplot, rel_widths = c(2, 1))
 
-  totalplot <- cowplot::plot_grid(linrow, r2row, mprow, outrow, nrow = 4)
-
-  if (!is.null(filename)) {
-    jpeg(filename = paste0(filename, "_Loganplot.jpeg"), width = 300, height = 400, units = "mm", res = 600)
-    totalplot
-    dev.off()
-  }
+  totalplot <- tstar_finalise_plot(
+    linrow, lowroi_fit, medroi_fit, highroi_fit,
+    comp$r2_df, comp$maxperc_df, comp$outcome_df,
+    outcome_ylab = expression(V[T]), t_tac = t_tac,
+    tstarInclFrames = tstarInclFrames, gridbreaks = gridbreaks,
+    outcome_ylim = NULL, filename = filename, modelname = "Loganplot"
+  )
 
   return(totalplot)
 }

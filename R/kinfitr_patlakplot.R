@@ -321,11 +321,7 @@ plot_Patlakfit <- function(patlakout, roiname = NULL) {
 #' @export
 
 Patlak_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, inpshift = 0, vB = 0, frameStartEnd = NULL, timeStartEnd = NULL, gridbreaks = 2) {
-  # Convert timeStartEnd to frameStartEnd if needed
-  if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
-    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1],
-                       tail(which(t_tac <= timeStartEnd[2]), 1))
-  }
+  frameStartEnd <- tstar_frameStartEnd(t_tac, frameStartEnd, timeStartEnd)
 
   frames <- length(t_tac)
   lowroi_fit <- Patlakplot(t_tac, lowroi, input, tstar = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
@@ -348,89 +344,23 @@ Patlak_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL,
   high_linplot <- qplot(highroi_fit$fitvals$Patlak_Plasma, highroi_fit$fitvals$Patlak_ROI) + ggtitle("High") + xlab(xlabel) + ylab(ylabel) + xlim(high_xlimits)
 
   tstarInclFrames <- 3:frames
-  zeros <- rep(0, length(tstarInclFrames))
 
-  r2_df <- data.frame(Frames = tstarInclFrames, Low = zeros, Medium = zeros, High = zeros)
-  maxperc_df <- data.frame(Frames = tstarInclFrames, Time = t_tac[ tstarInclFrames ], Low = zeros, Medium = zeros, High = zeros)
-  Ki_df <- data.frame(Frames = tstarInclFrames, Time = t_tac[ tstarInclFrames ], Low = zeros, Medium = zeros, High = zeros)
-
-  for (i in 1:length(tstarInclFrames)) {
-    lowfit <- Patlakplot(t_tac, lowroi, input, tstar = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
-    medfit <- Patlakplot(t_tac, medroi, input, tstar = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
-    highfit <- Patlakplot(t_tac, highroi, input, tstar = tstarInclFrames[i], inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
-
-    r2_df$Low[i] <- summary(lowfit$fit)$r.squared
-    r2_df$Medium[i] <- summary(medfit$fit)$r.squared
-    r2_df$High[i] <- summary(highfit$fit)$r.squared
-
-    maxperc_df$Low[i] <- maxpercres(lowfit)
-    maxperc_df$Medium[i] <- maxpercres(medfit)
-    maxperc_df$High[i] <- maxpercres(highfit)
-
-    Ki_df$Low[i] <- lowfit$par$Ki
-    Ki_df$Medium[i] <- medfit$par$Ki
-    Ki_df$High[i] <- highfit$par$Ki
+  fitfunc <- function(roitac, tstar) {
+    Patlakplot(t_tac, roitac, input, tstar = tstar, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
   }
 
-  xlabel <- "Number of Included Frames"
-  ylab_r2 <- expression(R^2)
-  ylab_mp <- "Maximum Percentage Deviation"
-
-
-  # R Squared plots
-
-  low_r2plot <- ggplot(r2_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
-  med_r2plot <- ggplot(r2_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
-  high_r2plot <- ggplot(r2_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
-
-
-  # Max Percentage Variation Plots
-
-  maxperc_df$inclmins <- rev(max(t_tac) - t_tac)[-c(1, 2)]
-  maxperc_df$tstar <- rev(t_tac)[-c(1, 2)]
-
-  low_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
-  med_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
-  high_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
-
-
-
-  # TAC Plot
-
-  tacplotdf <- data.frame(cbind(Time = lowroi_fit$tacs$Time, Low = lowroi_fit$tacs$Target, Medium = medroi_fit$tacs$Target, High = highroi_fit$tacs$Target))
-  tacplotdf <- tidyr::gather(tacplotdf, key = Region, value = Radioactivity, -Time)
-
-  tacplotdf$Region <- forcats::fct_rev(forcats::fct_inorder(factor(tacplotdf$Region)))
-
-  myColors <- RColorBrewer::brewer.pal(4, "Set1")
-  names(myColors) <- levels(tacplotdf$Region)
-  colScale <- scale_colour_manual(name = "Region", values = myColors)
-
-  tacplot <- ggplot(tacplotdf, aes(x = Time, y = Radioactivity, colour = Region)) + geom_point() + geom_line() + colScale
-
-
-  # Ki Plot
-
-  Kiplotdf <- tidyr::gather(Ki_df, key = Region, value = Ki, -Frames, -Time)
-  Kiplotdf$Region <- forcats::fct_rev(forcats::fct_inorder(factor(Kiplotdf$Region)))
-
-  Kiplot <- ggplot(Kiplotdf, aes(x = Frames, y = Ki, colour = Region)) + geom_point() + geom_line() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + ylab(expression(K[i])) + colScale
-
-
-  # Output
+  comp <- tstar_compute(t_tac, lowroi, medroi, highroi, fitfunc,
+                        function(f) f$par$Ki, tstarInclFrames)
 
   linrow <- cowplot::plot_grid(low_linplot, med_linplot, high_linplot, nrow = 1)
-  r2row <- cowplot::plot_grid(low_r2plot, med_r2plot, high_r2plot, nrow = 1)
-  mprow <- cowplot::plot_grid(low_mpplot, med_mpplot, high_mpplot, nrow = 1)
-  outrow <- cowplot::plot_grid(tacplot, Kiplot, rel_widths = c(2, 1))
 
-  totalplot <- cowplot::plot_grid(linrow, r2row, mprow, outrow, nrow = 4)
-
-  if (!is.null(filename)) {
-    jpeg(filename = paste0(filename, "_Patlakplot.jpeg"), width = 300, height = 400, units = "mm", res = 600)
-    totalplot
-    dev.off()
-  }
+  totalplot <- tstar_finalise_plot(
+    linrow, lowroi_fit, medroi_fit, highroi_fit,
+    comp$r2_df, comp$maxperc_df, comp$outcome_df,
+    outcome_ylab = expression(K[i]), t_tac = t_tac,
+    tstarInclFrames = tstarInclFrames, gridbreaks = gridbreaks,
+    outcome_ylim = NULL, filename = filename, modelname = "Patlakplot"
+  )
 
   return(totalplot)
 }

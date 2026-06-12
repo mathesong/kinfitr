@@ -338,11 +338,7 @@ plot_mrtm1fit <- function(mrtm1out, roiname = NULL, refname = NULL) {
 #' @export
 
 mrtm1_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename = NULL, frameStartEnd = NULL, timeStartEnd = NULL, gridbreaks = 2) {
-  # Convert timeStartEnd to frameStartEnd if needed
-  if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
-    frameStartEnd <- c(which(t_tac >= timeStartEnd[1])[1],
-                       tail(which(t_tac <= timeStartEnd[2]), 1))
-  }
+  frameStartEnd <- tstar_frameStartEnd(t_tac, frameStartEnd, timeStartEnd)
 
   frames <- length(reftac)
 
@@ -355,88 +351,23 @@ mrtm1_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename = NULL,
   high_linplot <- plot_mrtm1fit(highroi_fit) + ggtitle("High") + ylim(0, max(c(highroi_fit$tacs$Reference, highroi_fit$tacs$Target)) * 1.1) + theme(legend.position = "none")
 
   tstarInclFrames <- 3:frames
-  zeros <- rep(0, length(tstarInclFrames))
 
-  r2_df <- data.frame(Frames = tstarInclFrames, Low = zeros, Medium = zeros, High = zeros)
-  maxperc_df <- data.frame(Frames = tstarInclFrames, Time = t_tac[ tstarInclFrames ], Low = zeros, Medium = zeros, High = zeros)
-  bp_df <- data.frame(Frames = tstarInclFrames, Time = t_tac[ tstarInclFrames ], Low = zeros, Medium = zeros, High = zeros)
-
-  for (i in 1:length(tstarInclFrames)) {
-    lowfit <- mrtm1(t_tac, reftac, lowroi, tstar = tstarInclFrames[i], frameStartEnd = frameStartEnd)
-    medfit <- mrtm1(t_tac, reftac, medroi, tstar = tstarInclFrames[i], frameStartEnd = frameStartEnd)
-    highfit <- mrtm1(t_tac, reftac, highroi, tstar = tstarInclFrames[i], frameStartEnd = frameStartEnd)
-
-    r2_df$Low[i] <- summary(lowfit$fit)$r.squared
-    r2_df$Medium[i] <- summary(medfit$fit)$r.squared
-    r2_df$High[i] <- summary(highfit$fit)$r.squared
-
-    maxperc_df$Low[i] <- maxpercres(lowfit)
-    maxperc_df$Medium[i] <- maxpercres(medfit)
-    maxperc_df$High[i] <- maxpercres(highfit)
-
-    bp_df$Low[i] <- lowfit$par$bp
-    bp_df$Medium[i] <- medfit$par$bp
-    bp_df$High[i] <- highfit$par$bp
+  fitfunc <- function(roitac, tstar) {
+    mrtm1(t_tac, reftac, roitac, tstar = tstar, frameStartEnd = frameStartEnd)
   }
 
-  xlabel <- "Number of Included Frames"
-  ylab_r2 <- expression(R^2)
-  ylab_mp <- "Maximum Percentage Variance"
-
-
-  # R Squared plots
-
-  low_r2plot <- ggplot(r2_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
-  med_r2plot <- ggplot(r2_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
-  high_r2plot <- ggplot(r2_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0.99, 1)) + xlab(xlabel) + ylab(ylab_r2)
-
-  # Max Percentage Variation Plots
-
-  maxperc_df$inclmins <- rev(max(t_tac) - t_tac)[-c(1, 2)]
-  maxperc_df$tstar <- rev(t_tac)[-c(1, 2)]
-
-  low_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Low)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Low + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
-  med_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = Medium)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$Medium + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
-  high_mpplot <- ggplot(maxperc_df, aes(x = Frames, y = High)) + geom_point() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + coord_cartesian(ylim = c(0, 20)) + xlab(xlabel) + ylab(ylab_mp) + annotate("text", x = 3, y = 20, label = "t* Minutes", colour = "red", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 1.4, label = round(maxperc_df$tstar, 1), size = 3, colour = "red") + annotate("text", x = 3, y = 20 - 0.7, label = "Included Minutes", colour = "blue", size = 3, hjust = 0) + annotate("text", x = maxperc_df$Frames, y = maxperc_df$High + 0.7, label = round(maxperc_df$inclmins, 1), size = 3, colour = "blue")
-
-
-  # TAC Plot
-
-  tacplotdf <- data.frame(cbind(Time = lowroi_fit$tacs$Time, Reference = lowroi_fit$tacs$Reference, Low = lowroi_fit$tacs$Target, Medium = medroi_fit$tacs$Target, High = highroi_fit$tacs$Target))
-  tacplotdf <- tidyr::gather(tacplotdf, key = Region, value = Radioactivity, -Time)
-
-  tacplotdf$Region <- forcats::fct_rev(forcats::fct_inorder(factor(tacplotdf$Region)))
-
-  myColors <- RColorBrewer::brewer.pal(4, "Set1")
-  names(myColors) <- levels(tacplotdf$Region)
-  colScale <- scale_colour_manual(name = "Region", values = myColors)
-
-  tacplot <- ggplot(tacplotdf, aes(x = Time, y = Radioactivity, colour = Region)) + geom_point() + geom_line() + colScale
-
-
-
-  # BP Plot
-
-  bpplotdf <- tidyr::gather(bp_df, key = Region, value = BP, -Frames, -Time)
-  bpplotdf$Region <- forcats::fct_rev(forcats::fct_inorder(factor(bpplotdf$Region)))
-
-  bpplot <- ggplot(bpplotdf, aes(x = Frames, y = BP, colour = Region)) + geom_point() + geom_line() + scale_x_continuous(breaks = seq(min(tstarInclFrames), max(tstarInclFrames), by = gridbreaks)) + ylab(expression(BP[ND])) + colScale
-
-
-  # Output
+  comp <- tstar_compute(t_tac, lowroi, medroi, highroi, fitfunc,
+                        function(f) f$par$bp, tstarInclFrames)
 
   linrow <- cowplot::plot_grid(low_linplot, med_linplot, high_linplot, nrow = 1)
-  r2row <- cowplot::plot_grid(low_r2plot, med_r2plot, high_r2plot, nrow = 1)
-  mprow <- cowplot::plot_grid(low_mpplot, med_mpplot, high_mpplot, nrow = 1)
-  outrow <- cowplot::plot_grid(tacplot, bpplot, rel_widths = c(2, 1))
 
-  totalplot <- cowplot::plot_grid(linrow, r2row, mprow, outrow, nrow = 4)
-
-  if (!is.null(filename)) {
-    jpeg(filename = paste0(filename, "_mrtm1.jpeg"), width = 300, height = 400, units = "mm", res = 600)
-    totalplot
-    dev.off()
-  }
+  totalplot <- tstar_finalise_plot(
+    linrow, lowroi_fit, medroi_fit, highroi_fit,
+    comp$r2_df, comp$maxperc_df, comp$outcome_df,
+    outcome_ylab = expression(BP[ND]), t_tac = t_tac,
+    tstarInclFrames = tstarInclFrames, gridbreaks = gridbreaks,
+    outcome_ylim = NULL, filename = filename, modelname = "mrtm1"
+  )
 
   return(totalplot)
 }
