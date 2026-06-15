@@ -7,6 +7,9 @@
 #'
 #' @param t_tac Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
 #' zero. If a time zero frame is not included, it  will be added.
+#' @param dur Numeric vector of the time durations of the frames in minutes. The
+#' LEGA estimator is explicitly frame-aware (it integrates over each acquisition
+#' interval), so frame durations must be provided.
 #' @param tac Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
 #' zero: if not included, it is added.
 #' @param input Data frame containing the blood, plasma, and parent fraction concentrations over time.  This can be generated
@@ -24,19 +27,25 @@
 #' @param vB Optional. The blood volume fraction.  If not specified, this will be ignored and assumed to be 0%. If specified, it
 #' will be corrected for prior to parameter estimation using the following equation:
 #' \deqn{C_{T}(t) = \frac{C_{Measured}(t) - vB\times C_{B}(t)}{1-vB}}
-#' @param dur Optional, but recommended for LEGA. Numeric vector of the time
-#' durations of the frames. The LEGA estimator is explicitly frame-aware (it
-#' integrates over each acquisition interval), so durations should be provided
-#' where available. If not included, the frame durations will be approximated
-#' from the frame midtimes and a message displayed.
 #' @param frameStartEnd Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 #' This can be used to assess time stability for example.
 #' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
-#' @param fallback_to_ols Optional. Logical. The LEGA estimator can occasionally
-#' be numerically unstable in high-noise data. Following the recommendation of
-#' Ogden (2003), if the LEGA estimate of \eqn{V_T} is non-positive or more than
-#' twice the size of the ordinary Logan (OLS) estimate, the more numerically
-#' stable OLS Logan estimate is returned instead (with a message). Default TRUE.
+#' @param Vt.start Optional. Reference value for \eqn{V_T}. If not supplied, it is
+#' taken from the reference fit (see \code{fallback}). This value is used as the
+#' reference against which the stability fallback is judged, and as the value
+#' returned if the fallback is triggered.
+#' @param gamma.start Optional. Starting value for the intercept (\eqn{\gamma})
+#' around which the one-dimensional optimisation is centred. If not supplied, it
+#' is taken from the reference fit (see \code{fallback}).
+#' @param fallback The LEGA estimator can occasionally be numerically unstable in
+#' high-noise data. Following the recommendation of Ogden (2003), if the LEGA
+#' estimate of \eqn{V_T} is non-finite, non-positive, or more than twice the size
+#' of the reference estimate (\code{Vt.start}, or the reference-method estimate),
+#' a more numerically stable estimate is returned instead (with a message). One
+#' of: \code{"MA1"} (default; revert to the MA1 estimate, which targets
+#' essentially the same quantity as LEGA), \code{"Logan"} (revert to the ordinary
+#' Logan estimate, as in Ogden 2003), or \code{"none"} (never revert; the raw
+#' LEGA estimate is returned, with a warning if it looks unreliable).
 #'
 #' @return A list with a data frame of the fitted parameters \code{out$par}, the
 #' standard error of \eqn{V_T} as a fraction of the estimate \code{out$par.se},
@@ -75,19 +84,23 @@
 #'   t_parentfrac = 1, parentfrac = 1
 #' )
 #'
-#' fit1 <- LEGA(t_tac, tac, input, 10, weights, dur = dur)
-#' fit2 <- LEGA(t_tac, tac, input, 10, weights, inpshift = 0.1, vB = 0.05, dur = dur)
+#' fit1 <- LEGA(t_tac, dur, tac, input, 10, weights)
+#' fit2 <- LEGA(t_tac, dur, tac, input, 10, weights, inpshift = 0.1, vB = 0.05)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @references Ogden RT. Estimation of kinetic parameters in graphical analysis of PET imaging data. Statistics in Medicine. 2003 Nov 30;22(22):3557-68.
 #'
 #' @export
 
-LEGA <- function(t_tac, tac, input, tstar, weights = NULL,
-                 inpshift = 0, vB = 0, dur = NULL, frameStartEnd = NULL, timeStartEnd = NULL,
+LEGA <- function(t_tac, dur, tac, input, tstar, weights = NULL,
+                 inpshift = 0, vB = 0, frameStartEnd = NULL, timeStartEnd = NULL,
                  tstar_type = "frames", tstarIncludedFrames = NULL,
-                 fallback_to_ols = TRUE) {
+                 Vt.start = NULL, gamma.start = NULL,
+                 fallback = c("MA1", "Logan", "none")) {
 
+  if (missing(dur) || is.null(dur)) {
+    stop("'dur' (frame durations) is a required input for LEGA.")
+  }
 
   # Convert timeStartEnd to frameStartEnd if needed
   if (is.null(frameStartEnd) && !is.null(timeStartEnd)) {
@@ -105,32 +118,52 @@ LEGA <- function(t_tac, tac, input, tstar, weights = NULL,
     tstar_type <- "frames"
   }
 
-  # Validate tstar_type
+  # Validate tstar_type and fallback method
   tstar_type <- match.arg(tstar_type, c("frames", "time"))
+  fallback <- match.arg(fallback, c("MA1", "Logan", "none"))
 
-  # Handle missing tstar
-  if (missing(tstar)) {
-    tstar <- length(t_tac)
-    tstar_type <- "frames"
-    warning("No value specified for tstar: defaulting to including all frames. This may produce biased outcomes.", call. = FALSE)
+  # Reference fit. This serves two purposes: it provides default starting values
+  # for the intercept (gamma) and the reference slope (Vt), and it supplies the
+  # numerically stable estimate that the stability fallback reverts to. When the
+  # fallback is disabled a reference is only computed if it is still needed to
+  # seed the optimisation (i.e. gamma.start was not supplied), and is never used
+  # to override the result. If the user supplies everything that would otherwise
+  # be derived, no reference fit is computed at all.
+  ref_method <- if (fallback != "none") fallback else "Logan"
+  need_ref <- is.null(gamma.start) ||
+    (fallback != "none" && is.null(Vt.start))
+
+  if (need_ref) {
+    if (ref_method == "MA1") {
+      reffit <- ma1(t_tac, tac, input, tstar = tstar, weights = weights,
+                    inpshift = inpshift, vB = vB, dur = dur,
+                    frameStartEnd = frameStartEnd, tstar_type = tstar_type)
+      Vt_ref_default <- reffit$par$Vt
+      gamma_ref_default <- as.numeric(1 / stats::coef(reffit$fit)[2])
+      ref_se <- reffit$par.se$Vt.se
+    } else {
+      reffit <- Loganplot(t_tac, tac, input, tstar = tstar, weights = weights,
+                          inpshift = inpshift, vB = vB, dur = dur,
+                          frameStartEnd = frameStartEnd, tstar_type = tstar_type)
+      Vt_ref_default <- reffit$par$Vt
+      gamma_ref_default <- as.numeric(stats::coef(reffit$fit)[1])
+      ref_se <- reffit$par.se$Vt.se
+    }
+  } else {
+    Vt_ref_default <- NA_real_
+    gamma_ref_default <- NA_real_
+    ref_se <- NA_real_
   }
 
-  # Ordinary Logan (OLS) fit on the raw inputs - used both for starting values
-  # for the intercept search and for the (optional) numerical-stability fallback
-  loganout <- Loganplot(t_tac, tac, input, tstar = tstar, weights = weights,
-                        inpshift = inpshift, vB = vB, dur = dur,
-                        frameStartEnd = frameStartEnd, tstar_type = tstar_type)
-  Vt_ols <- loganout$par$Vt
-  gamma_ols <- as.numeric(stats::coef(loganout$fit)[1])
+  gamma_start <- if (!is.null(gamma.start)) gamma.start else gamma_ref_default
+  Vt_ref <- if (!is.null(Vt.start)) Vt.start else Vt_ref_default
 
   # Tidying
 
   tidyinput <- tidyinput_art(t_tac, tac, weights, frameStartEnd)
 
-  if (!is.null(dur)) {
-    tidyinput_dur <- tidyinput_art(dur, tac, weights, frameStartEnd)
-    dur <- tidyinput_dur$t_tac
-  }
+  tidyinput_dur <- tidyinput_art(dur, tac, weights, frameStartEnd)
+  dur <- tidyinput_dur$t_tac
 
   t_tac <- tidyinput$t_tac
   tac <- tidyinput$tac
@@ -174,18 +207,6 @@ LEGA <- function(t_tac, tac, input, tstar, weights = NULL,
   # Integrated plasma up to each frame midtime (x_i in Ogden 2003)
   x <- as.numeric(pracma::cumtrapz(interptime, aif))
   x <- pracma::interp1(interptime, x, t_tac, method = "linear")
-
-  # Frame durations. LEGA only needs the interval *widths* (s_i - s_{i-1}), not
-  # the absolute frame boundaries. If durations are not supplied, approximate
-  # them from the midtimes (edges = midpoints between consecutive midtimes).
-  if (is.null(dur)) {
-    message("No frame durations (dur) supplied: approximating them from the frame midtimes. ",
-            "LEGA is frame-aware, so supplying 'dur' is recommended where available.")
-    edges <- c(0, (utils::head(t_tac, -1) + utils::tail(t_tac, -1)) / 2,
-               t_tac[length(t_tac)] + (t_tac[length(t_tac)] -
-                 (t_tac[length(t_tac) - 1] + t_tac[length(t_tac)]) / 2))
-    dur <- diff(edges)
-  }
 
   # Z_i is the (blood-volume-corrected) measured tissue concentration
   Z <- tac
@@ -244,12 +265,13 @@ LEGA <- function(t_tac, tac, input, tstar, weights = NULL,
     sum(w_eq * (Z_eq - fitted)^2)
   }
 
-  # Search interval for gamma, centred on the OLS Logan intercept. The upper
-  # bound is kept strictly below (3/8) * min(dur) so the denominator (gamma -
-  # 3/8 * d_i) never changes sign within the search.
-  gamma_span <- max(abs(gamma_ols), 1) * 5
-  g_lower <- gamma_ols - gamma_span
-  g_upper <- min(gamma_ols + gamma_span, (3 / 8) * min(d_eq) - 1e-6)
+  # Search interval for gamma, centred on the starting intercept (supplied via
+  # gamma.start, or the OLS Logan intercept by default). The upper bound is kept
+  # strictly below (3/8) * min(dur) so the denominator (gamma - 3/8 * d_i) never
+  # changes sign within the search.
+  gamma_span <- max(abs(gamma_start), 1) * 5
+  g_lower <- gamma_start - gamma_span
+  g_upper <- min(gamma_start + gamma_span, (3 / 8) * min(d_eq) - 1e-6)
   if (g_upper <= g_lower) {
     g_lower <- g_upper - gamma_span
   }
@@ -269,26 +291,38 @@ LEGA <- function(t_tac, tac, input, tstar, weights = NULL,
 
   par.se <- data.frame(Vt.se = get_se(lega_model, "B_eq"))
 
-  # Numerical-stability fallback to OLS Logan (Ogden 2003, p.3564)
-  ols_fallback <- FALSE
-  if (fallback_to_ols &&
-      (is.na(Vt) || Vt <= 0 || (Vt_ols > 0 && Vt > 2 * Vt_ols))) {
-    message("LEGA estimate of Vt was non-positive or more than twice the OLS Logan estimate: ",
-            "returning the more numerically stable OLS Logan estimate (Ogden 2003).")
-    Vt <- Vt_ols
-    par.se <- data.frame(Vt.se = loganout$par.se$Vt.se)
-    ols_fallback <- TRUE
+  # Numerical-stability check (Ogden 2003, p.3564): the LEGA estimate is
+  # considered unreliable if it is non-finite, non-positive, or more than twice
+  # the reference estimate (Vt.start, or the reference-method estimate).
+  unreliable <- !is.finite(Vt) || Vt <= 0 ||
+    (is.finite(Vt_ref) && Vt_ref > 0 && Vt > 2 * Vt_ref)
+
+  fallback_used <- FALSE
+  fallback_method <- NA_character_
+  if (unreliable) {
+    if (fallback != "none" && is.finite(Vt_ref)) {
+      message("LEGA estimate of Vt was non-positive or more than twice the reference (",
+              ref_method, ") estimate: returning the more numerically stable ",
+              ref_method, " estimate.")
+      Vt <- Vt_ref
+      par.se <- data.frame(Vt.se = if (!is.null(Vt.start)) NA_real_ else ref_se)
+      fallback_used <- TRUE
+      fallback_method <- ref_method
+    } else {
+      # fallback == "none" (or no usable reference): keep the raw LEGA estimate
+      # but warn so a pathological value is not returned silently.
+      warning("LEGA estimate of Vt looks unreliable (non-positive, non-finite, ",
+              "or implausibly large), but fallback is disabled: returning the raw ",
+              "LEGA estimate.", call. = FALSE)
+    }
   }
 
   # Output
 
   par <- data.frame(Vt = Vt)
 
-  tacs <- data.frame(Time = t_tac, Target = tac, Target_uncor = tac_uncor) # uncorrected for blood volume
-
-  if (!is.null(dur)) {
-    tacs$Duration <- dur
-  }
+  tacs <- data.frame(Time = t_tac, Target = tac, Target_uncor = tac_uncor, # uncorrected for blood volume
+                     Duration = dur)
 
   fitvals <- data.frame(
     Time = t_tac[eq_idx], Target = Z_eq, A = A_eq, B = B_eq,
@@ -302,7 +336,8 @@ LEGA <- function(t_tac, tac, input, tstar, weights = NULL,
     par = par, par.se = par.se, fit = lega_model, tacs = tacs, fitvals = fitvals,
     input = input, weights = weights, inpshift = inpshift, vB = vB,
     tstarIncludedFrames = tstarIncludedFrames, gamma = gamma_hat,
-    ols_fallback = ols_fallback, model = "LEGA"
+    fallback_used = fallback_used, fallback_method = fallback_method,
+    model = "LEGA"
   )
 
   class(out) <- c("LEGA", "kinfit")
@@ -335,7 +370,7 @@ LEGA <- function(t_tac, tac, input, tstar, weights = NULL,
 #'   t_parentfrac = 1, parentfrac = 1
 #' )
 #'
-#' fit <- LEGA(t_tac, tac, input, 10, weights, dur = dur)
+#' fit <- LEGA(t_tac, dur, tac, input, 10, weights)
 #' plot_LEGAfit(fit)
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
@@ -398,6 +433,8 @@ plot_LEGAfit <- function(LEGAout, roiname = NULL) {
 #'
 #' @param t_tac Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
 #' zero. If a time zero frame is not included, it will be added.
+#' @param dur Numeric vector of the time durations of the frames in minutes. The
+#' LEGA estimator is explicitly frame-aware, so frame durations must be provided.
 #' @param lowroi Numeric vector of radioactivity concentrations in a target tissue for each frame. This should be from a ROI with low binding.
 #' @param medroi Numeric vector of radioactivity concentrations in a target tissue for each frame. This should be from a ROI with medium binding.
 #' @param highroi Numeric vector of radioactivity concentrations in a target tissue for each frame. This should be from a ROI with high binding.
@@ -419,7 +456,7 @@ plot_LEGAfit <- function(LEGAout, roiname = NULL) {
 #'
 #' @examples
 #' \dontrun{
-#' LEGA_tstar(t_tac, lowroi, medroi, highroi, input,
+#' LEGA_tstar(t_tac, dur, lowroi, medroi, highroi, input,
 #'   filename = "demonstration",
 #'   inpshift = onetcmout$par$inpshift, frameStartEnd, gridbreaks = 4
 #' )
@@ -432,13 +469,13 @@ plot_LEGAfit <- function(LEGAout, roiname = NULL) {
 #' @export
 
 
-LEGA_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, inpshift = 0, vB = 0, frameStartEnd = NULL, timeStartEnd = NULL, gridbreaks = 2) {
+LEGA_tstar <- function(t_tac, dur, lowroi, medroi, highroi, input, filename = NULL, inpshift = 0, vB = 0, frameStartEnd = NULL, timeStartEnd = NULL, gridbreaks = 2) {
   frameStartEnd <- tstar_frameStartEnd(t_tac, frameStartEnd, timeStartEnd)
 
   frames <- length(t_tac)
-  lowroi_fit <- LEGA(t_tac, lowroi, input, tstar = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
-  medroi_fit <- LEGA(t_tac, medroi, input, tstar = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
-  highroi_fit <- LEGA(t_tac, highroi, input, tstar = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+  lowroi_fit <- LEGA(t_tac, dur, lowroi, input, tstar = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+  medroi_fit <- LEGA(t_tac, dur, medroi, input, tstar = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+  highroi_fit <- LEGA(t_tac, dur, highroi, input, tstar = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
 
   low_linplot <- plot_LEGAfit(lowroi_fit) + ggtitle("Low") + ylim(0, max(lowroi_fit$tacs$Target * 1.1)) + theme(legend.position = "none")
   med_linplot <- plot_LEGAfit(medroi_fit) + ggtitle("Medium") + ylim(0, max(medroi_fit$tacs$Target * 1.1)) + theme(legend.position = "none")
@@ -447,7 +484,7 @@ LEGA_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, i
   tstarInclFrames <- 3:frames
 
   fitfunc <- function(roitac, tstar) {
-    LEGA(t_tac, roitac, input, tstar = tstar, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
+    LEGA(t_tac, dur, roitac, input, tstar = tstar, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
   }
 
   comp <- tstar_compute(t_tac, lowroi, medroi, highroi, fitfunc,

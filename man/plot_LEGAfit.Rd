@@ -33,7 +33,7 @@ input <- blood_interp(
   t_parentfrac = 1, parentfrac = 1
 )
 
-fit <- LEGA(t_tac, tac, input, 10, weights, dur = dur)
+fit <- LEGA(t_tac, dur, tac, input, 10, weights)
 plot_LEGAfit(fit)
 }
 \author{

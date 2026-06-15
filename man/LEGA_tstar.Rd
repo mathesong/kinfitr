@@ -6,6 +6,7 @@
 \usage{
 LEGA_tstar(
   t_tac,
+  dur,
   lowroi,
   medroi,
   highroi,
@@ -21,6 +22,9 @@ LEGA_tstar(
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
 zero. If a time zero frame is not included, it will be added.}
+
+\item{dur}{Numeric vector of the time durations of the frames in minutes. The
+LEGA estimator is explicitly frame-aware, so frame durations must be provided.}
 
 \item{lowroi}{Numeric vector of radioactivity concentrations in a target tissue for each frame. This should be from a ROI with low binding.}
 
@@ -56,7 +60,7 @@ Function to identify where t* is for LEGA.
 }
 \examples{
 \dontrun{
-LEGA_tstar(t_tac, lowroi, medroi, highroi, input,
+LEGA_tstar(t_tac, dur, lowroi, medroi, highroi, input,
   filename = "demonstration",
   inpshift = onetcmout$par$inpshift, frameStartEnd, gridbreaks = 4
 )

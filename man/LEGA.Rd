@@ -6,23 +6,29 @@
 \usage{
 LEGA(
   t_tac,
+  dur,
   tac,
   input,
   tstar,
   weights = NULL,
   inpshift = 0,
   vB = 0,
-  dur = NULL,
   frameStartEnd = NULL,
   timeStartEnd = NULL,
   tstar_type = "frames",
   tstarIncludedFrames = NULL,
-  fallback_to_ols = TRUE
+  Vt.start = NULL,
+  gamma.start = NULL,
+  fallback = c("MA1", "Logan", "none")
 )
 }
 \arguments{
 \item{t_tac}{Numeric vector of times for each frame in minutes. We use the time halfway through the frame as well as a
 zero. If a time zero frame is not included, it  will be added.}
+
+\item{dur}{Numeric vector of the time durations of the frames in minutes. The
+LEGA estimator is explicitly frame-aware (it integrates over each acquisition
+interval), so frame durations must be provided.}
 
 \item{tac}{Numeric vector of radioactivity concentrations in the target tissue for each frame. We include zero at time
 zero: if not included, it is added.}
@@ -45,12 +51,6 @@ If not specified, this will be set to 0. This can be fitted using 1TCM or 2TCM.}
 will be corrected for prior to parameter estimation using the following equation:
 \deqn{C_{T}(t) = \frac{C_{Measured}(t) - vB\times C_{B}(t)}{1-vB}}}
 
-\item{dur}{Optional, but recommended for LEGA. Numeric vector of the time
-durations of the frames. The LEGA estimator is explicitly frame-aware (it
-integrates over each acquisition interval), so durations should be provided
-where available. If not included, the frame durations will be approximated
-from the frame midtimes and a message displayed.}
-
 \item{frameStartEnd}{Optional: This allows one to specify the beginning and final frame to use for modelling, e.g. c(1,20).
 This can be used to assess time stability for example.}
 
@@ -60,11 +60,24 @@ This can be used to assess time stability for example.}
 
 \item{tstarIncludedFrames}{Deprecated. Use 'tstar' with 'tstar_type="frames"' instead.}
 
-\item{fallback_to_ols}{Optional. Logical. The LEGA estimator can occasionally
-be numerically unstable in high-noise data. Following the recommendation of
-Ogden (2003), if the LEGA estimate of \eqn{V_T} is non-positive or more than
-twice the size of the ordinary Logan (OLS) estimate, the more numerically
-stable OLS Logan estimate is returned instead (with a message). Default TRUE.}
+\item{Vt.start}{Optional. Reference value for \eqn{V_T}. If not supplied, it is
+taken from the reference fit (see \code{fallback}). This value is used as the
+reference against which the stability fallback is judged, and as the value
+returned if the fallback is triggered.}
+
+\item{gamma.start}{Optional. Starting value for the intercept (\eqn{\gamma})
+around which the one-dimensional optimisation is centred. If not supplied, it
+is taken from the reference fit (see \code{fallback}).}
+
+\item{fallback}{The LEGA estimator can occasionally be numerically unstable in
+high-noise data. Following the recommendation of Ogden (2003), if the LEGA
+estimate of \eqn{V_T} is non-finite, non-positive, or more than twice the size
+of the reference estimate (\code{Vt.start}, or the reference-method estimate),
+a more numerically stable estimate is returned instead (with a message). One
+of: \code{"MA1"} (default; revert to the MA1 estimate, which targets
+essentially the same quantity as LEGA), \code{"Logan"} (revert to the ordinary
+Logan estimate, as in Ogden 2003), or \code{"none"} (never revert; the raw
+LEGA estimate is returned, with a warning if it looks unreliable).}
 }
 \value{
 A list with a data frame of the fitted parameters \code{out$par}, the
@@ -110,8 +123,8 @@ input <- blood_interp(
   t_parentfrac = 1, parentfrac = 1
 )
 
-fit1 <- LEGA(t_tac, tac, input, 10, weights, dur = dur)
-fit2 <- LEGA(t_tac, tac, input, 10, weights, inpshift = 0.1, vB = 0.05, dur = dur)
+fit1 <- LEGA(t_tac, dur, tac, input, 10, weights)
+fit2 <- LEGA(t_tac, dur, tac, input, 10, weights, inpshift = 0.1, vB = 0.05)
 }
 \references{
 Ogden RT. Estimation of kinetic parameters in graphical analysis of PET imaging data. Statistics in Medicine. 2003 Nov 30;22(22):3557-68.
