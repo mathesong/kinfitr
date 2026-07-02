@@ -4,3 +4,5 @@
 inst/doc
 .httr-oauth
 .positai
+tests/testthat/_problems/
+tests/testthat/Rplots.pdf

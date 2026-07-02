@@ -48,16 +48,16 @@ theory and demonstrating how the package can be used on my blog. These give
 a good general introduction to using the package.
 
   - [Part 1: PET Modelling
-    Theory](https://www.granvillematheson.com/post/pharmacokinetic-modelling-of-pet-data-in-r-using-kinfitr-part-1-theory)
+    Theory](https://granvillematheson.com/posts/2020/kinfitr-part-1-theory)
 
   - [Part 2: Basics and Iteration using
-    kinfitr](https://www.granvillematheson.com/post/pharmacokinetic-modelling-of-pet-data-in-r-using-kinfitr-part-2-basics-and-iteration)
+    kinfitr](https://granvillematheson.com/posts/2020/kinfitr-part-2-basics-iteration)
 
   - [Part 3: Finding tstar using
-    kinfitr](https://www.granvillematheson.com/post/pharmacokinetic-modelling-of-pet-data-in-r-using-kinfitr-part-3-finding-tstar)
+    kinfitr](https://granvillematheson.com/posts/2020/kinfitr-part-3-finding-tstar)
 
   - [Part 4: Blood Processing using
-    kinfitr](https://www.granvillematheson.com/post/pharmacokinetic-modelling-of-pet-data-in-r-using-kinfitr-part-4-blood-processing)
+    kinfitr](https://granvillematheson.com/posts/2020/kinfitr-part-4-blood-processing)
 
 <!-- ## Example Usage -->
 

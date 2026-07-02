@@ -216,6 +216,146 @@ test_that("MA1 tstarfinder works", {
 })
 
 
+# LEGA
+
+test_that("LEGA works", {
+  LEGAout <- LEGA(
+    t_tac, dur, tac, input, 10, weights,
+    inpshift = inpshift
+  )
+  expect_lt(LEGAout$par$Vt, 3)
+  expect_gt(LEGAout$par$Vt, 2)
+  expect_true(any(class(plot(LEGAout)) == "ggplot"))
+})
+
+test_that("LEGA with frameStartEnd works", {
+  LEGAout <- LEGA(
+    t_tac, dur, tac, input, 10, weights,
+    inpshift = inpshift,
+    frameStartEnd = c(1, 33)
+  )
+  expect_lt(LEGAout$par$Vt, 3)
+  expect_gt(LEGAout$par$Vt, 2)
+  expect_lt(max(LEGAout$tacs$Time), max(t_tac))
+  expect_true(any(class(plot(LEGAout)) == "ggplot"))
+})
+
+test_that("LEGA with time-based tstar works", {
+  LEGAout <- LEGA(
+    t_tac, dur, tac, input, tstar = 30, tstar_type = "time", weights,
+    inpshift = inpshift
+  )
+  expect_lt(LEGAout$par$Vt, 3)
+  expect_gt(LEGAout$par$Vt, 2)
+  expect_true(any(class(plot(LEGAout)) == "ggplot"))
+})
+
+test_that("LEGA works without weights", {
+  LEGAout <- LEGA(
+    t_tac, dur, tac, input, 10,
+    inpshift = inpshift
+  )
+  expect_lt(LEGAout$par$Vt, 3)
+  expect_gt(LEGAout$par$Vt, 2)
+})
+
+test_that("LEGA errors when dur is not supplied", {
+  expect_error(
+    LEGA(t_tac = t_tac, tac = tac, input = input, tstar = 10, weights = weights),
+    "required"
+  )
+})
+
+test_that("LEGA accepts Vt.start and gamma.start", {
+  LEGAout <- LEGA(
+    t_tac, dur, tac, input, 10, weights,
+    inpshift = inpshift,
+    Vt.start = 2.5, gamma.start = -40
+  )
+  expect_lt(LEGAout$par$Vt, 3)
+  expect_gt(LEGAout$par$Vt, 2)
+  # Supplying both starts and disabling the fallback bypasses the reference fit
+  LEGAout2 <- LEGA(
+    t_tac, dur, tac, input, 10, weights,
+    inpshift = inpshift,
+    Vt.start = 2.5, gamma.start = -40, fallback = "none"
+  )
+  expect_lt(LEGAout2$par$Vt, 3)
+  expect_gt(LEGAout2$par$Vt, 2)
+})
+
+test_that("LEGA stability fallback uses the reference Vt", {
+  # Force the fallback by providing an implausibly small reference Vt
+  suppressMessages(
+    LEGAout <- LEGA(
+      t_tac, dur, tac, input, 10, weights,
+      inpshift = inpshift, Vt.start = 0.5
+    )
+  )
+  expect_true(LEGAout$fallback_used)
+  expect_equal(LEGAout$par$Vt, 0.5)
+})
+
+test_that("LEGA fallback method can be selected", {
+  fit_ma1 <- LEGA(t_tac, dur, tac, input, 10, weights, inpshift = inpshift, fallback = "MA1")
+  fit_log <- LEGA(t_tac, dur, tac, input, 10, weights, inpshift = inpshift, fallback = "Logan")
+  fit_none <- LEGA(t_tac, dur, tac, input, 10, weights, inpshift = inpshift, fallback = "none")
+  # The healthy estimate is unchanged regardless of fallback method
+  expect_false(fit_ma1$fallback_used)
+  expect_equal(fit_ma1$par$Vt, fit_log$par$Vt, tolerance = 1e-6)
+  expect_equal(fit_ma1$par$Vt, fit_none$par$Vt, tolerance = 1e-6)
+})
+
+test_that("LEGA reduces the negative bias of the Logan plot", {
+  LEGAout <- LEGA(
+    t_tac, dur, tac, input, 10, weights,
+    inpshift = inpshift
+  )
+  Loganout <- Loganplot(
+    t_tac, tac, input, 10, weights,
+    inpshift = inpshift, dur = dur
+  )
+  # LEGA is bias-free, the Logan plot is negatively biased, so LEGA >= Logan
+  expect_gte(LEGAout$par$Vt, Loganout$par$Vt)
+})
+
+test_that("LEGA returns a finite standard error and intercept", {
+  LEGAout <- LEGA(
+    t_tac, dur, tac, input, 10, weights,
+    inpshift = inpshift
+  )
+  expect_true(is.finite(LEGAout$par.se$Vt.se))
+  expect_gt(LEGAout$par.se$Vt.se, 0)
+  expect_true(is.finite(LEGAout$gamma))
+  # fit object plugs into the shared kinfitr machinery
+  expect_true(is.finite(maxpercres(LEGAout)))
+  expect_true(is.finite(summary(LEGAout$fit)$r.squared))
+})
+
+test_that("LEGA fit object supports residuals and fitted", {
+  LEGAout <- LEGA(
+    t_tac, dur, tac, input, 10, weights,
+    inpshift = inpshift
+  )
+  expect_equal(length(residuals(LEGAout$fit)), length(fitted(LEGAout$fit)))
+  # fitted values are the noise-free tissue concentrations Z* (offset included)
+  expect_equal(
+    as.numeric(fitted(LEGAout$fit)),
+    LEGAout$fitvals$Target_fitted
+  )
+})
+
+test_that("LEGA tstarfinder works", {
+  suppressWarnings(
+    tstar <- LEGA_tstar(t_tac, dur, lowroi, medroi, highroi,
+      input,
+      inpshift = inpshift, vB = 0.05
+    )
+  )
+  expect_true(any(class(plot(tstar)) == "ggplot"))
+})
+
+
 # MA2
 
 test_that("MA2 works", {
