@@ -153,3 +153,24 @@ test_that("bids_parse_derivatives handles empty and missing folders", {
   expect_error(bids_parse_derivatives(file.path(root, "nope")),
                "Derivatives folder not found")
 })
+
+test_that("path_absolute points at the file that was found", {
+
+  root <- make_derivatives("sub-01/ses-test/pet/sub-01_inputfunction.json")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+
+  writeLines('{"time": {"Units": "s"}}',
+             file.path(root, "sub-01/ses-test/pet/sub-01_inputfunction.json"))
+
+  d <- bids_parse_derivatives(root)
+
+  # path is relative to the folder, path_absolute resolves on its own. These
+  # came out equal once, because tibble() evaluates its arguments in its own
+  # scope and `path` there meant the column, not the argument.
+  expect_true(file.exists(d$path_absolute))
+  expect_false(identical(d$path, d$path_absolute))
+  expect_equal(d$path, "sub-01/ses-test/pet/sub-01_inputfunction.json")
+
+  # It is a real file, so it can actually be read
+  expect_equal(jsonlite::fromJSON(d$path_absolute)$time$Units, "s")
+})

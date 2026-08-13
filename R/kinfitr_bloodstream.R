@@ -13,9 +13,13 @@
 #' }
 bloodstream_import_inputfunctions <- function(blstream_folder) {
 
-  blstream_files <- bids_parse_files(blstream_folder)
-  blstream_files <- tidyr::unnest(blstream_files,
-                                  cols = filedata)
+  # A bloodstream or petfit folder holds derived files, not PET images, so the
+  # derivative parser applies. The raw parser fills in absent entities from the
+  # other files around them, which invents a session for any subject stored
+  # without one -- and the entity columns returned here are joined on by name,
+  # so an invented value means the blood silently matches no TACs at all.
+  blstream_files <- bids_parse_derivatives(blstream_folder)
+  blstream_files <- dplyr::rename(blstream_files, measurement = "suffix")
   blstream_files <- dplyr::filter(blstream_files,
                                   measurement == "inputfunction")
 
@@ -31,10 +35,17 @@ bloodstream_import_inputfunctions <- function(blstream_folder) {
                                        ~read.delim(.x, sep="\t"))
   blstream_tsv <- dplyr::select(blstream_tsv, -path_absolute, -path, -extension)
 
-  # Combine
-  suppressMessages(
-    blstream_data <- dplyr::full_join(blstream_json, blstream_tsv)
-  )
+  # Combine. A tsv and its json sidecar describe one product and so share an
+  # artifact_key, which pairs them exactly rather than by whichever entity
+  # columns the two happen to have in common.
+  blstream_data <- dplyr::full_join(blstream_json, blstream_tsv,
+                                    by = intersect(colnames(blstream_json),
+                                                   colnames(blstream_tsv)))
+  # The keys are used to pair the files, not to describe them: callers join on
+  # the entity columns, so returning extra columns would change that join.
+  blstream_data <- dplyr::select(blstream_data,
+                                 -dplyr::any_of(c("source_key", "artifact_key",
+                                                  "analysis_scope_key")))
 
   # Unit Conversions
 
@@ -135,9 +146,12 @@ bloodstream_import_inputfunctions <- function(blstream_folder) {
 #' }
 bloodstream_import_aifpars <- function(blstream_folder) {
 
-  blstream_files <- bids_parse_files(blstream_folder)
-  blstream_files <- tidyr::unnest(blstream_files,
-                                  cols = filedata)
+  # Derived files: see bloodstream_import_inputfunctions() above.
+  blstream_files <- bids_parse_derivatives(blstream_folder)
+  blstream_files <- dplyr::rename(blstream_files, measurement = "suffix")
+  blstream_files <- dplyr::select(blstream_files,
+                                  -dplyr::any_of(c("source_key", "artifact_key",
+                                                   "analysis_scope_key")))
   blstream_files <- dplyr::filter(blstream_files,
                                   measurement == "config")
 

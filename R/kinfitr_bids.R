@@ -976,7 +976,11 @@ bids_parse_derivatives <- function(path) {
   # every one of them would key identically to the rest.
   relative <- relative[stringr::str_detect(relative, "\\.(tsv|json|nii\\.gz|nii)$")]
 
-  scope <- basename(normalizePath(path, mustWork = FALSE))
+  # Resolved once, outside the row loop: tibble() evaluates its arguments in its
+  # own scope, so referring to `path` there would pick up the path column rather
+  # than this argument.
+  root <- normalizePath(path, mustWork = FALSE)
+  scope <- basename(root)
   selectors <- bids_selector_entities()
 
   if (length(relative) == 0) {
@@ -1061,7 +1065,7 @@ bids_parse_derivatives <- function(path) {
 
     row <- tibble::tibble(
       path = p$rel,
-      path_absolute = file.path(normalizePath(path, mustWork = FALSE), p$rel),
+      path_absolute = file.path(root, p$rel),
       extension = p$extension,
       suffix = p$suffix,
       source_key = source_key,
