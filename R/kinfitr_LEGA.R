@@ -32,8 +32,8 @@
 #' @param timeStartEnd Optional. This allows one to specify the beginning and end time point instead of defining the frame numbers using frameStartEnd. This function will restrict the model to all time frames whose t_tac is between the values, i.e. c(0,5) will select all frames with midtimes during the first 5 minutes.
 #' @param Vt.start Optional. Reference value for \eqn{V_T}. If not supplied, it is
 #' taken from the reference fit (see \code{fallback}). This value is used as the
-#' reference against which the stability fallback is judged, and as the value
-#' returned if the fallback is triggered.
+#' reference against which the stability fallback is judged. If the fallback is
+#' triggered, the selected fallback model estimate is returned.
 #' @param gamma.start Optional. Starting value for the intercept (\eqn{\gamma})
 #' around which the one-dimensional optimisation is centred. If not supplied, it
 #' is taken from the reference fit (see \code{fallback}).
@@ -122,6 +122,27 @@ LEGA <- function(t_tac, dur, tac, input, tstar, weights = NULL,
   tstar_type <- match.arg(tstar_type, c("frames", "time"))
   fallback <- match.arg(fallback, c("MA1", "Logan", "none"))
 
+  orig_t_tac <- t_tac
+  orig_dur <- dur
+  orig_tac <- tac
+  orig_input <- input
+  orig_weights <- weights
+  orig_frameStartEnd <- frameStartEnd
+
+  fit_reference <- function(ref_method) {
+    if (ref_method == "MA1") {
+      ma1(orig_t_tac, orig_tac, orig_input, tstar = tstar,
+          weights = orig_weights, inpshift = inpshift, vB = vB,
+          dur = orig_dur, frameStartEnd = orig_frameStartEnd,
+          tstar_type = tstar_type)
+    } else {
+      Loganplot(orig_t_tac, orig_tac, orig_input, tstar = tstar,
+                weights = orig_weights, inpshift = inpshift, vB = vB,
+                dur = orig_dur, frameStartEnd = orig_frameStartEnd,
+                tstar_type = tstar_type)
+    }
+  }
+
   # Reference fit. This serves two purposes: it provides default starting values
   # for the intercept (gamma) and the reference slope (Vt), and it supplies the
   # numerically stable estimate that the stability fallback reverts to. When the
@@ -134,22 +155,18 @@ LEGA <- function(t_tac, dur, tac, input, tstar, weights = NULL,
     (fallback != "none" && is.null(Vt.start))
 
   if (need_ref) {
+    reffit <- fit_reference(ref_method)
     if (ref_method == "MA1") {
-      reffit <- ma1(t_tac, tac, input, tstar = tstar, weights = weights,
-                    inpshift = inpshift, vB = vB, dur = dur,
-                    frameStartEnd = frameStartEnd, tstar_type = tstar_type)
       Vt_ref_default <- reffit$par$Vt
       gamma_ref_default <- as.numeric(1 / stats::coef(reffit$fit)[2])
       ref_se <- reffit$par.se$Vt.se
     } else {
-      reffit <- Loganplot(t_tac, tac, input, tstar = tstar, weights = weights,
-                          inpshift = inpshift, vB = vB, dur = dur,
-                          frameStartEnd = frameStartEnd, tstar_type = tstar_type)
       Vt_ref_default <- reffit$par$Vt
       gamma_ref_default <- as.numeric(stats::coef(reffit$fit)[1])
       ref_se <- reffit$par.se$Vt.se
     }
   } else {
+    reffit <- NULL
     Vt_ref_default <- NA_real_
     gamma_ref_default <- NA_real_
     ref_se <- NA_real_
@@ -294,28 +311,15 @@ LEGA <- function(t_tac, dur, tac, input, tstar, weights = NULL,
   # Numerical-stability check (Ogden 2003, p.3564): the LEGA estimate is
   # considered unreliable if it is non-finite, non-positive, or more than twice
   # the reference estimate (Vt.start, or the reference-method estimate).
-  unreliable <- !is.finite(Vt) || Vt <= 0 ||
-    (is.finite(Vt_ref) && Vt_ref > 0 && Vt > 2 * Vt_ref)
-
-  fallback_used <- FALSE
-  fallback_method <- NA_character_
-  if (unreliable) {
-    if (fallback != "none" && is.finite(Vt_ref)) {
-      message("LEGA estimate of Vt was non-positive or more than twice the reference (",
-              ref_method, ") estimate: returning the more numerically stable ",
-              ref_method, " estimate.")
-      Vt <- Vt_ref
-      par.se <- data.frame(Vt.se = if (!is.null(Vt.start)) NA_real_ else ref_se)
-      fallback_used <- TRUE
-      fallback_method <- ref_method
-    } else {
-      # fallback == "none" (or no usable reference): keep the raw LEGA estimate
-      # but warn so a pathological value is not returned silently.
-      warning("LEGA estimate of Vt looks unreliable (non-positive, non-finite, ",
-              "or implausibly large), but fallback is disabled: returning the raw ",
-              "LEGA estimate.", call. = FALSE)
-    }
+  fallback_reason <- NA_character_
+  if (!is.finite(Vt)) {
+    fallback_reason <- "non-finite"
+  } else if (Vt <= 0) {
+    fallback_reason <- "non-positive"
+  } else if (is.finite(Vt_ref) && Vt_ref > 0 && Vt > 2 * Vt_ref) {
+    fallback_reason <- "more than twice the reference estimate"
   }
+  unreliable <- !is.na(fallback_reason)
 
   # Output
 
@@ -336,9 +340,48 @@ LEGA <- function(t_tac, dur, tac, input, tstar, weights = NULL,
     par = par, par.se = par.se, fit = lega_model, tacs = tacs, fitvals = fitvals,
     input = input, weights = weights, inpshift = inpshift, vB = vB,
     tstarIncludedFrames = tstarIncludedFrames, gamma = gamma_hat,
-    fallback_used = fallback_used, fallback_method = fallback_method,
+    fallback_used = FALSE, fallback_method = NA_character_,
+    fallback_reason = fallback_reason, fallback_reference_vt = Vt_ref,
     model = "LEGA"
   )
+
+  if (unreliable) {
+    if (fallback != "none") {
+      if (is.null(reffit)) {
+        reffit <- fit_reference(ref_method)
+      }
+
+      if (is.finite(reffit$par$Vt)) {
+        message("LEGA estimate of Vt was ", fallback_reason,
+                ": returning the more numerically stable ",
+                ref_method, " estimate.")
+
+        fallback_out <- reffit
+        fallback_out$requested_model <- "LEGA"
+        fallback_out$fallback_used <- TRUE
+        fallback_out$fallback_method <- ref_method
+        fallback_out$fallback_reason <- fallback_reason
+        fallback_out$fallback_reference_vt <- Vt_ref
+        fallback_out$lega_par <- out$par
+        fallback_out$lega_par.se <- out$par.se
+        fallback_out$lega_fit <- out$fit
+        fallback_out$lega_tacs <- out$tacs
+        fallback_out$lega_fitvals <- out$fitvals
+        fallback_out$lega_input <- out$input
+        fallback_out$lega_weights <- out$weights
+        fallback_out$lega_gamma <- out$gamma
+        class(fallback_out) <- unique(c("LEGA", class(reffit)))
+
+        return(fallback_out)
+      }
+    }
+
+    # fallback == "none" (or no usable fallback fit): keep the raw LEGA estimate
+    # but warn so a pathological value is not returned silently.
+    warning("LEGA estimate of Vt looks unreliable (", fallback_reason,
+            "), but no usable fallback was available: returning the raw ",
+            "LEGA estimate.", call. = FALSE)
+  }
 
   class(out) <- c("LEGA", "kinfit")
 

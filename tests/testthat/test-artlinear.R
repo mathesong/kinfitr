@@ -284,16 +284,26 @@ test_that("LEGA accepts Vt.start and gamma.start", {
   expect_gt(LEGAout2$par$Vt, 2)
 })
 
-test_that("LEGA stability fallback uses the reference Vt", {
-  # Force the fallback by providing an implausibly small reference Vt
+test_that("LEGA stability fallback returns fallback fit bookkeeping", {
+  ma1out <- ma1(t_tac, tac, input, 10, weights,
+                inpshift = inpshift, dur = dur)
+
+  # Force the fallback by providing an implausibly small reference Vt threshold.
   suppressMessages(
     LEGAout <- LEGA(
       t_tac, dur, tac, input, 10, weights,
       inpshift = inpshift, Vt.start = 0.5
     )
   )
+
   expect_true(LEGAout$fallback_used)
-  expect_equal(LEGAout$par$Vt, 0.5)
+  expect_equal(LEGAout$fallback_method, "MA1")
+  expect_equal(LEGAout$model, "ma1")
+  expect_equal(LEGAout$par$Vt, ma1out$par$Vt)
+  expect_equal(LEGAout$fallback_reference_vt, 0.5)
+  expect_equal(fitted(LEGAout$fit), fitted(ma1out$fit))
+  expect_s3_class(LEGAout$lega_fit, "lm")
+  expect_equal(LEGAout$lega_par$Vt, LEGAout$lega_fit$coefficients[["B_eq"]])
 })
 
 test_that("LEGA fallback method can be selected", {

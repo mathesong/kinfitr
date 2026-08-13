@@ -62,8 +62,8 @@ This can be used to assess time stability for example.}
 
 \item{Vt.start}{Optional. Reference value for \eqn{V_T}. If not supplied, it is
 taken from the reference fit (see \code{fallback}). This value is used as the
-reference against which the stability fallback is judged, and as the value
-returned if the fallback is triggered.}
+reference against which the stability fallback is judged. If the fallback is
+triggered, the selected fallback model estimate is returned.}
 
 \item{gamma.start}{Optional. Starting value for the intercept (\eqn{\gamma})
 around which the one-dimensional optimisation is centred. If not supplied, it
