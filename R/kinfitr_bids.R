@@ -815,12 +815,17 @@ bids_parse_pettimes <- function(filedata) {
     return(NA)
   }
 
-  json_pet$jsondat_pet <- purrr::map(json_pet$path_absolute,
-                                     bids_read_sidecar, filedata, "_pet.json")
-
   ### Extract the data ###
 
-  jsondat_pet <- purrr::flatten(purrr::compact(json_pet$jsondat_pet))
+  # Merge the applicable sidecars nearest-last rather than flattening them, so a
+  # field set close to the data file wins and the result does not depend on the
+  # order the files were listed in.
+  data_file <- filedata$path[filedata$measurement == "pet" &
+                               filedata$extension %in% c("nii", "nii.gz")]
+  if (length(data_file) == 0) data_file <- json_pet$path
+  resolved <- bids_resolve_sidecars(data_file[1], json_pet$path,
+                                    sidecar_root = attr(filedata, "study_root"))
+  jsondat_pet <- resolved$values
 
   if (length(jsondat_pet) == 0) {
     return(NA)
@@ -866,12 +871,17 @@ bids_parse_petinfo <- function(filedata) {
     return(NA)
   }
 
-  json_pet$jsondat_pet <- purrr::map(json_pet$path_absolute,
-                                     bids_read_sidecar, filedata, "_pet.json")
-
   ### Extract the data ###
 
-  jsondat_pet <- purrr::flatten(purrr::compact(json_pet$jsondat_pet))
+  # Merge the applicable sidecars nearest-last rather than flattening them, so a
+  # field set close to the data file wins and the result does not depend on the
+  # order the files were listed in.
+  data_file <- filedata$path[filedata$measurement == "pet" &
+                               filedata$extension %in% c("nii", "nii.gz")]
+  if (length(data_file) == 0) data_file <- json_pet$path
+  resolved <- bids_resolve_sidecars(data_file[1], json_pet$path,
+                                    sidecar_root = attr(filedata, "study_root"))
+  jsondat_pet <- resolved$values
 
   if (length(jsondat_pet) == 0) {
     return(NA)
@@ -1443,4 +1453,144 @@ bids_associate_blood <- function(filedata) {
   }
 
   complete
+}
+
+
+# --- Sidecar resolution -------------------------------------------------------
+
+# Is a sidecar applicable to a data file?
+#
+# Three conditions: the same suffix, a directory that is an ancestor of the data
+# file's, and every entity the sidecar names also named by the data file with the
+# same value.
+#
+# The last condition is relaxed for the entities in `lenient`. A root-level
+# task-rest_pet.json is meant to apply to PET files that name no task, and
+# without leniency it applies to nothing at all. trc and run stay strict: a
+# sidecar specific enough to name the tracer should match an image that names it
+# too, and attaching the wrong one would silently supply the wrong half-life and
+# injected dose.
+bids_sidecar_applies <- function(sidecar_path, data_path, lenient) {
+
+  if (!identical(bids_filename_suffix(basename(sidecar_path)),
+                 bids_filename_suffix(basename(data_path)))) {
+    return("suffix differs")
+  }
+
+  sidecar_dir <- dirname(sidecar_path)
+  data_dir <- dirname(data_path)
+  ancestor <- sidecar_dir == "." || sidecar_dir == data_dir ||
+    startsWith(paste0(data_dir, "/"), paste0(sidecar_dir, "/"))
+  if (!ancestor) {
+    return("not in a parent directory of the data file")
+  }
+
+  sidecar_entities <- bids_path_entities(sidecar_path)
+  data_entities <- bids_path_entities(data_path)
+
+  for (entity in names(sidecar_entities)) {
+    if (!entity %in% names(data_entities)) {
+      if (entity %in% lenient) next
+      return(paste0("names ", entity, "-", sidecar_entities[entity],
+                    ", which the data file does not"))
+    }
+    if (!identical(unname(sidecar_entities[entity]),
+                   unname(data_entities[entity]))) {
+      return(paste0("names ", entity, "-", sidecar_entities[entity],
+                    " but the data file names ", entity, "-",
+                    data_entities[entity]))
+    }
+  }
+
+  NA_character_
+}
+
+#' Resolve the metadata sidecars applying to a data file
+#'
+#' @description Merge the JSON sidecars that apply to one data file, nearest
+#'   directory last, and report where each field came from.
+#'
+#'   Merging is key by key from the study root inwards, so a field set close to
+#'   the data file overrides the same field set further out, and fields set only
+#'   at the root are inherited. Two applicable sidecars in the same directory are
+#'   refused: nothing distinguishes them, and picking by enumeration order makes
+#'   the frame times depend on how the filesystem happens to list files.
+#'
+#'   Every sidecar that does not apply is reported, with the reason.
+#'
+#' @param data_path Path of the data file, relative to the study root.
+#' @param sidecar_paths Candidate sidecar paths, relative to the same root.
+#' @param sidecar_root Optional directory to prepend when reading the files.
+#' @param lenient Entities a sidecar may name that the data file does not.
+#'   Defaults to `task` and `rec`.
+#'
+#' @return A list with `values`, the merged fields, and `provenance`, naming the
+#'   sidecar each field came from.
+#' @export
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @examples
+#' \dontrun{
+#' bids_resolve_sidecars("sub-01/ses-test/pet/sub-01_ses-test_pet.nii.gz",
+#'                       c("task-rest_pet.json",
+#'                         "sub-01/ses-test/pet/sub-01_ses-test_pet.json"))
+#' }
+bids_resolve_sidecars <- function(data_path, sidecar_paths, sidecar_root = NULL,
+                                  lenient = c("task", "rec")) {
+
+  empty <- list(values = list(), provenance = character(0))
+
+  if (length(sidecar_paths) == 0) {
+    return(empty)
+  }
+
+  reasons <- vapply(sidecar_paths, bids_sidecar_applies, character(1),
+                    data_path, lenient, USE.NAMES = FALSE)
+
+  skipped <- !is.na(reasons)
+  if (any(skipped)) {
+    warning("Sidecars not applied to ", data_path, ":\n",
+            paste0("  ", sidecar_paths[skipped], " -- ", reasons[skipped],
+                   collapse = "\n"), call. = FALSE)
+  }
+
+  applicable <- sidecar_paths[!skipped]
+  if (length(applicable) == 0) {
+    return(empty)
+  }
+
+  depth <- lengths(strsplit(applicable, "/", fixed = TRUE))
+
+  duplicated_depth <- unique(depth[duplicated(depth)])
+  if (length(duplicated_depth) > 0) {
+    clashing <- applicable[depth %in% duplicated_depth]
+    stop("More than one sidecar applies to ", data_path,
+         " from the same directory:\n",
+         paste0("  ", clashing, collapse = "\n"),
+         "\nNothing distinguishes them, so which one wins would depend on the ",
+         "order the files are listed in.", call. = FALSE)
+  }
+
+  applicable <- applicable[order(depth)]
+
+  values <- list()
+  provenance <- character(0)
+
+  for (sidecar in applicable) {
+    full <- if (is.null(sidecar_root)) sidecar else file.path(sidecar_root, sidecar)
+    fields <- tryCatch(jsonlite::fromJSON(full), error = function(e) {
+      warning("The sidecar ", sidecar, " could not be read: ",
+              conditionMessage(e), call. = FALSE)
+      NULL
+    })
+    if (is.null(fields) || length(fields) == 0) next
+
+    for (key in names(fields)) {
+      values[[key]] <- fields[[key]]
+      provenance[key] <- sidecar
+    }
+  }
+
+  list(values = values, provenance = provenance)
 }
