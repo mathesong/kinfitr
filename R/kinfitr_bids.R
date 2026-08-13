@@ -876,3 +876,207 @@ bids_parse_study <- function(studypath) {
 #     tidyr::unnest(matchdata)
 # }
 
+
+
+# --- Derivative parsing -------------------------------------------------------
+#
+# A derivatives folder is not a normal BIDS folder: with no PET images, there are
+# no acquisitions to enumerate, and the raw parser's inheritance and entity
+# grid do not apply to it. Using bids_parse_files() on one produces fabricated
+# entities -- a subject with no session directory comes back carrying ses-test.
+# These functions do filename grouping and nothing else.
+
+# The BIDS PET filename template, and thus the entities that identify which
+# acquisition a derivative belongs to. Deliberately hard-coded rather than
+# derived: an entity added here changes what counts as the same measurement.
+bids_selector_entities <- function() {
+  c("sub", "ses", "task", "trc", "rec", "run")
+}
+
+# Every "key-label" pair in a path or filename, in order of appearance.
+bids_path_entities <- function(x) {
+  m <- stringr::str_match_all(x, "(?:^|[_/])([a-z0-9]+)-([a-zA-Z0-9+]+)")[[1]]
+  if (nrow(m) == 0) {
+    return(stats::setNames(character(0), character(0)))
+  }
+  stats::setNames(m[, 3], m[, 2])
+}
+
+# The trailing token of a filename stem: "kinpar" in
+# sub-01_model-2TCM_desc-model1_kinpar.tsv. A stem whose last token is itself an
+# entity pair has no suffix.
+bids_filename_suffix <- function(basename) {
+  stem <- stringr::str_remove(basename, "\\.(tsv|json|nii\\.gz|nii)$")
+  last <- stringr::str_extract(stem, "[^_]+$")
+  if (is.na(last) || stringr::str_detect(last, "-")) NA_character_ else last
+}
+
+bids_compose_key <- function(entities, keys) {
+  keys <- keys[keys %in% names(entities)]
+  if (length(keys) == 0) {
+    return(NA_character_)
+  }
+  paste(paste0(keys, "-", entities[keys]), collapse = "_")
+}
+
+#' Parse the derivative files of a PET BIDS derivatives folder
+#'
+#' @description Returns one row per derivative file, with the keys needed to
+#'   join it to the acquisition it came from and to group the files that make up
+#'   a single product.
+#'
+#'   This is deliberately a narrower contract than BIDS Derivatives. It groups
+#'   by filename and does no inheritance, no entity grid and no acquisition
+#'   enumeration, because a derivatives folder contains no PET images to
+#'   enumerate. Running the raw parser over one instead invents entities: a
+#'   subject stored without a session directory comes back carrying whichever
+#'   session its neighbours happen to use, and then fails to join.
+#'
+#'   Three keys are returned per file:
+#'
+#'   \describe{
+#'     \item{`source_key`}{*Which acquisition?* The selector entities
+#'       (`sub`, `ses`, `task`, `trc`, `rec`, `run`) the file carries, with the
+#'       directory supplying any the filename omits. `NA` for group-level files.}
+#'     \item{`artifact_key`}{*Which product?* The source key plus every
+#'       remaining entity plus the suffix. A `.tsv` and its `.json` sidecar
+#'       describe one product and so share an artifact key.}
+#'     \item{`analysis_scope_key`}{*Which analysis?* Set for group-level files,
+#'       `NA` otherwise.}
+#'   }
+#'
+#'   Files with no `sub` are group-level results. They get no `source_key`, so
+#'   they cannot be joined to an acquisition by accident.
+#'
+#'   `.html` reports and any other non-data file are ignored: they are output
+#'   for people to read, not artifacts to join on, and they carry no entities to
+#'   tell them apart.
+#'
+#' @param path Path to the derivatives folder, e.g. a petfit analysis folder.
+#'
+#' @return A tibble with one row per derivative file: `path`, `path_absolute`,
+#'   `extension`, `suffix`, the three keys above, and a column per entity found.
+#' @export
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @examples
+#' \dontrun{
+#' derivatives <- bids_parse_derivatives("derivatives/petfit/analysis3")
+#' }
+bids_parse_derivatives <- function(path) {
+
+  if (!dir.exists(path)) {
+    stop("Derivatives folder not found: ", path, call. = FALSE)
+  }
+
+  relative <- list.files(path, recursive = TRUE)
+
+  # Data files only. Reports and other non-data files carry no entities, so
+  # every one of them would key identically to the rest.
+  relative <- relative[stringr::str_detect(relative, "\\.(tsv|json|nii\\.gz|nii)$")]
+
+  scope <- basename(normalizePath(path, mustWork = FALSE))
+  selectors <- bids_selector_entities()
+
+  if (length(relative) == 0) {
+    return(tibble::tibble(
+      path = character(0), path_absolute = character(0),
+      extension = character(0), suffix = character(0),
+      source_key = character(0), artifact_key = character(0),
+      analysis_scope_key = character(0)
+    ))
+  }
+
+  parsed <- purrr::map(relative, function(rel) {
+
+    base <- basename(rel)
+    file_entities <- bids_path_entities(base)
+    dir_entities <- bids_path_entities(paste0(dirname(rel), "/"))
+
+    # A filename that names an entity outranks the directory it sits in.
+    conflicting <- intersect(names(file_entities), names(dir_entities))
+    conflicting <- conflicting[file_entities[conflicting] != dir_entities[conflicting]]
+
+    # The directory completes what the filename omits. petfit's own derivatives
+    # put ses in the path but not the filename, so a filename-only key would
+    # fail to join for exactly the subjects that have sessions.
+    #
+    # What neither the filename nor the directory says stays unsaid. An entity a
+    # file does not name imposes no constraint on it: a weights file called
+    # sub-01_desc-weights_weights.tsv sitting beside trc-A and trc-B results
+    # applies to both. So source_key is whatever the file does specify, and
+    # matching it against acquisitions is a subset test rather than string
+    # equality. This function could not decide that in any case -- a derivatives
+    # folder holds no PET images, so it never sees the acquisitions to match.
+    completed <- file_entities
+    for (entity in names(dir_entities)) {
+      if (!entity %in% names(completed)) {
+        completed[entity] <- dir_entities[entity]
+      }
+    }
+
+    list(
+      rel = rel,
+      entities = completed,
+      conflicting = conflicting,
+      from_directory = setdiff(names(dir_entities), names(file_entities)),
+      extension = stringr::str_extract(base, "(nii\\.gz|tsv|json|nii)$"),
+      suffix = bids_filename_suffix(base)
+    )
+  })
+
+  conflicts <- purrr::keep(parsed, ~ length(.x$conflicting) > 0)
+  if (length(conflicts) > 0) {
+    detail <- purrr::map_chr(conflicts, function(p) {
+      paste0("  ", p$rel, " (disagrees on: ",
+             paste(p$conflicting, collapse = ", "), ")")
+    })
+    stop("A filename and the directory holding it name different values for ",
+         "the same entity, so the acquisition it belongs to is ambiguous:\n",
+         paste(detail, collapse = "\n"), call. = FALSE)
+  }
+
+  out <- purrr::map_dfr(parsed, function(p) {
+
+    entities <- p$entities
+    is_group <- !("sub" %in% names(entities))
+
+    source_key <- if (is_group) {
+      NA_character_
+    } else {
+      bids_compose_key(entities, selectors)
+    }
+
+    # Every remaining entity, never a hand-maintained list of the ones we happen
+    # to recognise: an unfamiliar but valid entity would otherwise collapse two
+    # distinct files into one identity.
+    qualifiers <- sort(setdiff(names(entities), selectors))
+
+    artifact_key <- paste(stats::na.omit(c(
+      if (is_group) scope else source_key,
+      bids_compose_key(entities, qualifiers),
+      p$suffix
+    )), collapse = "_")
+
+    row <- tibble::tibble(
+      path = p$rel,
+      path_absolute = file.path(normalizePath(path, mustWork = FALSE), p$rel),
+      extension = p$extension,
+      suffix = p$suffix,
+      source_key = source_key,
+      artifact_key = artifact_key,
+      analysis_scope_key = if (is_group) scope else NA_character_
+    )
+
+    for (entity in names(entities)) {
+      row[[entity]] <- unname(entities[entity])
+    }
+
+    row
+  })
+
+
+  out
+}
+
