@@ -1161,6 +1161,7 @@ bids_file_belongs_to <- function(file_entities, pet_entities, selectors) {
 bids_parse_filenames <- function(studypath) {
 
   selectors <- bids_selector_entities()
+  study_root <- normalizePath(studypath, mustWork = FALSE)
 
   extensions <- paste(c("*.nii.gz", "*.nii", "*.tsv", "*.json"), collapse = "|")
   files <- fs::dir_info(studypath, recurse = TRUE, type = "file",
@@ -1258,10 +1259,136 @@ bids_parse_filenames <- function(studypath) {
 
     belongs <- purrr::map_lgl(file_entities,
                               bids_file_belongs_to, entities, selectors)
-    row$filedata <- list(filedata[belongs, , drop = FALSE])
+
+    # The acquisition's identity travels with its files as attributes rather
+    # than as extra columns or a new argument. bids_create_blooddata() is
+    # exported and takes a bare table, so a hand-built one still works -- it
+    # simply has no key to name itself with in messages.
+    acquisition_files <- filedata[belongs, , drop = FALSE]
+    attr(acquisition_files, "pet_key") <-
+      bids_compose_key(entities, selectors[selectors %in% names(entities)])
+    attr(acquisition_files, "study_root") <- study_root
+
+    row$filedata <- list(acquisition_files)
 
     row
   })
 
   out
+}
+
+
+# --- Blood association --------------------------------------------------------
+
+#' Associate blood files with a PET acquisition
+#'
+#' @description Works out which blood files belong to one acquisition, and
+#'   refuses the combinations that cannot be resolved.
+#'
+#'   BIDS requires blood to live in the acquisition's `pet/` directory and to
+#'   carry a `recording` entity, so both are enforced here. Several recordings
+#'   for one acquisition are normal and expected -- manual samples alongside an
+#'   autosampler is explicitly permitted -- but two complete file pairs claiming
+#'   the *same* recording cannot both be it.
+#'
+#'   For an acquisition with no blood, the
+#'   returned table is simply empty, and its `excluded` attribute says what was
+#'   left out of the *blood association*, so that "this scan has no blood" can
+#'   be told apart from "this scan's blood failed to attach".
+#'
+#' @param filedata The files belonging to one acquisition, as nested by
+#'   [bids_parse_filenames()]. Its `pet_key` attribute, if present, is used to
+#'   name the acquisition in messages.
+#'
+#' @return A tibble with one row per recording: `recording`, `tsv`, `json`. Zero
+#'   rows when the acquisition has no usable blood, carrying an `excluded`
+#'   attribute explaining which case it is. That refers to the blood, not the
+#'   acquisition, which remains perfectly usable without it.
+#' @export
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @examples
+#' \dontrun{
+#' blood <- bids_associate_blood(measurements$filedata[[1]])
+#' }
+bids_associate_blood <- function(filedata) {
+
+  key <- attr(filedata, "pet_key")
+  if (is.null(key) || is.na(key)) key <- "this acquisition"
+
+  empty <- function(reason) {
+    out <- tibble::tibble(recording = character(0),
+                          tsv = character(0),
+                          json = character(0))
+    attr(out, "excluded") <- reason
+    out
+  }
+
+  if (is.null(filedata) || nrow(filedata) == 0 ||
+      !("blood" %in% filedata$measurement)) {
+    return(empty("no blood files"))
+  }
+
+  blood <- filedata[filedata$measurement == "blood", , drop = FALSE]
+
+  # Spec-mandated: blood belongs in the acquisition's pet/ directory.
+  misplaced <- blood$path[!stringr::str_detect(blood$path, "(^|/)pet/")]
+  if (length(misplaced) > 0) {
+    stop("Blood files for ", key, " are outside a pet/ directory:\n",
+         paste0("  ", misplaced, collapse = "\n"),
+         "\nBIDS places blood recordings alongside the PET data they belong to.",
+         call. = FALSE)
+  }
+
+  # Spec-mandated: recording distinguishes one blood recording from another.
+  if (!"recording" %in% colnames(blood)) {
+    blood$recording <- NA_character_
+  }
+  unlabelled <- blood$path[is.na(blood$recording)]
+  if (length(unlabelled) > 0) {
+    stop("Blood files for ", key, " carry no recording entity:\n",
+         paste0("  ", unlabelled, collapse = "\n"),
+         "\nWithout it there is no way to tell one recording from another.",
+         call. = FALSE)
+  }
+
+  recordings <- sort(unique(blood$recording))
+
+  pairs <- purrr::map_dfr(recordings, function(recording) {
+
+    this <- blood[blood$recording == recording, , drop = FALSE]
+    tsv <- this$path_absolute[this$extension == "tsv"]
+    json <- this$path_absolute[this$extension == "json"]
+
+    # Several recordings per acquisition are fine, and so are files that differ
+    # by a selector entity: run-01 and run-02 blood belong to different
+    # acquisitions and are never compared here, because filedata holds one
+    # acquisition's files. What cannot be resolved is two files claiming the
+    # same recording of the *same* acquisition.
+    if (length(tsv) > 1 || length(json) > 1) {
+      stop("More than one blood file pair for ", key,
+           " claims recording-", recording, ":\n",
+           paste0("  ", this$path, collapse = "\n"),
+           "\nGive them distinct recording labels.", call. = FALSE)
+    }
+
+    tibble::tibble(
+      recording = recording,
+      tsv = if (length(tsv)) tsv else NA_character_,
+      json = if (length(json)) json else NA_character_
+    )
+  })
+
+  complete <- pairs[!is.na(pairs$tsv) & !is.na(pairs$json), , drop = FALSE]
+
+  if (nrow(complete) == 0) {
+    return(empty(paste0(
+      "blood files present but no complete tsv/json pair (",
+      paste0("recording-", pairs$recording,
+             ifelse(is.na(pairs$tsv), " missing tsv", " missing json"),
+             collapse = "; "), ")")))
+  }
+
+  complete
 }
