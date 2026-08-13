@@ -1,3 +1,42 @@
+# Warn about entity labels that differ only in case.
+#
+# BIDS labels are case-sensitive, so trc-PF974 and trc-pf974 are two different
+# tracers as far as any tool is concerned -- which is almost never what was
+# meant, and produces confusing duplicate measurements.
+#
+# Warn, never error: a collision simply yields two distinct measurements, so
+# refusing the dataset would only turn away work that can be done correctly.
+bids_warn_case_collisions <- function(attributes) {
+
+  entity_cols <- setdiff(colnames(attributes),
+                         c("path", "path_absolute", "extension", "measurement"))
+
+  for (entity in entity_cols) {
+
+    values <- unique(attributes[[entity]])
+    values <- values[!is.na(values)]
+    if (length(values) < 2) next
+
+    collided <- split(values, tolower(values))
+    collided <- collided[vapply(collided, length, integer(1)) > 1]
+    if (length(collided) == 0) next
+
+    groups <- vapply(collided, function(v) {
+      paste(paste0(entity, "-", v), collapse = " / ")
+    }, character(1))
+
+    warning("Entity labels differing only in case: ",
+            paste(groups, collapse = "; "),
+            ". BIDS labels are case-sensitive, so these are treated as ",
+            "distinct measurements. If that was not intended, run the BIDS ",
+            "validator (https://bids-standard.github.io/bids-validator/) and ",
+            "correct the filenames.",
+            call. = FALSE)
+  }
+
+  invisible(attributes)
+}
+
 #' Extract the filenames from a PET BIDS study
 #'
 #' This function returns a data frame of the files for each measurement in a
@@ -35,6 +74,10 @@ bids_parse_files <- function(studypath) {
                                       grepl(".nii.gz", path),
                                       "nii.gz", extension)) %>%
     dplyr::filter(!is.na(measurement))
+
+  # Check before the defaults below are filled in, so that synthetic values
+  # such as trc = "trc" cannot themselves collide.
+  bids_warn_case_collisions(attributes)
 
   if(!("sub" %in% colnames(attributes))) {
     attributes$sub <- "01"
@@ -238,8 +281,11 @@ bids_parse_files <- function(studypath) {
 #'    "sub-01/ses-01/pet/sub-01_ses-01_recording-continuous_blood.json")
 bids_filename_attributes <- function(filename) {
 
-  attr <- stringr::str_match_all(filename, "([a-z0-9]*-[a-zA-Z0-9]*)[/_]")[[1]]
-  attr_val <- stringr::str_match(attr[,2], "([a-z0-9]*)-([a-zA-Z0-9]*)")
+  # "+" is a legal character in a BIDS entity label. Without it here the entity
+  # does not merely lose the label -- the whole key-value pair fails to match and
+  # is dropped, so "task-A+B" parses as no task at all rather than as task "A".
+  attr <- stringr::str_match_all(filename, "([a-z0-9]*-[a-zA-Z0-9+]*)[/_]")[[1]]
+  attr_val <- stringr::str_match(attr[,2], "([a-z0-9]*)-([a-zA-Z0-9+]*)")
   attr_vals <- tibble::tibble(
     attribute = attr_val[,2],
     value = attr_val[,3]
@@ -681,6 +727,21 @@ bids_create_blooddata <- function(filedata) {
 
 }
 
+# A short label naming a measurement, for use in messages. Prefers the PET
+# file's relative path, which is what a user would go looking for.
+bids_describe_measurement <- function(filedata) {
+
+  paths <- filedata$path[filedata$measurement == "pet"]
+  if (length(paths) == 0) {
+    paths <- filedata$path
+  }
+  if (length(paths) == 0) {
+    return("this measurement")
+  }
+
+  paths[1]
+}
+
 bids_parse_pettimes <- function(filedata) {
 
   if(!("pet" %in% filedata$measurement)) {
@@ -690,7 +751,22 @@ bids_parse_pettimes <- function(filedata) {
   ### Get the filenames ###
 
   json_pet <- filedata %>%
-    dplyr::filter(measurement=="pet" & extension=="json") %>%
+    dplyr::filter(measurement=="pet" & extension=="json")
+
+  # Frame times come from the _pet.json sidecar. Report a measurement that has
+  # none and return NA so it is dropped, rather than failing: this function is
+  # mapped over every measurement in the study, so an error here used to abort
+  # the whole parse -- one missing sidecar took down every other measurement
+  # too, with the opaque message "object 'dur' not found".
+  if (nrow(json_pet) == 0) {
+    warning("No _pet.json sidecar found for ", bids_describe_measurement(filedata),
+            ". Frame times cannot be determined, so this measurement is ",
+            "excluded. Every PET image needs an accompanying _pet.json.",
+            call. = FALSE)
+    return(NA)
+  }
+
+  json_pet <- json_pet %>%
     dplyr::mutate(jsondat_pet = purrr::map(
       path_absolute, jsonlite::fromJSON
     ))
@@ -698,6 +774,16 @@ bids_parse_pettimes <- function(filedata) {
   ### Extract the data ###
 
   jsondat_pet <- purrr::flatten(json_pet$jsondat_pet)
+
+  missing_fields <- setdiff(c("FrameTimesStart", "FrameDuration"),
+                            names(jsondat_pet))
+  if (length(missing_fields) > 0) {
+    warning("The _pet.json for ", bids_describe_measurement(filedata),
+            " is missing ", paste(missing_fields, collapse = " and "),
+            ". Frame times cannot be determined, so this measurement is ",
+            "excluded.", call. = FALSE)
+    return(NA)
+  }
 
   tacdata <- tibble::tibble(
     start = jsondat_pet$FrameTimesStart,

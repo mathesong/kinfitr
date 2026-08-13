@@ -66,3 +66,19 @@ test_that("bids_filename_attributes reads the measurement suffix", {
       "sub-01/ses-01/pet/sub-01_ses-01_recording-continuous_blood.json")$recording,
     "continuous")
 })
+
+test_that("bids_filename_attributes accepts + in an entity label", {
+
+  # "+" is legal in a BIDS label. The regex used to require the label to be
+  # strictly alphanumeric, and a non-matching pair is dropped wholesale rather
+  # than truncated -- so "task-A+B" parsed as no task at all, not as task "A".
+  attrs <- bids_filename_attributes("sub-01_ses-test_task-A+B_trc-pf974_pet.nii.gz")
+
+  expect_true("task" %in% colnames(attrs))
+  expect_equal(attrs$task, "A+B")
+
+  # The neighbouring entities survive too
+  expect_equal(attrs$sub, "01")
+  expect_equal(attrs$ses, "test")
+  expect_equal(attrs$trc, "pf974")
+})
