@@ -103,6 +103,9 @@ test_that("entity labels differing only in case are warned about", {
   expect_warning(bids_parse_files(root), "trc-PF974")
   expect_warning(bids_parse_files(root), "bids-validator")
 
+  # The replacement parser checks too, comparing entity by entity
+  expect_warning(bids_parse_filenames(root), "trc-PF974")
+
   # It warns; it must never refuse the dataset
   files <- suppressWarnings(bids_parse_files(root))
   expect_true(nrow(files) > 0)
@@ -113,5 +116,15 @@ test_that("a consistently cased study raises no case warning", {
   root <- make_bids_study(complete = c("01", "02"))
   on.exit(unlink(root, recursive = TRUE), add = TRUE)
 
-  expect_silent(bids_parse_files(root))
+  # Not expect_silent: bids_parse_files() is deprecated and says so. What must
+  # be absent is the case warning specifically.
+  warnings <- character(0)
+  withCallingHandlers(
+    bids_parse_filenames(root),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    })
+
+  expect_false(any(grepl("differing only in case", warnings)))
 })

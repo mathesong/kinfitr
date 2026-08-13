@@ -55,6 +55,12 @@ bids_warn_case_collisions <- function(attributes) {
 #' }
 bids_parse_files <- function(studypath) {
 
+  warning(
+    "bids_parse_files() is deprecated in favour of bids_parse_filenames(), ",
+    "and will be removed in 2027.",
+    call. = FALSE)
+
+
   extensions = paste(c('*.nii.gz', "*.tsv", "*.json"), collapse="|")
 
   files <- fs::dir_info(studypath, recurse = T, type = "file",
@@ -836,8 +842,14 @@ bids_parse_petinfo <- function(filedata) {
 #' }
 bids_parse_study <- function(studypath) {
 
-  measurements <- bids_parse_files(studypath) %>%
-    dplyr::group_by(ses, sub, task, acq)
+  # One row per acquisition actually on disk. Grouping is by whichever selector
+  # entities this study uses -- naming them literally would fail on a study that
+  # has no task or no acq, which the previous parser hid by fabricating both.
+  measurements <- bids_parse_filenames(studypath)
+
+  grouping <- intersect(bids_selector_entities(), colnames(measurements))
+  measurements <- dplyr::group_by(measurements,
+                                  dplyr::across(dplyr::all_of(grouping)))
 
 
   measurements$petinfo <- purrr::map(measurements$filedata,
@@ -1084,3 +1096,172 @@ bids_parse_derivatives <- function(path) {
   out
 }
 
+
+
+# --- Measurement enumeration --------------------------------------------------
+
+# Does a file belong to a given acquisition?
+#
+# The subset rule: every selector entity the *file* names must match the
+# acquisition's value for it. A selector the file leaves out imposes no
+# constraint, so blood recorded once for a subject reaches both of that
+# subject's reconstructions. A file naming a selector the acquisition does not
+# have at all does not belong to it -- blood claiming rec-A cannot attach to an
+# acquisition with no rec.
+bids_file_belongs_to <- function(file_entities, pet_entities, selectors) {
+
+  claimed <- intersect(names(file_entities), selectors)
+
+  for (entity in claimed) {
+    if (!entity %in% names(pet_entities)) return(FALSE)
+    if (!identical(unname(file_entities[entity]),
+                   unname(pet_entities[entity]))) return(FALSE)
+  }
+
+  TRUE
+}
+
+#' Extract the measurements of a PET BIDS study from its filenames
+#'
+#' @description Returns one row per PET acquisition found on disk, with the
+#'   files belonging to it nested in `filedata`.
+#'
+#'   An acquisition's entities are exactly those its filename and directory
+#'   carry. Nothing is filled in: a study whose files name no `trc` has no `trc`
+#'   column, rather than a fabricated one. This matters because the previous
+#'   behaviour built a grid of every entity value against every other and kept
+#'   the combinations that matched a file, which invents acquisitions that do
+#'   not exist -- on a deliberately ragged 12-acquisition fixture it returns 192
+#'   measurements, giving subjects sessions and tracers belonging to their
+#'   neighbours.
+#'
+#'   An acquisition is any `_pet.nii`, `_pet.nii.gz` or `_pet.json` inside a
+#'   `pet/` directory; the image and its sidecar count once. Requiring `pet/`
+#'   excludes study-level inheritance sidecars such as `task-rest_pet.json`.
+#'   Because a `_pet.json` alone is enough, blood collected before the images
+#'   are reconstructed still yields a measurement.
+#'
+#'   Files are attached by the subset rule: every selector entity a file names
+#'   must match, and one it omits imposes no constraint. Blood recorded once per
+#'   subject therefore reaches every reconstruction of it, while blood naming a
+#'   `rec` no acquisition has attaches to nothing.
+#'
+#' @param studypath The BIDS study path for the main study.
+#'
+#' @return A tibble with one row per acquisition: a column per entity the study
+#'   actually uses, and `filedata` holding that acquisition's files.
+#' @export
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @examples
+#' \dontrun{
+#' measurements <- bids_parse_filenames(studypath)
+#' }
+bids_parse_filenames <- function(studypath) {
+
+  selectors <- bids_selector_entities()
+
+  extensions <- paste(c("*.nii.gz", "*.nii", "*.tsv", "*.json"), collapse = "|")
+  files <- fs::dir_info(studypath, recurse = TRUE, type = "file",
+                        glob = extensions)
+
+  filedata <- tibble::tibble(
+    path_absolute = as.character(files$path),
+    path = as.character(fs::path_rel(files$path, studypath))
+  )
+
+  filedata <- filedata[!stringr::str_detect(
+    filedata$path, "^(derivatives|code|phenotype|sourcedata)/"), , drop = FALSE]
+
+  if (nrow(filedata) == 0) {
+    return(tibble::tibble())
+  }
+
+  filedata$extension <- ifelse(
+    stringr::str_detect(filedata$path, "\\.nii\\.gz$"), "nii.gz",
+    fs::path_ext(filedata$path))
+  filedata$measurement <- purrr::map_chr(basename(filedata$path),
+                                         ~ bids_filename_suffix(.x) %||% NA_character_)
+  filedata <- filedata[!is.na(filedata$measurement), , drop = FALSE]
+
+  file_entities <- purrr::map(filedata$path, bids_path_entities)
+
+  # filedata carries the entities that describe the file rather than the
+  # acquisition -- recording, desc, seg and the like. Consumers filter on them
+  # (bids_parse_blood() needs `recording`), and the selector entities are on the
+  # measurement row itself, so they would be redundant here.
+  qualifiers <- setdiff(unique(unlist(lapply(file_entities, names))), selectors)
+  for (entity in qualifiers) {
+    filedata[[entity]] <- purrr::map_chr(file_entities, function(e) {
+      if (entity %in% names(e)) unname(e[entity]) else NA_character_
+    })
+  }
+
+  # One column per entity, so labels can be compared entity by entity. Pasting
+  # them into a single string would only ever detect two filenames identical
+  # apart from case, which is not the collision that matters.
+  all_entities <- unique(unlist(lapply(file_entities, names)))
+  entity_table <- tibble::tibble(.rows = length(file_entities))
+  for (entity in all_entities) {
+    entity_table[[entity]] <- purrr::map_chr(file_entities, function(e) {
+      if (entity %in% names(e)) unname(e[entity]) else NA_character_
+    })
+  }
+  bids_warn_case_collisions(entity_table)
+
+  # An acquisition is a _pet.* file inside pet/. The image and its sidecar are
+  # the same acquisition, so they collapse to one entry.
+  is_pet <- filedata$measurement == "pet" &
+    stringr::str_detect(filedata$path, "(^|/)pet/") &
+    filedata$extension %in% c("nii", "nii.gz", "json")
+
+  if (!any(is_pet)) {
+    return(tibble::tibble())
+  }
+
+  pet_entities <- file_entities[is_pet]
+  pet_keys <- purrr::map_chr(pet_entities, function(e) {
+    bids_compose_key(e, selectors[selectors %in% names(e)])
+  })
+
+  # Two images for one acquisition is the validator's business, but silently
+  # keeping whichever comes first would be ours.
+  images <- filedata$extension[is_pet] %in% c("nii", "nii.gz")
+  duplicated_images <- unique(pet_keys[images][duplicated(pet_keys[images])])
+  if (length(duplicated_images) > 0) {
+    offenders <- filedata$path[is_pet][images][pet_keys[images] %in% duplicated_images]
+    stop("More than one PET image describes the same acquisition:\n",
+         paste0("  ", offenders, collapse = "\n"),
+         "\nEach acquisition needs entities that tell it apart from the others.",
+         call. = FALSE)
+  }
+
+  keep <- !duplicated(pet_keys)
+  measurements_entities <- pet_entities[keep]
+
+  used <- unique(unlist(lapply(measurements_entities, names)))
+  used <- selectors[selectors %in% used]
+
+  out <- purrr::map_dfr(seq_along(measurements_entities), function(i) {
+
+    entities <- measurements_entities[[i]]
+
+    row <- tibble::tibble(.rows = 1)
+    for (entity in used) {
+      row[[entity]] <- if (entity %in% names(entities)) {
+        unname(entities[entity])
+      } else {
+        NA_character_
+      }
+    }
+
+    belongs <- purrr::map_lgl(file_entities,
+                              bids_file_belongs_to, entities, selectors)
+    row$filedata <- list(filedata[belongs, , drop = FALSE])
+
+    row
+  })
+
+  out
+}
