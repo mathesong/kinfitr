@@ -101,3 +101,20 @@ test_that("importing yields the entity columns callers join on", {
   expect_equal(imported$ses, "01")
   expect_false("acq" %in% colnames(imported))
 })
+
+test_that("an importer with only incomplete input functions returns empty", {
+
+  # Every input function lacking its sidecar: the incomplete rows are warned
+  # about and dropped, and what remains must come back as a zero-row table
+  # rather than a subscript error.
+  root <- bloodstream_folder(list(
+    "Primary_Analysis/sub-01/ses-01/pet/sub-01_ses-01_inputfunction.tsv" =
+      input_tsv))
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+
+  expect_warning(imported <- bloodstream_import_inputfunctions(root),
+                 "complete tsv/json pair")
+
+  expect_equal(nrow(imported), 0)
+  expect_true("input" %in% colnames(imported))
+})

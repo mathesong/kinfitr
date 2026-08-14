@@ -228,3 +228,25 @@ test_that("files directly under the root keep an unscoped key", {
   expect_equal(d$artifact_key[d$suffix == "config"],
                paste0(basename(root), "_desc-petfitoptions_config"))
 })
+
+test_that("analysis_scope_key names each analysis, not the parse root", {
+
+  # Parsing a parent of several analyses: each group-level file's scope is the
+  # analysis holding it. One shared scope would make "which analysis?"
+  # unanswerable exactly where it matters.
+  root <- make_derivatives(c(
+    "analysisA/bloodstream_config.json",
+    "analysisB/bloodstream_config.json"))
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+
+  d <- bids_parse_derivatives(root)
+
+  expect_setequal(d$analysis_scope_key, c("analysisA", "analysisB"))
+
+  # Directly under the root there is no analysis directory, and the root's own
+  # name remains the scope -- petfit parses single analysis folders this way.
+  single <- make_derivatives("bloodstream_config.json")
+  on.exit(unlink(single, recursive = TRUE), add = TRUE)
+  expect_equal(bids_parse_derivatives(single)$analysis_scope_key,
+               basename(single))
+})

@@ -351,13 +351,8 @@ bids_parse_blood <- function(filedata) {
 
   if (is.null(blood) || nrow(blood) == 0) {
     # An acquisition with no blood files at all is ordinary and passes in
-    # silence. Blood files that are present but unusable must not: a tsv
-    # missing its json would otherwise be indistinguishable from no blood.
-    reason <- if (is.null(blood)) NULL else attr(blood, "excluded")
-    if (!is.null(reason) && !identical(reason, "no blood files")) {
-      warning("The blood for ", attr(filedata, "pet_key") %||% "this acquisition",
-              " could not be used: ", reason, ".", call. = FALSE)
-    }
+    # silence. Blood that is present but unusable has already been warned
+    # about, per recording, by bids_associate_blood() itself.
     return(NA)
   }
 
@@ -1167,7 +1162,14 @@ bids_parse_derivatives <- function(path) {
       suffix = p$suffix,
       source_key = source_key,
       artifact_key = artifact_key,
-      analysis_scope_key = if (is_group) scope else NA_character_
+      # The analysis a group-level file belongs to is the directory holding it
+      # within the parse root, not the root itself: parsing a parent of
+      # several analyses must not give their configs one shared scope.
+      analysis_scope_key = if (is_group) {
+        if (!is.na(path_scope)) path_scope else scope
+      } else {
+        NA_character_
+      }
     )
 
     for (entity in names(entities)) {
@@ -1432,11 +1434,14 @@ bids_parse_filenames <- function(studypath) {
 #' @description Works out which blood files belong to one acquisition, and
 #'   refuses the combinations that cannot be resolved.
 #'
-#'   BIDS requires blood to live in the acquisition's `pet/` directory and to
-#'   carry a `recording` entity, so both are enforced here. Several recordings
-#'   for one acquisition are normal and expected -- manual samples alongside an
-#'   autosampler is explicitly permitted -- but two complete file pairs claiming
-#'   the *same* recording cannot both be it.
+#'   BIDS requires blood to live beside the PET data it belongs to -- the same
+#'   `pet/` directory as the acquisition's own `_pet.*` files, not merely some
+#'   `pet/` directory -- and to carry a `recording` entity, so both are
+#'   enforced here. Several recordings for one acquisition are normal and
+#'   expected -- manual samples alongside an autosampler is explicitly
+#'   permitted -- but two complete file pairs claiming the *same* recording
+#'   cannot both be it, and a json pairs with a tsv only if every entity the
+#'   json names is named by the tsv with the same value.
 #'
 #'   For an acquisition with no blood, the
 #'   returned table is simply empty, and its `excluded` attribute says what was
@@ -1488,6 +1493,22 @@ bids_associate_blood <- function(filedata) {
          call. = FALSE)
   }
 
+  # And not merely any pet/ directory: the one holding this acquisition's own
+  # _pet.* files. Without this, subject-level blood under sub-01/pet/ attaches
+  # to an acquisition under sub-01/ses-01/pet/, silently crossing scope.
+  pet_dirs <- unique(dirname(filedata$path[filedata$measurement == "pet"]))
+  pet_dirs <- pet_dirs[stringr::str_detect(pet_dirs, "(^|/)pet$")]
+  if (length(pet_dirs) > 0) {
+    astray <- blood$path[!dirname(blood$path) %in% pet_dirs]
+    if (length(astray) > 0) {
+      stop("Blood files for ", key, " are not beside its PET data (",
+           paste(pet_dirs, collapse = ", "), "):\n",
+           paste0("  ", astray, collapse = "\n"),
+           "\nBIDS places blood recordings alongside the PET data they belong ",
+           "to, in the same directory.", call. = FALSE)
+    }
+  }
+
   # Spec-mandated: recording distinguishes one blood recording from another.
   if (!"recording" %in% colnames(blood)) {
     blood$recording <- NA_character_
@@ -1520,12 +1541,46 @@ bids_associate_blood <- function(filedata) {
            "\nGive them distinct recording labels.", call. = FALSE)
     }
 
+    # A sidecar describes the tsv it names: every entity the json carries must
+    # be carried by the tsv with the same value (naming fewer is fine). A
+    # rec-A json beside a tsv that names no rec may describe different data,
+    # so recording alone is not enough to pair them.
+    if (length(tsv) == 1 && length(json) == 1) {
+      tsv_entities <- bids_path_entities(basename(this$path[this$extension == "tsv"]))
+      json_entities <- bids_path_entities(basename(this$path[this$extension == "json"]))
+      extra <- setdiff(names(json_entities), names(tsv_entities))
+      shared <- intersect(names(json_entities), names(tsv_entities))
+      mismatched <- shared[json_entities[shared] != tsv_entities[shared]]
+      disagreeing <- c(extra, mismatched)
+      if (length(disagreeing) > 0) {
+        warning("The blood json for ", key, ", recording-", recording,
+                " names ", paste(disagreeing, collapse = ", "),
+                " differently from its tsv, so it is not treated as that ",
+                "tsv's sidecar:\n",
+                paste0("  ", this$path, collapse = "\n"),
+                call. = FALSE)
+        json <- character(0)
+      }
+    }
+
     tibble::tibble(
       recording = recording,
       tsv = if (length(tsv)) tsv else NA_character_,
       json = if (length(json)) json else NA_character_
     )
   })
+
+  # Every incomplete recording is reported, whether or not another recording is
+  # complete: an autosampler tsv missing its json must not vanish in silence
+  # just because the manual samples are fine.
+  incomplete <- pairs[is.na(pairs$tsv) | is.na(pairs$json), , drop = FALSE]
+  if (nrow(incomplete) > 0) {
+    warning("Blood for ", key,
+            " without a complete tsv/json pair, skipped:\n",
+            paste0("  recording-", incomplete$recording,
+                   ifelse(is.na(incomplete$tsv), " missing tsv", " missing json"),
+                   collapse = "\n"), call. = FALSE)
+  }
 
   complete <- pairs[!is.na(pairs$tsv) & !is.na(pairs$json), , drop = FALSE]
 

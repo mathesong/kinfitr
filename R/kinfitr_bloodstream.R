@@ -66,7 +66,9 @@ bloodstream_import_inputfunctions <- function(blstream_folder) {
 
   # Unit Conversions
 
-  for(i in 1:nrow(blstream_data)) {
+  # seq_len, not 1:nrow -- with every input function incomplete and skipped
+  # above, nrow is 0 and 1:0 would index rows that do not exist.
+  for(i in seq_len(nrow(blstream_data))) {
 
     # time
     if("time" %in% colnames(blstream_data$tsvdata[[i]])) {

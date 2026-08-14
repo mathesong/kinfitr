@@ -21,11 +21,14 @@ A tibble with one row per recording: `recording`, `tsv`, `json`. Zero
 Works out which blood files belong to one acquisition, and
   refuses the combinations that cannot be resolved.
 
-  BIDS requires blood to live in the acquisition's `pet/` directory and to
-  carry a `recording` entity, so both are enforced here. Several recordings
-  for one acquisition are normal and expected -- manual samples alongside an
-  autosampler is explicitly permitted -- but two complete file pairs claiming
-  the *same* recording cannot both be it.
+  BIDS requires blood to live beside the PET data it belongs to -- the same
+  `pet/` directory as the acquisition's own `_pet.*` files, not merely some
+  `pet/` directory -- and to carry a `recording` entity, so both are
+  enforced here. Several recordings for one acquisition are normal and
+  expected -- manual samples alongside an autosampler is explicitly
+  permitted -- but two complete file pairs claiming the *same* recording
+  cannot both be it, and a json pairs with a tsv only if every entity the
+  json names is named by the tsv with the same value.
 
   For an acquisition with no blood, the
   returned table is simply empty, and its `excluded` attribute says what was

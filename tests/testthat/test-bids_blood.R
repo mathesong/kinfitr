@@ -98,7 +98,7 @@ test_that("an incomplete pair yields no blood, and says which half is missing", 
     "sub-02/ses-test/pet/sub-02_ses-test_pet.nii.gz",
     "sub-02/ses-test/pet/sub-02_ses-test_recording-manual_blood.tsv"))
 
-  blood <- bids_associate_blood(fd)
+  expect_warning(blood <- bids_associate_blood(fd), "missing json")
 
   expect_equal(nrow(blood), 0)
   expect_match(attr(blood, "excluded"), "missing json")
@@ -184,4 +184,64 @@ test_that("an acquisition with no blood at all passes in silence", {
 
   expect_no_warning(res <- bids_parse_blood(fd))
   expect_true(identical(res, NA))
+})
+
+test_that("a json naming entities its tsv does not is not its sidecar", {
+
+  # recording alone is not enough to pair the files: a rec-A json beside a tsv
+  # that names no rec may describe different data, and its units and
+  # availability flags would then be wrong for this tsv.
+  fd <- blood_filedata(c(
+    "sub-01/pet/sub-01_rec-A_pet.nii.gz",
+    "sub-01/pet/sub-01_recording-manual_blood.tsv",
+    "sub-01/pet/sub-01_rec-A_recording-manual_blood.json"),
+    key = "sub-01_rec-A")
+
+  warnings <- character(0)
+  blood <- withCallingHandlers(
+    bids_associate_blood(fd),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    })
+
+  expect_match(warnings[1], "not treated as that tsv's sidecar")
+  # The mismatched pair is then incomplete, not silently accepted
+  expect_match(warnings[2], "missing json")
+  expect_equal(nrow(blood), 0)
+})
+
+test_that("an incomplete recording is reported even when another is complete", {
+
+  # A manual pair plus an autosampler tsv missing its json: the manual
+  # recording is returned, and the autosampler one must not vanish in silence.
+  fd <- blood_filedata(c(
+    "sub-01/ses-test/pet/sub-01_ses-test_pet.nii.gz",
+    "sub-01/ses-test/pet/sub-01_ses-test_recording-manual_blood.tsv",
+    "sub-01/ses-test/pet/sub-01_ses-test_recording-manual_blood.json",
+    "sub-01/ses-test/pet/sub-01_ses-test_recording-autosampler_blood.tsv"))
+
+  expect_warning(blood <- bids_associate_blood(fd),
+                 "recording-autosampler missing json")
+
+  expect_equal(blood$recording, "manual")
+})
+
+test_that("blood in another directory's pet/ is refused", {
+
+  # Subject-level blood under sub-01/pet/ names no session, so the subset rule
+  # alone would let it attach to the session-level acquisition. BIDS places
+  # blood alongside the PET data it belongs to: same directory, not merely
+  # some pet/ directory.
+  root <- tempfile("kinfitr-bloodscope-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  dir.create(file.path(root, "sub-01/ses-01/pet"), recursive = TRUE)
+  dir.create(file.path(root, "sub-01/pet"), recursive = TRUE)
+  file.create(file.path(root, "sub-01/ses-01/pet/sub-01_ses-01_pet.nii.gz"))
+  file.create(file.path(root, "sub-01/pet/sub-01_recording-manual_blood.tsv"))
+  file.create(file.path(root, "sub-01/pet/sub-01_recording-manual_blood.json"))
+
+  m <- suppressWarnings(bids_parse_filenames(root))
+  expect_error(bids_associate_blood(m$filedata[[1]]),
+               "not beside its PET data")
 })
