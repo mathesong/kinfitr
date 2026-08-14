@@ -350,6 +350,14 @@ bids_parse_blood <- function(filedata) {
     })
 
   if (is.null(blood) || nrow(blood) == 0) {
+    # An acquisition with no blood files at all is ordinary and passes in
+    # silence. Blood files that are present but unusable must not: a tsv
+    # missing its json would otherwise be indistinguishable from no blood.
+    reason <- if (is.null(blood)) NULL else attr(blood, "excluded")
+    if (!is.null(reason) && !identical(reason, "no blood files")) {
+      warning("The blood for ", attr(filedata, "pet_key") %||% "this acquisition",
+              " could not be used: ", reason, ".", call. = FALSE)
+    }
     return(NA)
   }
 
@@ -1185,17 +1193,36 @@ bids_parse_derivatives <- function(path) {
 # subject's reconstructions. A file naming a selector the acquisition does not
 # have at all does not belong to it -- blood claiming rec-A cannot attach to an
 # acquisition with no rec.
-bids_file_belongs_to <- function(file_entities, pet_entities, selectors) {
+#
+# `lenient` relaxes that last condition for the entities it names, and is set
+# only for metadata sidecars (Part D: sidecar -> data is the one lenient
+# direction). A root-level task-rest_pet.json is meant to apply to images that
+# name no task; matched strictly it applies to nothing, and the frame times it
+# carries become unreachable. Data files always pass character(0): blood
+# claiming a rec no acquisition has stays unattached rather than guessing.
+bids_file_belongs_to <- function(file_entities, pet_entities, selectors,
+                                 lenient = character(0)) {
 
   claimed <- intersect(names(file_entities), selectors)
 
   for (entity in claimed) {
-    if (!entity %in% names(pet_entities)) return(FALSE)
+    if (!entity %in% names(pet_entities)) {
+      if (entity %in% lenient) next
+      return(FALSE)
+    }
     if (!identical(unname(file_entities[entity]),
                    unname(pet_entities[entity]))) return(FALSE)
   }
 
   TRUE
+}
+
+# The entities a sidecar may name that its data file does not. Kept in one
+# place so enumeration-time attachment and bids_resolve_sidecars() cannot
+# drift apart. trc and run stay strict: attaching the wrong tracer's sidecar
+# silently supplies the wrong half-life and injected dose.
+bids_lenient_entities <- function() {
+  c("task", "rec")
 }
 
 #' Extract the measurements of a PET BIDS study from its filenames
@@ -1214,14 +1241,20 @@ bids_file_belongs_to <- function(file_entities, pet_entities, selectors) {
 #'
 #'   An acquisition is any `_pet.nii`, `_pet.nii.gz` or `_pet.json` inside a
 #'   `pet/` directory; the image and its sidecar count once. Requiring `pet/`
-#'   excludes study-level inheritance sidecars such as `task-rest_pet.json`.
-#'   Because a `_pet.json` alone is enough, blood collected before the images
-#'   are reconstructed still yields a measurement.
+#'   excludes study-level inheritance sidecars such as `task-rest_pet.json`. A
+#'   `_pet.json` that applies as an inheritance sidecar to another acquisition
+#'   -- `sub-01_pet.json` beside `run-01` and `run-02` images -- is metadata for
+#'   those acquisitions, not one of its own. One that applies to no other
+#'   acquisition does count on its own, so a `_pet.json` whose image is not
+#'   found still yields a measurement -- most commonly one whose blood is
+#'   collected before the image is available.
 #'
 #'   Files are attached by the subset rule: every selector entity a file names
 #'   must match, and one it omits imposes no constraint. Blood recorded once per
 #'   subject therefore reaches every reconstruction of it, while blood naming a
-#'   `rec` no acquisition has attaches to nothing.
+#'   `rec` no acquisition has attaches to nothing. Metadata sidecars are matched
+#'   leniently for `task` and `rec`, so a study-level `task-rest_pet.json`
+#'   reaches images that name no task; data files are always matched strictly.
 #'
 #' @param studypath The BIDS study path for the main study.
 #'
@@ -1315,6 +1348,36 @@ bids_parse_filenames <- function(studypath) {
 
   keep <- !duplicated(pet_keys)
   measurements_entities <- pet_entities[keep]
+  measurement_keys <- pet_keys[keep]
+  has_image <- measurement_keys %in% pet_keys[images]
+
+  # A _pet.json inside pet/ is not necessarily an acquisition: BIDS inheritance
+  # lets one sidecar serve several images, so sub-01_pet.json beside run-01 and
+  # run-02 describes both runs rather than a third, run-less scan. A json-only
+  # entry is therefore an acquisition only if it does not apply as a sidecar to
+  # another acquisition -- one with an image, or a json-only one it is less
+  # specific than. A _pet.json matching no image at all still counts: an
+  # acquisition whose image is not found (most commonly, blood collected
+  # before the image is available) remains a measurement.
+  selector_count <- vapply(measurements_entities, function(e) {
+    length(intersect(names(e), selectors))
+  }, integer(1))
+
+  is_inherited_sidecar <- vapply(seq_along(measurements_entities), function(i) {
+    if (has_image[i]) return(FALSE)
+    for (j in seq_along(measurements_entities)) {
+      if (j == i) next
+      if (!has_image[j] && selector_count[j] <= selector_count[i]) next
+      if (bids_file_belongs_to(measurements_entities[[i]],
+                               measurements_entities[[j]], selectors,
+                               lenient = bids_lenient_entities())) {
+        return(TRUE)
+      }
+    }
+    FALSE
+  }, logical(1))
+
+  measurements_entities <- measurements_entities[!is_inherited_sidecar]
 
   used <- unique(unlist(lapply(measurements_entities, names)))
   used <- selectors[selectors %in% used]
@@ -1332,8 +1395,18 @@ bids_parse_filenames <- function(studypath) {
       }
     }
 
-    belongs <- purrr::map_lgl(file_entities,
-                              bids_file_belongs_to, entities, selectors)
+    # Metadata sidecars attach leniently (a task-rest_pet.json reaches an image
+    # that names no task); data files attach strictly. A _blood.json follows
+    # its tsv rather than getting leniency of its own, so a pair never splits.
+    belongs <- purrr::map_lgl(seq_along(file_entities), function(k) {
+      lenient <- if (filedata$measurement[k] == "pet" &&
+                     filedata$extension[k] == "json") {
+        bids_lenient_entities()
+      } else {
+        character(0)
+      }
+      bids_file_belongs_to(file_entities[[k]], entities, selectors, lenient)
+    })
 
     # The acquisition's identity travels with its files as attributes, so
     # bids_create_blooddata() keeps taking a bare table. A hand-built one works
@@ -1549,7 +1622,7 @@ bids_sidecar_applies <- function(sidecar_path, data_path, lenient) {
 #'                         "sub-01/ses-test/pet/sub-01_ses-test_pet.json"))
 #' }
 bids_resolve_sidecars <- function(data_path, sidecar_paths, sidecar_root = NULL,
-                                  lenient = c("task", "rec")) {
+                                  lenient = bids_lenient_entities()) {
 
   empty <- list(values = list(), provenance = character(0))
 

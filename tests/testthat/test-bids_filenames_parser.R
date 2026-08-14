@@ -122,8 +122,8 @@ test_that("an image and its sidecar are one acquisition", {
 
 test_that("a _pet.json with no image is still an acquisition", {
 
-  # Blood collected before the images are reconstructed still has something to
-  # attach to.
+  # An acquisition whose image is not found is still a measurement, so blood
+  # arriving before the image still has something to attach to.
   root <- tempfile("kinfitr-jsononly-")
   on.exit(unlink(root, recursive = TRUE), add = TRUE)
   dir.create(file.path(root, "sub-01/pet"), recursive = TRUE)
@@ -161,4 +161,83 @@ test_that("bids_parse_files keeps its old behaviour and says it is deprecated", 
   old <- suppressWarnings(bids_parse_files(root))
   new <- suppressWarnings(bids_parse_filenames(root))
   expect_gt(nrow(old), nrow(new))
+})
+
+test_that("a shared inheritance sidecar in pet/ is not an acquisition", {
+
+  # One sub-01_pet.json serving run-01 and run-02 is metadata for both runs
+  # (BIDS inheritance), not a third, run-less acquisition.
+  root <- tempfile("kinfitr-shared-sidecar-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  dir.create(file.path(root, "sub-01/pet"), recursive = TRUE)
+  file.create(file.path(root, "sub-01/pet/sub-01_run-01_pet.nii.gz"))
+  file.create(file.path(root, "sub-01/pet/sub-01_run-02_pet.nii.gz"))
+  file.create(file.path(root, "sub-01/pet/sub-01_pet.json"))
+
+  m <- suppressWarnings(bids_parse_filenames(root))
+
+  expect_equal(nrow(m), 2)
+  expect_setequal(m$run, c("01", "02"))
+
+  # The sidecar reaches both runs rather than becoming a measurement of its own
+  for (fd in m$filedata) {
+    expect_true(any(grepl("sub-01_pet\\.json$", fd$path)))
+  }
+})
+
+test_that("a json-only acquisition survives beside unrelated images", {
+
+  # The shared-sidecar rule must not swallow D18's case: a _pet.json that
+  # applies to no other acquisition is still a measurement of its own.
+  root <- tempfile("kinfitr-jsononly-beside-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  dir.create(file.path(root, "sub-01/pet"), recursive = TRUE)
+  dir.create(file.path(root, "sub-02/pet"), recursive = TRUE)
+  file.create(file.path(root, "sub-01/pet/sub-01_pet.nii.gz"))
+  file.create(file.path(root, "sub-02/pet/sub-02_pet.json"))
+
+  m <- suppressWarnings(bids_parse_filenames(root))
+
+  expect_equal(nrow(m), 2)
+  expect_setequal(m$sub, c("01", "02"))
+})
+
+test_that("a study-level task sidecar reaches images that name no task", {
+
+  # BIDS leniency for task: a root task-rest_pet.json is meant to apply to
+  # images that carry no task entity. Strictly matched it applies to nothing,
+  # and a dataset keeping its frame times only there parses to zero
+  # measurements.
+  root <- tempfile("kinfitr-lenient-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  dir.create(file.path(root, "sub-01/pet"), recursive = TRUE)
+  file.create(file.path(root, "sub-01/pet/sub-01_pet.nii.gz"))
+  writeLines('{"FrameTimesStart":[0,60],"FrameDuration":[60,60]}',
+             file.path(root, "task-rest_pet.json"))
+
+  m <- bids_parse_filenames(root)
+  expect_equal(nrow(m), 1)
+  expect_true(any(grepl("task-rest_pet\\.json$", m$filedata[[1]]$path)))
+
+  # And the frame times it carries are reachable end to end
+  s <- bids_parse_study(root)
+  expect_equal(nrow(s), 1)
+  expect_equal(nrow(s$tactimes[[1]]), 2)
+})
+
+test_that("trc stays strict at attachment", {
+
+  # A sidecar specific enough to name the tracer must match an image that
+  # names it too: the wrong trc sidecar silently supplies the wrong half-life
+  # and injected dose.
+  root <- tempfile("kinfitr-strict-trc-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  dir.create(file.path(root, "sub-01/pet"), recursive = TRUE)
+  file.create(file.path(root, "sub-01/pet/sub-01_pet.nii.gz"))
+  writeLines('{"FrameTimesStart":[0,60],"FrameDuration":[60,60]}',
+             file.path(root, "trc-abc_pet.json"))
+
+  m <- bids_parse_filenames(root)
+  expect_equal(nrow(m), 1)
+  expect_false(any(grepl("trc-abc_pet\\.json$", m$filedata[[1]]$path)))
 })

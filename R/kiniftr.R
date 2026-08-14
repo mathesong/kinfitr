@@ -2,7 +2,7 @@
 #' @importFrom utils data head modifyList read.delim tail
 #' @importFrom grDevices dev.off jpeg
 #' @importFrom graphics lines
-#' @importFrom rlang :=
+#' @importFrom rlang := %||%
 NULL
 
 # Suppress R CMD check notes about NSE variables used in dplyr/ggplot2 functions

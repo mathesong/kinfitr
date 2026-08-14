@@ -164,3 +164,24 @@ test_that("an acquisition without blood still parses and is returned", {
   study <- suppressWarnings(bids_parse_study(root))
   expect_equal(nrow(study), 1)
 })
+
+test_that("blood present but unusable is warned about, not silently dropped", {
+
+  # A manual tsv with no json cannot be read, but it must not be
+  # indistinguishable from an acquisition that never had blood.
+  fd <- blood_filedata(c(
+    "sub-01/ses-test/pet/sub-01_ses-test_pet.nii.gz",
+    "sub-01/ses-test/pet/sub-01_ses-test_recording-manual_blood.tsv"))
+
+  expect_warning(res <- bids_parse_blood(fd), "complete tsv/json pair")
+  expect_warning(bids_parse_blood(fd), "sub-01_ses-test")
+  expect_true(identical(res, NA))
+})
+
+test_that("an acquisition with no blood at all passes in silence", {
+
+  fd <- blood_filedata("sub-01/ses-test/pet/sub-01_ses-test_pet.nii.gz")
+
+  expect_no_warning(res <- bids_parse_blood(fd))
+  expect_true(identical(res, NA))
+})

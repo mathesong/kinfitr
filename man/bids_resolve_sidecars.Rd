@@ -8,7 +8,7 @@ bids_resolve_sidecars(
   data_path,
   sidecar_paths,
   sidecar_root = NULL,
-  lenient = c("task", "rec")
+  lenient = bids_lenient_entities()
 )
 }
 \arguments{

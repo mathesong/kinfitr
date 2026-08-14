@@ -28,14 +28,20 @@ Returns one row per PET acquisition found on disk, with the
 
   An acquisition is any `_pet.nii`, `_pet.nii.gz` or `_pet.json` inside a
   `pet/` directory; the image and its sidecar count once. Requiring `pet/`
-  excludes study-level inheritance sidecars such as `task-rest_pet.json`.
-  Because a `_pet.json` alone is enough, blood collected before the images
-  are reconstructed still yields a measurement.
+  excludes study-level inheritance sidecars such as `task-rest_pet.json`. A
+  `_pet.json` that applies as an inheritance sidecar to another acquisition
+  -- `sub-01_pet.json` beside `run-01` and `run-02` images -- is metadata for
+  those acquisitions, not one of its own. One that applies to no other
+  acquisition does count on its own, so a `_pet.json` whose image is not
+  found still yields a measurement -- most commonly one whose blood is
+  collected before the image is available.
 
   Files are attached by the subset rule: every selector entity a file names
   must match, and one it omits imposes no constraint. Blood recorded once per
   subject therefore reaches every reconstruction of it, while blood naming a
-  `rec` no acquisition has attaches to nothing.
+  `rec` no acquisition has attaches to nothing. Metadata sidecars are matched
+  leniently for `task` and `rec`, so a study-level `task-rest_pet.json`
+  reaches images that name no task; data files are always matched strictly.
 }
 \examples{
 \dontrun{
