@@ -1134,8 +1134,20 @@ bids_parse_derivatives <- function(path) {
     # separates two files rather than collapsing them into one identity.
     qualifiers <- sort(setdiff(names(entities), selectors))
 
+    # The directories between the parse root and the subject folder. A
+    # derivatives tree can hold several analyses of the same acquisition, and
+    # without this they would be one artifact rather than several.
+    parts <- strsplit(p$rel, "/", fixed = TRUE)[[1]]
+    subject_at <- which(startsWith(parts, "sub-"))
+    path_scope <- if (length(subject_at) > 0) {
+      if (subject_at[1] > 1) paste(parts[seq_len(subject_at[1] - 1)], collapse = "/") else NA_character_
+    } else {
+      if (length(parts) > 1) paste(utils::head(parts, -1), collapse = "/") else NA_character_
+    }
+
     artifact_key <- paste(stats::na.omit(c(
-      if (is_group) scope else source_key,
+      if (!is.na(path_scope)) path_scope else if (is_group) scope else NA_character_,
+      if (is_group) NA_character_ else source_key,
       bids_compose_key(entities, qualifiers),
       p$suffix
     )), collapse = "_")

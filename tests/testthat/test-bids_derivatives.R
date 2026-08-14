@@ -174,3 +174,57 @@ test_that("path_absolute points at the file that was found", {
   # It is a real file, so it can actually be read
   expect_equal(jsonlite::fromJSON(d$path_absolute)$time$Units, "s")
 })
+
+test_that("the same acquisition in two analyses gives two artifacts", {
+
+  # A derivatives tree can hold several analyses side by side. Without the path
+  # scope in the key, one acquisition's input function in two analyses is a
+  # single artifact, and pairing its tsv with its json then multiplies rows.
+  root <- make_derivatives(c(
+    "Primary_Analysis/sub-01/ses-test/pet/sub-01_ses-test_inputfunction.tsv",
+    "Primary_Analysis/sub-01/ses-test/pet/sub-01_ses-test_inputfunction.json",
+    "tutorial/sub-01/ses-test/pet/sub-01_ses-test_inputfunction.tsv",
+    "tutorial/sub-01/ses-test/pet/sub-01_ses-test_inputfunction.json"))
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+
+  d <- bids_parse_derivatives(root)
+
+  expect_equal(nrow(d), 4)
+  expect_equal(length(unique(d$artifact_key)), 2)
+
+  # Same acquisition either way: the scope separates the products, not the source
+  expect_equal(length(unique(d$source_key)), 1)
+  expect_true(any(grepl("^Primary_Analysis_", d$artifact_key)))
+  expect_true(any(grepl("^tutorial_", d$artifact_key)))
+})
+
+test_that("group-level files in different analyses stay distinct", {
+
+  root <- make_derivatives(c(
+    "Primary_Analysis/bloodstream_config.json",
+    "tutorial/bloodstream_config.json"))
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+
+  d <- bids_parse_derivatives(root)
+
+  expect_equal(nrow(d), 2)
+  expect_equal(length(unique(d$artifact_key)), 2)
+  expect_true(all(is.na(d$source_key)))
+})
+
+test_that("files directly under the root keep an unscoped key", {
+
+  # petfit calls this on a single analysis folder, where there is no scope
+  # directory. Those keys must not gain a prefix.
+  root <- make_derivatives(c(
+    "desc-petfitoptions_config.json",
+    "sub-01/ses-test/pet/sub-01_desc-combinedregions_tacs.tsv"))
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+
+  d <- bids_parse_derivatives(root)
+
+  expect_equal(d$artifact_key[d$suffix == "tacs"],
+               "sub-01_ses-test_desc-combinedregions_tacs")
+  expect_equal(d$artifact_key[d$suffix == "config"],
+               paste0(basename(root), "_desc-petfitoptions_config"))
+})
