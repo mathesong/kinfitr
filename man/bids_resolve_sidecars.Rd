@@ -8,7 +8,7 @@ bids_resolve_sidecars(
   data_path,
   sidecar_paths,
   sidecar_root = NULL,
-  lenient = bids_lenient_entities()
+  lenient = character(0)
 )
 }
 \arguments{
@@ -19,7 +19,9 @@ bids_resolve_sidecars(
 \item{sidecar_root}{Optional directory to prepend when reading the files.}
 
 \item{lenient}{Entities a sidecar may name that the data file does not.
-Defaults to `task` and `rec`.}
+Defaults to none: per the BIDS inheritance principle, a sidecar applies
+only to data that names every entity the sidecar names. Pass e.g.
+`c("task", "rec")` to opt in for a study that needs it.}
 }
 \value{
 A list with `values`, the merged fields, and `provenance`, naming the

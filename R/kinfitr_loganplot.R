@@ -324,7 +324,7 @@ plot_Loganfit <- function(loganout, roiname = NULL) {
   # Plot
 
   outplot <- ggplot(data = plotdf, aes(x = Logan_Plasma, y = Logan_ROI, colour = Equilibrium)) +
-    geom_point(aes(shape = "a", size = Weights)) +
+    geom_point(aes(shape = "a", size = Weights), na.rm = TRUE) +
     geom_abline(
       slope = as.numeric(loganout$fit$coefficients[2]),
       intercept = as.numeric(loganout$fit$coefficients[1])
@@ -408,9 +408,13 @@ Logan_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, 
   med_xlimits <- c(0, tail(medroi_fit$fitvals$Logan_Plasma, 1))
   high_xlimits <- c(0, tail(highroi_fit$fitvals$Logan_Plasma, 1))
 
-  low_linplot <- qplot(lowroi_fit$fitvals$Logan_Plasma, lowroi_fit$fitvals$Logan_ROI) + ggtitle("Low") + xlim(low_xlimits) + xlab(xlabel) + ylab(ylabel)
-  med_linplot <- qplot(medroi_fit$fitvals$Logan_Plasma, medroi_fit$fitvals$Logan_ROI) + ggtitle("Medium") + xlim(med_xlimits) + xlab(xlabel) + ylab(ylabel)
-  high_linplot <- qplot(highroi_fit$fitvals$Logan_Plasma, highroi_fit$fitvals$Logan_ROI) + ggtitle("High") + xlim(high_xlimits) + xlab(xlabel) + ylab(ylabel)
+  # The first frame's linearised point is 0/0 and so NA by construction:
+  # both Logan and Patlak divide by a tissue or plasma concentration that
+  # is zero at t = 0. na.rm declares that, rather than warning once per
+  # panel about a value that is never going to be there.
+  low_linplot <- ggplot(lowroi_fit$fitvals, aes(x = Logan_Plasma, y = Logan_ROI)) + geom_point(na.rm = TRUE) + ggtitle("Low") + coord_cartesian(xlim = low_xlimits) + xlab(xlabel) + ylab(ylabel)
+  med_linplot <- ggplot(medroi_fit$fitvals, aes(x = Logan_Plasma, y = Logan_ROI)) + geom_point(na.rm = TRUE) + ggtitle("Medium") + coord_cartesian(xlim = med_xlimits) + xlab(xlabel) + ylab(ylabel)
+  high_linplot <- ggplot(highroi_fit$fitvals, aes(x = Logan_Plasma, y = Logan_ROI)) + geom_point(na.rm = TRUE) + ggtitle("High") + coord_cartesian(xlim = high_xlimits) + xlab(xlabel) + ylab(ylabel)
 
   tstarInclFrames <- 3:frames
 

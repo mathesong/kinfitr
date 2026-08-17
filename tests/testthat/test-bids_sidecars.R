@@ -18,10 +18,12 @@ test_that("a nearer sidecar overrides a further one, field by field", {
       '{"InjectedRadioactivity":183416.77}'))
   on.exit(unlink(root, recursive = TRUE), add = TRUE)
 
+  # lenient is an explicit opt-in here: by default a sidecar naming task does
+  # not apply to an image that names no task
   resolved <- suppressWarnings(bids_resolve_sidecars(
     "sub-01/ses-test/pet/sub-01_ses-test_pet.nii.gz",
     c("task-rest_pet.json", "sub-01/ses-test/pet/sub-01_ses-test_pet.json"),
-    sidecar_root = root))
+    sidecar_root = root, lenient = c("task", "rec")))
 
   # The nearer file wins for the field it sets...
   expect_equal(resolved$values$InjectedRadioactivity, 183416.77)
@@ -40,7 +42,7 @@ test_that("resolution reports where each field came from", {
   resolved <- suppressWarnings(bids_resolve_sidecars(
     "sub-01/ses-test/pet/sub-01_ses-test_pet.nii.gz",
     c("task-rest_pet.json", "sub-01/ses-test/pet/sub-01_ses-test_pet.json"),
-    sidecar_root = root))
+    sidecar_root = root, lenient = c("task", "rec")))
 
   expect_equal(resolved$provenance[["TracerRadionuclide"]], "task-rest_pet.json")
   expect_equal(resolved$provenance[["InjectedRadioactivity"]],
@@ -54,13 +56,14 @@ test_that("two sidecars in one directory are refused", {
     "task-memory_pet.json" = '{"InjectedRadioactivity":200}'))
   on.exit(unlink(root, recursive = TRUE), add = TRUE)
 
-  # Both are lenient-applicable to a task-less image, and nothing distinguishes
-  # them. Choosing by enumeration order would make the injected dose depend on
-  # how the filesystem lists files.
+  # Under opt-in leniency both apply to a task-less image, and nothing
+  # distinguishes them. Choosing by enumeration order would make the injected
+  # dose depend on how the filesystem lists files.
   expect_error(
     suppressWarnings(bids_resolve_sidecars(
       "sub-01/pet/sub-01_pet.nii.gz",
-      c("task-rest_pet.json", "task-memory_pet.json"), sidecar_root = root)),
+      c("task-rest_pet.json", "task-memory_pet.json"), sidecar_root = root,
+      lenient = c("task", "rec"))),
     "same directory")
 })
 
@@ -144,4 +147,47 @@ test_that("no sidecars yields an empty result rather than an error", {
 
   expect_equal(length(resolved$values), 0)
   expect_equal(length(resolved$provenance), 0)
+})
+
+test_that("an unresolvable sidecar clash costs one acquisition, not the study", {
+  # Two applicable sidecars at one directory level break the BIDS inheritance
+  # principle and are refused. sub-09 is unrelated and must still parse: before
+  # this was scoped per acquisition, the clash aborted bids_parse_study()
+  # outright and took every healthy subject with it.
+  root <- withr::local_tempdir()
+  dir.create(file.path(root, "sub-01", "pet"), recursive = TRUE)
+  dir.create(file.path(root, "sub-09", "pet"), recursive = TRUE)
+  writeLines('{"Name":"amb","BIDSVersion":"1.8.0"}',
+             file.path(root, "dataset_description.json"))
+
+  sidecar <- function(path, manufacturer) {
+    jsonlite::write_json(list(
+      Manufacturer = manufacturer, Units = "Bq/mL",
+      FrameTimesStart = c(0, 60), FrameDuration = c(60, 60)),
+      path, auto_unbox = TRUE)
+  }
+
+  # both apply to sub-01, and neither is more specific than the other
+  sidecar(file.path(root, "ses-01_pet.json"), "A")
+  sidecar(file.path(root, "task-rest_pet.json"), "B")
+  file.create(file.path(root, "sub-01", "pet",
+                        "sub-01_ses-01_task-rest_pet.nii.gz"))
+
+  # sub-09 has its own sidecar and is untouched by the clash
+  sidecar(file.path(root, "sub-09", "pet", "sub-09_pet.json"), "OK")
+  file.create(file.path(root, "sub-09", "pet", "sub-09_pet.nii.gz"))
+
+  # both acquisitions are enumerated; the clash is a metadata problem only
+  expect_equal(nrow(suppressWarnings(bids_parse_filenames(root))), 2)
+
+  # the study parses rather than aborting, and sub-09 comes through intact
+  study <- suppressWarnings(bids_parse_study(root))
+  expect_equal(nrow(study), 1)
+  expect_equal(study$sub, "09")
+  expect_equal(study$petinfo[[1]]$Manufacturer, "OK")
+  expect_equal(nrow(study$tactimes[[1]]), 2)
+
+  # and the excluded acquisition is named, with the reason
+  expect_warning(bids_parse_study(root), "More than one sidecar applies")
+  expect_warning(bids_parse_study(root), "rest of the study is unaffected")
 })

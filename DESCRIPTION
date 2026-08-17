@@ -45,5 +45,6 @@ Suggests:
     roxygen2,
     testthat,
     rmarkdown,
-    covr
+    covr,
+    withr
 Config/roxygen2/version: 8.0.0

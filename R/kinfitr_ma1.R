@@ -324,9 +324,9 @@ ma1_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL, in
   medroi_fit <- ma1(t_tac, medroi, input, tstar = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
   highroi_fit <- ma1(t_tac, highroi, input, tstar = frames, inpshift = inpshift, vB = vB, frameStartEnd = frameStartEnd)
 
-  low_linplot <- plot_ma1fit(lowroi_fit) + ggtitle("Low") + ylim(0, max(lowroi_fit$tacs$Target * 1.1)) + theme(legend.position = "none")
-  med_linplot <- plot_ma1fit(medroi_fit) + ggtitle("Medium") + ylim(0, max(medroi_fit$tacs$Target * 1.1)) + theme(legend.position = "none")
-  high_linplot <- plot_ma1fit(highroi_fit) + ggtitle("High") + ylim(0, max(highroi_fit$tacs$Target * 1.1)) + theme(legend.position = "none")
+  low_linplot <- plot_ma1fit(lowroi_fit) + ggtitle("Low") + coord_cartesian(ylim = c(0, max(lowroi_fit$tacs$Target * 1.1))) + theme(legend.position = "none")
+  med_linplot <- plot_ma1fit(medroi_fit) + ggtitle("Medium") + coord_cartesian(ylim = c(0, max(medroi_fit$tacs$Target * 1.1))) + theme(legend.position = "none")
+  high_linplot <- plot_ma1fit(highroi_fit) + ggtitle("High") + coord_cartesian(ylim = c(0, max(highroi_fit$tacs$Target * 1.1))) + theme(legend.position = "none")
 
   tstarInclFrames <- 3:frames
 

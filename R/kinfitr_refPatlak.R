@@ -245,7 +245,7 @@ plot_refPatlakfit <- function(refpatlakout, roiname = NULL) {
                                   "C", phantom()[{ paste("R") }],"(t)"))
 
   outplot <- ggplot(data = plotdf, aes(x = Patlak_ref, y = Patlak_roi, colour = Equilibrium)) +
-    geom_point(aes(shape = "a", size = Weights)) +
+    geom_point(aes(shape = "a", size = Weights), na.rm = TRUE) +
     geom_abline(
       slope = as.numeric(refpatlakout$fit$coefficients[2]),
       intercept = as.numeric(refpatlakout$fit$coefficients[1])
@@ -302,9 +302,13 @@ refPatlak_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, filename = N
                              "C", phantom()[{ paste("R") }],"(",tau,")d",tau, " / ",
                              "C", phantom()[{ paste("R") }],"(t)"))
 
-  low_linplot <- qplot(lowroi_fit$fitvals$Patlak_Ref, lowroi_fit$fitvals$Patlak_ROI) + ggtitle("Low") + xlab(xlabel) + ylab(ylabel)
-  med_linplot <- qplot(medroi_fit$fitvals$Patlak_Ref, medroi_fit$fitvals$Patlak_ROI) + ggtitle("Medium") + xlab(xlabel) + ylab(ylabel)
-  high_linplot <- qplot(highroi_fit$fitvals$Patlak_Ref, highroi_fit$fitvals$Patlak_ROI) + ggtitle("High") + xlab(xlabel) + ylab(ylabel)
+  # The first frame's linearised point is 0/0 and so NA by construction:
+  # both Logan and Patlak divide by a tissue or plasma concentration that
+  # is zero at t = 0. na.rm declares that, rather than warning once per
+  # panel about a value that is never going to be there.
+  low_linplot <- ggplot(lowroi_fit$fitvals, aes(x = Patlak_Ref, y = Patlak_ROI)) + geom_point(na.rm = TRUE) + ggtitle("Low") + xlab(xlabel) + ylab(ylabel)
+  med_linplot <- ggplot(medroi_fit$fitvals, aes(x = Patlak_Ref, y = Patlak_ROI)) + geom_point(na.rm = TRUE) + ggtitle("Medium") + xlab(xlabel) + ylab(ylabel)
+  high_linplot <- ggplot(highroi_fit$fitvals, aes(x = Patlak_Ref, y = Patlak_ROI)) + geom_point(na.rm = TRUE) + ggtitle("High") + xlab(xlabel) + ylab(ylabel)
 
   tstarInclFrames <- 3:frames
 

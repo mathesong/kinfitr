@@ -270,12 +270,12 @@ plot_Patlakfit <- function(patlakout, roiname = NULL) {
                              "C", phantom()[{ paste("P") }],"(t)"))
 
   outplot <- ggplot(data = plotdf, aes(x = Patlak_Plasma, y = Patlak_ROI, colour = Equilibrium)) +
-    geom_point(aes(shape = "a", size = Weights)) +
+    geom_point(aes(shape = "a", size = Weights), na.rm = TRUE) +
     geom_abline(
       slope = as.numeric(patlakout$fit$coefficients[2]),
       intercept = as.numeric(patlakout$fit$coefficients[1])
     ) +
-    xlab(xlabel) + ylab(ylabel) + xlim(xlimits) + colScale +
+    xlab(xlabel) + ylab(ylabel) + coord_cartesian(xlim = xlimits) + colScale +
     guides(shape = "none", color = guide_legend(order = 1)) + scale_size(range = c(1, 3))
 
   return(outplot)
@@ -339,9 +339,13 @@ Patlak_tstar <- function(t_tac, lowroi, medroi, highroi, input, filename = NULL,
   ylabel <- expression(paste("C", phantom()[{ paste("T") }],"(t)", " / ",
                              "C", phantom()[{ paste("P") }],"(t)"))
 
-  low_linplot <- qplot(lowroi_fit$fitvals$Patlak_Plasma, lowroi_fit$fitvals$Patlak_ROI) + ggtitle("Low") + xlab(xlabel) + ylab(ylabel) + xlim(low_xlimits)
-  med_linplot <- qplot(medroi_fit$fitvals$Patlak_Plasma, medroi_fit$fitvals$Patlak_ROI) + ggtitle("Medium") + xlab(xlabel) + ylab(ylabel) + xlim(med_xlimits)
-  high_linplot <- qplot(highroi_fit$fitvals$Patlak_Plasma, highroi_fit$fitvals$Patlak_ROI) + ggtitle("High") + xlab(xlabel) + ylab(ylabel) + xlim(high_xlimits)
+  # The first frame's linearised point is 0/0 and so NA by construction:
+  # both Logan and Patlak divide by a tissue or plasma concentration that
+  # is zero at t = 0. na.rm declares that, rather than warning once per
+  # panel about a value that is never going to be there.
+  low_linplot <- ggplot(lowroi_fit$fitvals, aes(x = Patlak_Plasma, y = Patlak_ROI)) + geom_point(na.rm = TRUE) + ggtitle("Low") + xlab(xlabel) + ylab(ylabel) + coord_cartesian(xlim = low_xlimits)
+  med_linplot <- ggplot(medroi_fit$fitvals, aes(x = Patlak_Plasma, y = Patlak_ROI)) + geom_point(na.rm = TRUE) + ggtitle("Medium") + xlab(xlabel) + ylab(ylabel) + coord_cartesian(xlim = med_xlimits)
+  high_linplot <- ggplot(highroi_fit$fitvals, aes(x = Patlak_Plasma, y = Patlak_ROI)) + geom_point(na.rm = TRUE) + ggtitle("High") + xlab(xlabel) + ylab(ylabel) + coord_cartesian(xlim = high_xlimits)
 
   tstarInclFrames <- 3:frames
 

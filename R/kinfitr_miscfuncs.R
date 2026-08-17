@@ -138,7 +138,7 @@ plot_residuals <- function(outputobject) {
 
   outplot <- ggplot(plotdf, aes(x = Time, y = Residuals)) +
     geom_point(aes(size = Weights)) +
-    geom_hline(aes(yintercept = 0), linetype = "dashed") + ylim(ylimits) +
+    geom_hline(aes(yintercept = 0), linetype = "dashed") + coord_cartesian(ylim = ylimits) +
     scale_size(range = c(1, 3)) + geom_line()
 
   return(outplot)
@@ -749,6 +749,20 @@ camel <- function(x){ #function for camel case
   paste(first, rest, collapse="")
 }
 
+#' Split a radioactivity concentration unit into its parts
+#'
+#' @description Splits a unit string such as `"kBq/mL"` or `"Bq.mL-1"` into its
+#'   radioactivity unit and its volume unit. Exported because petfit and
+#'   bloodstream both need it to reconcile the units of TACs, blood and input
+#'   functions produced by different tools.
+#'
+#' @param x A unit string, e.g. `"kBq/mL"` or `"Bq.mL-1"`.
+#'
+#' @return A list with `rad`, the radioactivity unit, and `vol`, the volume unit.
+#'
+#' @examples
+#' get_units_radioactivity("kBq/mL")
+#' @export
 get_units_radioactivity <- function(x) {
 
   rad <- gsub("[\\.\\/].*", "", x)

@@ -206,7 +206,7 @@ plot_refmlLoganfit <- function(refmlloganout, roiname = NULL) {
                                    "C", phantom()[{ paste("T") }],"(",tau,")d",tau))
 
   outplot <- ggplot(data = plotdf, aes(x = Fitted, y = Term1_DV, colour = Equilibrium)) +
-    geom_point(aes(shape = "a", size = Weights)) +
+    geom_point(aes(shape = "a", size = Weights), na.rm = TRUE) +
     geom_abline(slope = 1, intercept = 0) +
     xlab(xlabel) + ylab(ylabel) + colScale +
     guides(shape = "none", color = guide_legend(order = 1)) + scale_size(range = c(1, 3))
@@ -263,9 +263,13 @@ refmlLogan_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, fi
   ylabel <- expression(paste("", "", integral(, paste("0"), paste("", "t")),
                              "C", phantom()[{ paste("T") }],"(",tau,")d",tau))
 
-  low_linplot <- qplot(lowroi_fit$fitvals$Fitted, lowroi_fit$fitvals$Term1_DV) + ggtitle("Low") + xlab(xlabel) + ylab(ylabel)
-  med_linplot <- qplot(medroi_fit$fitvals$Fitted, medroi_fit$fitvals$Term1_DV) + ggtitle("Medium") + xlab(xlabel) + ylab(ylabel)
-  high_linplot <- qplot(highroi_fit$fitvals$Fitted, highroi_fit$fitvals$Term1_DV) + ggtitle("High") + xlab(xlabel) + ylab(ylabel)
+  # The first frame's linearised point is 0/0 and so NA by construction:
+  # both Logan and Patlak divide by a tissue or plasma concentration that
+  # is zero at t = 0. na.rm declares that, rather than warning once per
+  # panel about a value that is never going to be there.
+  low_linplot <- ggplot(lowroi_fit$fitvals, aes(x = Fitted, y = Term1_DV)) + geom_point(na.rm = TRUE) + ggtitle("Low") + xlab(xlabel) + ylab(ylabel)
+  med_linplot <- ggplot(medroi_fit$fitvals, aes(x = Fitted, y = Term1_DV)) + geom_point(na.rm = TRUE) + ggtitle("Medium") + xlab(xlabel) + ylab(ylabel)
+  high_linplot <- ggplot(highroi_fit$fitvals, aes(x = Fitted, y = Term1_DV)) + geom_point(na.rm = TRUE) + ggtitle("High") + xlab(xlabel) + ylab(ylabel)
 
   tstarInclFrames <- 3:frames
 

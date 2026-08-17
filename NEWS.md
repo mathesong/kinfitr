@@ -33,6 +33,41 @@
   name and contract — parse a study, get its measurements — built on the new
   enumeration.
 
+## Sidecar clashes no longer cost the whole study
+
+* **A dataset that breaks the inheritance principle now costs one acquisition,
+  not the parse.** The BIDS spec is explicit that there MUST NOT be more than
+  one metadata file applicable to a data file at a single directory level, and
+  `bids_resolve_sidecars()` refuses such a dataset rather than picking by
+  enumeration order. That error previously propagated out of
+  `bids_parse_study()`, so one ambiguous sidecar took every unrelated subject
+  in the study down with it. It is now reported per acquisition — naming both
+  sidecars and the measurement excluded — and the rest of the study parses,
+  matching how `bids_associate_blood()` already handled the equivalent case.
+  Worth knowing: the BIDS validator does not currently flag this layout, so
+  kinfitr may be the only thing that tells you about it.
+
+## Plotting
+
+* **`qplot()` replaced throughout**, which is deprecated in ggplot2 3.4.0 and
+  was warning on every t\* plot.
+
+* **Scale limits that silently dropped data are now coordinate limits.** The
+  t\* and fit plots set their view with `xlim()`/`ylim()`, which removes points
+  outside the range before drawing — so a `geom_line` through them broke at the
+  gap, and every panel warned. They now use `coord_cartesian()`, which clips
+  the view and keeps the data.
+
+* **The undefined first point of a linearised plot is declared as such.** Logan
+  and Patlak both divide by a concentration that is zero at *t* = 0, so their
+  first fitted value is `NA` by construction. Those layers now pass
+  `na.rm = TRUE` rather than warning once per panel about a value that is never
+  going to be there.
+
+* `get_units_radioactivity()` is **exported**. petfit and bloodstream were
+  reaching it through `:::`.
+
+
 ## Sidecar inheritance
 
 * **New `bids_resolve_sidecars()`: inherited metadata is merged
@@ -50,20 +85,6 @@
   acquisition whose image is not found (most commonly, blood collected before
   the image is available) remains usable.
 
-* **Matching is lenient for `task` and `rec`, strict for `trc` and `run`.**
-  An entity on the data filename that the sidecar does not name never blocks
-  matching — that is ordinary inheritance. In the other direction, a `task`
-  or `rec` named by the sidecar but absent from the data filename is also
-  accepted: a root-level `task-rest_pet.json` applies to images that omit
-  `task`. **This is deliberately more permissive than the letter of the BIDS
-  inheritance principle**, which would have such a sidecar apply to nothing —
-  a common layout on real datasets, which the previous parser satisfied only
-  by inventing `task = "rest"` on the images. `trc` and `run` stay strict:
-  attaching the wrong tracer's sidecar would silently supply the wrong
-  half-life and injected dose. Two lenient candidates at one directory level
-  are an error, and every sidecar that does not apply is reported with the
-  reason, since a sidecar that quietly fails to apply is how metadata goes
-  missing with nothing looking wrong.
 
 ## Blood association
 

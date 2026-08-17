@@ -245,3 +245,25 @@ test_that("blood in another directory's pet/ is refused", {
   expect_error(bids_associate_blood(m$filedata[[1]]),
                "not beside its PET data")
 })
+
+test_that("an inherited sidecar does not widen the blood anchor", {
+
+  # A subject-level sub-01_pet.json attaches to the session acquisition as
+  # inherited metadata, but its directory is not where the acquisition lives.
+  # Blood there must still be refused: the anchor is where the acquisition's
+  # own files sit, not every directory a sidecar was inherited from.
+  root <- tempfile("kinfitr-anchor-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  dir.create(file.path(root, "sub-01/ses-01/pet"), recursive = TRUE)
+  dir.create(file.path(root, "sub-01/pet"), recursive = TRUE)
+  file.create(file.path(root, "sub-01/ses-01/pet/sub-01_ses-01_pet.nii.gz"))
+  file.create(file.path(root, "sub-01/pet/sub-01_pet.json"))
+  file.create(file.path(root, "sub-01/pet/sub-01_recording-manual_blood.tsv"))
+  file.create(file.path(root, "sub-01/pet/sub-01_recording-manual_blood.json"))
+
+  m <- suppressWarnings(bids_parse_filenames(root))
+  expect_equal(nrow(m), 1)
+  expect_equal(attr(m$filedata[[1]], "pet_dir"), "sub-01/ses-01/pet")
+  expect_error(bids_associate_blood(m$filedata[[1]]),
+               "not beside its PET data")
+})

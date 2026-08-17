@@ -37,11 +37,13 @@ Returns one row per PET acquisition found on disk, with the
   collected before the image is available.
 
   Files are attached by the subset rule: every selector entity a file names
-  must match, and one it omits imposes no constraint. Blood recorded once per
-  subject therefore reaches every reconstruction of it, while blood naming a
-  `rec` no acquisition has attaches to nothing. Metadata sidecars are matched
-  leniently for `task` and `rec`, so a study-level `task-rest_pet.json`
-  reaches images that name no task; data files are always matched strictly.
+  must match, and one it omits imposes no constraint. Blood recorded once
+  per subject therefore reaches every reconstruction of it, and a
+  study-level sidecar naming no entities reaches every image beneath it --
+  while blood naming a `rec` no acquisition has attaches to nothing, and a
+  `task-rest_pet.json` does not describe an image that names no task. The
+  rule is the same for data files and metadata: a file specific enough to
+  name an entity applies only to acquisitions that name it too.
 }
 \examples{
 \dontrun{
