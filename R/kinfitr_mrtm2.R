@@ -324,9 +324,9 @@ mrtm2_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, filenam
   medroi_fit <- mrtm2(t_tac, reftac, medroi, k2prime = k2prime, frameStartEnd = frameStartEnd)
   highroi_fit <- mrtm2(t_tac, reftac, highroi, k2prime = k2prime, frameStartEnd = frameStartEnd)
 
-  low_linplot <- plot_mrtm2fit(lowroi_fit) + ggtitle("Low") + ylim(0, max(c(lowroi_fit$tacs$Reference, lowroi_fit$tacs$Target)) * 1.1) + theme(legend.position = "none")
-  med_linplot <- plot_mrtm2fit(medroi_fit) + ggtitle("Medium") + ylim(0, max(c(medroi_fit$tacs$Reference, medroi_fit$tacs$Target)) * 1.1) + theme(legend.position = "none")
-  high_linplot <- plot_mrtm2fit(highroi_fit) + ggtitle("High") + ylim(0, max(c(highroi_fit$tacs$Reference, highroi_fit$tacs$Target)) * 1.1) + theme(legend.position = "none")
+  low_linplot <- plot_mrtm2fit(lowroi_fit) + ggtitle("Low") + coord_cartesian(ylim = c(0, max(c(lowroi_fit$tacs$Reference, lowroi_fit$tacs$Target)) * 1.1)) + theme(legend.position = "none")
+  med_linplot <- plot_mrtm2fit(medroi_fit) + ggtitle("Medium") + coord_cartesian(ylim = c(0, max(c(medroi_fit$tacs$Reference, medroi_fit$tacs$Target)) * 1.1)) + theme(legend.position = "none")
+  high_linplot <- plot_mrtm2fit(highroi_fit) + ggtitle("High") + coord_cartesian(ylim = c(0, max(c(highroi_fit$tacs$Reference, highroi_fit$tacs$Target)) * 1.1)) + theme(legend.position = "none")
 
   tstarInclFrames <- 3:frames
 

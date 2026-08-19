@@ -285,7 +285,7 @@ plot_refLoganfit <- function(refloganout, roiname = NULL) {
   # Plot
 
   outplot <- ggplot(data = plotdf, aes(x = Logan_ref, y = Logan_roi, colour = Equilibrium)) +
-    geom_point(aes(shape = "a", size = Weights)) +
+    geom_point(aes(shape = "a", size = Weights), na.rm = TRUE) +
     geom_abline(
       slope = as.numeric(refloganout$fit$coefficients[2]),
       intercept = as.numeric(refloganout$fit$coefficients[1])
@@ -352,9 +352,13 @@ refLogan_tstar <- function(t_tac, reftac, lowroi, medroi, highroi, k2prime, file
                              "C", phantom()[{ paste("T") }],"(",tau,")d",tau, " / ",
                              "C", phantom()[{ paste("T") }],"(t)"))
 
-  low_linplot <- qplot(lowroi_fit$fitvals$Logan_Ref, lowroi_fit$fitvals$Logan_ROI) + ggtitle("Low") + xlab(xlabel) + ylab(ylabel)
-  med_linplot <- qplot(medroi_fit$fitvals$Logan_Ref, medroi_fit$fitvals$Logan_ROI) + ggtitle("Medium") + xlab(xlabel) + ylab(ylabel)
-  high_linplot <- qplot(highroi_fit$fitvals$Logan_Ref, highroi_fit$fitvals$Logan_ROI) + ggtitle("High") + xlab(xlabel) + ylab(ylabel)
+  # The first frame's linearised point is 0/0 and so NA by construction:
+  # both Logan and Patlak divide by a tissue or plasma concentration that
+  # is zero at t = 0. na.rm declares that, rather than warning once per
+  # panel about a value that is never going to be there.
+  low_linplot <- ggplot(lowroi_fit$fitvals, aes(x = Logan_Ref, y = Logan_ROI)) + geom_point(na.rm = TRUE) + ggtitle("Low") + xlab(xlabel) + ylab(ylabel)
+  med_linplot <- ggplot(medroi_fit$fitvals, aes(x = Logan_Ref, y = Logan_ROI)) + geom_point(na.rm = TRUE) + ggtitle("Medium") + xlab(xlabel) + ylab(ylabel)
+  high_linplot <- ggplot(highroi_fit$fitvals, aes(x = Logan_Ref, y = Logan_ROI)) + geom_point(na.rm = TRUE) + ggtitle("High") + xlab(xlabel) + ylab(ylabel)
 
   tstarInclFrames <- 3:frames
 

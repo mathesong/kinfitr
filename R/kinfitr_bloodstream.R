@@ -13,9 +13,13 @@
 #' }
 bloodstream_import_inputfunctions <- function(blstream_folder) {
 
-  blstream_files <- bids_parse_files(blstream_folder)
-  blstream_files <- tidyr::unnest(blstream_files,
-                                  cols = filedata)
+  # A bloodstream or petfit folder holds derived files, not PET images, so the
+  # derivative parser applies. The entity columns returned here are joined on by
+  # name, so they must reflect what the filenames actually carry.
+  blstream_files <- bids_parse_derivatives(blstream_folder)
+  blstream_files <- dplyr::rename(blstream_files, measurement = "suffix")
+  # Group-level files belong to the analysis rather than to any acquisition.
+  blstream_files <- blstream_files[!is.na(blstream_files$source_key), , drop = FALSE]
   blstream_files <- dplyr::filter(blstream_files,
                                   measurement == "inputfunction")
 
@@ -31,14 +35,40 @@ bloodstream_import_inputfunctions <- function(blstream_folder) {
                                        ~read.delim(.x, sep="\t"))
   blstream_tsv <- dplyr::select(blstream_tsv, -path_absolute, -path, -extension)
 
-  # Combine
-  suppressMessages(
-    blstream_data <- dplyr::full_join(blstream_json, blstream_tsv)
-  )
+  # A tsv and its json sidecar describe one product and share an artifact_key,
+  # which pairs them exactly.
+  blstream_data <- dplyr::full_join(blstream_json, blstream_tsv,
+                                    by = intersect(colnames(blstream_json),
+                                                   colnames(blstream_tsv)))
+  # The keys pair the files; callers join on the entity columns, so the keys are
+  # dropped before returning.
+  # A tsv without its json, or the reverse, cannot be interpreted: the units and
+  # availability flags live in the sidecar. Name the offender rather than
+  # failing later on an empty subscript.
+  incomplete <- purrr::map_lgl(blstream_data$jsondata, is.null) |
+    purrr::map_lgl(blstream_data$tsvdata, is.null)
+
+  if (any(incomplete)) {
+    warning("Input functions without a complete tsv/json pair, which were ",
+            "skipped:\n",
+            paste0("  ", blstream_data$artifact_key[incomplete],
+                   " (missing ",
+                   ifelse(purrr::map_lgl(blstream_data$jsondata[incomplete], is.null),
+                          "json", "tsv"),
+                   ")", collapse = "\n"),
+            call. = FALSE)
+    blstream_data <- blstream_data[!incomplete, , drop = FALSE]
+  }
+
+  blstream_data <- dplyr::select(blstream_data,
+                                 -dplyr::any_of(c("source_key", "artifact_key",
+                                                  "analysis_scope_key")))
 
   # Unit Conversions
 
-  for(i in 1:nrow(blstream_data)) {
+  # seq_len, not 1:nrow -- with every input function incomplete and skipped
+  # above, nrow is 0 and 1:0 would index rows that do not exist.
+  for(i in seq_len(nrow(blstream_data))) {
 
     # time
     if("time" %in% colnames(blstream_data$tsvdata[[i]])) {
@@ -135,9 +165,16 @@ bloodstream_import_inputfunctions <- function(blstream_folder) {
 #' }
 bloodstream_import_aifpars <- function(blstream_folder) {
 
-  blstream_files <- bids_parse_files(blstream_folder)
-  blstream_files <- tidyr::unnest(blstream_files,
-                                  cols = filedata)
+  # Derived files: see bloodstream_import_inputfunctions() above.
+  blstream_files <- bids_parse_derivatives(blstream_folder)
+  blstream_files <- dplyr::rename(blstream_files, measurement = "suffix")
+  # Group-level files describe the analysis, not an acquisition: a bloodstream
+  # folder holds its own bloodstream_config.json alongside the per-measurement
+  # AIF fits, and only the latter carry fitted parameters.
+  blstream_files <- blstream_files[!is.na(blstream_files$source_key), , drop = FALSE]
+  blstream_files <- dplyr::select(blstream_files,
+                                  -dplyr::any_of(c("source_key", "artifact_key",
+                                                   "analysis_scope_key")))
   blstream_files <- dplyr::filter(blstream_files,
                                   measurement == "config")
 

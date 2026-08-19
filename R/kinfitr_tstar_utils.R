@@ -197,7 +197,7 @@ tstar_outrow <- function(lowroi_fit, medroi_fit, highroi_fit, outcome_df,
     ylab(outcome_ylab) + colScale + theme(legend.position = "none")
 
   if (!is.null(outcome_ylim)) {
-    outcomeplot <- outcomeplot + ylim(outcome_ylim)
+    outcomeplot <- outcomeplot + coord_cartesian(ylim = outcome_ylim)
   }
 
   cowplot::plot_grid(tacplot, outcomeplot, rel_widths = c(2, 1))

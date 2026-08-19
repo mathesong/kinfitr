@@ -2,7 +2,7 @@
 #' @importFrom utils data head modifyList read.delim tail
 #' @importFrom grDevices dev.off jpeg
 #' @importFrom graphics lines
-#' @importFrom rlang :=
+#' @importFrom rlang := %||%
 NULL
 
 # Suppress R CMD check notes about NSE variables used in dplyr/ggplot2 functions
@@ -23,5 +23,5 @@ utils::globalVariables(c(
   "task", "time", "trc", "tsvdata", "update_blooddata_bids", "value",
   "whole_blood_radioactivity", "ROI.fitted", "ROI.measured", "ROI_measured",
   "Reference", "Target.fitted", "Target.measured", "Measure", "Ki", "Kiref",
-  "Type"
+  "Type", "Logan_Ref", "Patlak_Ref"
 ))
