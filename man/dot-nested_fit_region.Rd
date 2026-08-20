@@ -27,7 +27,8 @@ input (or reftac) as appropriate for the model.}
 
 \item{upper}{Named numeric vector of upper bounds.}
 
-\item{multstart_iter}{Numeric. If > 1, use nls_multstart.}
+\item{multstart_iter}{Numeric. A single number, or one value per fitted
+parameter. If the product exceeds 1, \code{nls_multstart} is used.}
 
 \item{multstart_lower}{Named numeric vector of multstart lower bounds.}
 

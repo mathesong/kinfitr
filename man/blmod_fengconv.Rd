@@ -58,7 +58,8 @@ they will be selected using \code{blmod_feng_startpars}.}
 
 \item{multstart_iter}{The number of fits to perform with different starting
 parameters. If set to 1, then the starting parameters will be used for a
-single fit.}
+single fit. Otherwise the starting values are chosen by improved Latin
+hypercube sampling over the multstart bounds rather than at random.}
 
 \item{Method_weights}{If no weights provided, should the weights be divided
 by discrete and continuous samples equally (i.e. with more continuous

@@ -41,7 +41,8 @@ between the values, i.e. c(0,5) will select all frames with midtimes
 during the first 5 minutes.}
 
 \item{multstart_iter}{Number of iterations for starting parameters. Default
-is 500. For more information, see
+is 500. Starting values are chosen by improved Latin hypercube sampling
+rather than at random. For more information, see
 \code{\link[nls.multstart]{nls_multstart}}.}
 }
 \value{

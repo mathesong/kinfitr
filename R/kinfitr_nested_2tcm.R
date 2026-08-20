@@ -51,7 +51,10 @@
 #'   another method is selected, the lower and upper limits for shared
 #'   parameters are ignored.
 #' @param optim_control Control parameters for optim().
-#' @param multstart_iter Multistart iterations for inner fits. Default is 1.
+#' @param multstart_iter Multistart iterations for the inner (per-region) fits.
+#'   Default is 1. A single number, or one value per fitted parameter. Where
+#'   more than one iteration is used, starting values are chosen by improved
+#'   Latin hypercube sampling over the multstart bounds rather than at random.
 #' @param multstart_lower Optional. Lower bounds for multistart.
 #' @param multstart_upper Optional. Upper bounds for multistart.
 #' @param frameStartEnd Optional. Frame range c(start, end).
@@ -59,7 +62,19 @@
 #' @param keep_inner_fits Logical. If TRUE, store per-region nlsLM fit objects
 #'   in \code{$fits_inner}. Default is FALSE.
 #'
+#' @details The standard errors in \code{par.se} follow the usual kinfitr
+#'   convention of being expressed as a fraction of the estimate. Those for the
+#'   shared (outer) parameters are derived from the curvature of the profile
+#'   objective at its optimum, obtained by finite differences, and are therefore
+#'   more approximate than those of the per-region parameters. The per-region
+#'   standard errors are conditional on the shared parameters: they treat
+#'   the shared values as known rather than estimated, and so are somewhat
+#'   optimistic.
+#'
 #' @return A list with class c("nested_2tcm", "kinfit").
+#'   \code{par} and \code{par.se} have one row per region, with the shared
+#'   parameter values repeated. \code{weights} holds the full stacked vector
+#'   of frame weights, aligned with the rows of \code{tacs}.
 #'
 #' @export
 nested_2tcm <- function(
@@ -83,7 +98,7 @@ nested_2tcm <- function(
 
   # Convert timeStartEnd to frameStartEnd
   region <- as.character(region)
-  regions_raw <- unique(region)
+  regions_raw <- .nested_regions(region, "nested_2tcm", "twotcm_macro")
 
   # Resolve roiweights against the original (pre-tidy) region vector, since a
   # per-observation roiweights vector is sized to the input TACs. tidyinput_long
@@ -104,7 +119,7 @@ nested_2tcm <- function(
   weights <- tidied$weights
   regions <- unique(region)
 
-  weights_per_region <- weights[region == regions[1]]
+  weights_by_region <- .nested_weights_by_region(weights, region, regions)
 
   # Shift timings (inpshift is pre-fitted)
   shifted <- shift_timings_long(t_tac, tac, region, input, inpshift)
@@ -148,10 +163,13 @@ nested_2tcm <- function(
 
   inner_config <- build_inner_config()
 
-  if (multstart_iter > 1) {
-    if (is.null(multstart_lower)) multstart_lower <- inner_config$lower
-    if (is.null(multstart_upper)) multstart_upper <- inner_config$upper
-  }
+  multstart_bounds <- .nested_multstart_bounds(inner_config$start,
+                                               inner_config$lower,
+                                               inner_config$upper,
+                                               multstart_iter,
+                                               multstart_lower, multstart_upper)
+  multstart_lower <- multstart_bounds$lower
+  multstart_upper <- multstart_bounds$upper
 
   # Build formula string with outer params fixed from current outer values
   build_formula <- function(Vnd_val, k4_val) {
@@ -183,7 +201,7 @@ nested_2tcm <- function(
       modeldata <- list(
         tac = shifted$tac[region_mask],
         t_tac = shifted$t_tac[region_mask],
-        weights = weights_per_region,
+        weights = weights_by_region[[r]],
         input = shifted$input
       )
 
@@ -194,9 +212,10 @@ nested_2tcm <- function(
                                 multstart_upper)
 
       if (is.null(fit)) {
-        total_rss <- total_rss + 1e10 * roiweights[r]
+        total_rss <- total_rss + 1e10 * unname(roiweights[r])
       } else {
-        total_rss <- total_rss + sum(weights(fit) * residuals(fit)^2) * roiweights[r]
+        total_rss <- total_rss +
+          sum(weights(fit) * residuals(fit)^2) * unname(roiweights[r])
       }
     }
     return(total_rss)
@@ -239,7 +258,7 @@ nested_2tcm <- function(
     modeldata <- list(
       tac = region_tac,
       t_tac = region_t,
-      weights = weights_per_region,
+      weights = weights_by_region[[r]],
       input = shifted$input
     )
 
@@ -248,6 +267,7 @@ nested_2tcm <- function(
                               inner_config$upper,
                               multstart_iter, multstart_lower,
                               multstart_upper)
+    .nested_require_fit(fit, r, "nested_2tcm")
 
     coefs <- as.list(coef(fit))
 
@@ -288,30 +308,35 @@ nested_2tcm <- function(
     region_par$k2       <- this_k2
     region_par$k3       <- this_k3
 
-    # SEs
+    # SEs. Shared parameters are fixed at their optimised values, so the
+    # derived parameters are obtained by substituting those values into the
+    # delta method expression: the resulting SEs are conditional on the
+    # shared parameters (see the Details section).
     inner_names <- names(coef(fit))
     se_vals <- list(region = r)
 
+    for (pname in outer_pars) {
+      se_vals[[paste0(pname, ".se")]] <- NA_real_
+    }
     for (pname in inner_names) {
       se_vals[[paste0(pname, ".se")]] <- get_se(fit, pname)
     }
 
-    if (shared == "Vnd_k4") {
-      se_vals$Vt.se   <- NA
-      se_vals$BPnd.se <- NA
-      se_vals$k2.se   <- NA
-      se_vals$k3.se   <- NA
-    } else if (shared == "Vnd") {
-      se_vals$Vt.se   <- NA
-      se_vals$BPnd.se <- NA
-      se_vals$k2.se   <- NA
-      se_vals$k3.se   <- NA
-    } else if (shared == "k4") {
-      se_vals$Vt.se   <- get_se(fit, "Vnd + BPp")
-      se_vals$BPnd.se <- get_se(fit, "BPp / Vnd")
-      se_vals$k2.se   <- get_se(fit, "K1 / Vnd")
-      se_vals$k3.se   <- NA
+    Vnd_expr <- if (shared %in% c("Vnd", "Vnd_k4")) {
+      .nested_num(this_Vnd)
+    } else {
+      "Vnd"
     }
+    k4_expr <- if (shared %in% c("k4", "Vnd_k4")) {
+      .nested_num(this_k4)
+    } else {
+      "k4"
+    }
+
+    se_vals$Vt.se   <- get_se(fit, paste0(Vnd_expr, " + BPp"))
+    se_vals$BPnd.se <- get_se(fit, paste0("BPp / ", Vnd_expr))
+    se_vals$k2.se   <- get_se(fit, paste0("K1 / ", Vnd_expr))
+    se_vals$k3.se   <- get_se(fit, paste0("(BPp / ", Vnd_expr, ") * ", k4_expr))
 
     region_se <- as.data.frame(se_vals, stringsAsFactors = FALSE)
 
@@ -320,7 +345,7 @@ nested_2tcm <- function(
       Region = r,
       Radioactivity = region_tac,
       Fitted = as.numeric(fitted(fit)),
-      Weights = weights_per_region,
+      Weights = weights_by_region[[r]],
       stringsAsFactors = FALSE
     )
 
@@ -332,6 +357,17 @@ nested_2tcm <- function(
   par <- do.call(rbind, par_list)
   par.se <- do.call(rbind, par_se_list)
   tacs <- do.call(rbind, fitted_tacs)
+
+  # Approximate profile-based SEs for the shared parameters
+  outer_se <- .nested_outer_se(
+    optim_result, outer_objective,
+    n_obs = sum(weights > 0),
+    n_par = length(outer_pars) + length(inner_config$start) * length(regions)
+  )
+  for (pname in outer_pars) {
+    par.se[[paste0(pname, ".se")]] <- outer_se[[pname]]
+  }
+
   rownames(par) <- NULL
   rownames(par.se) <- NULL
   rownames(tacs) <- NULL
@@ -343,7 +379,7 @@ nested_2tcm <- function(
     fit = optim_result,
     tacs = tacs,
     input = shifted$input,
-    weights = weights_per_region,
+    weights = weights,
     roiweights = roiweights,
     vB = vB,
     inpshift = inpshift,
@@ -428,7 +464,7 @@ plot_nested_2tcmfit <- function(nested_out, roiname = NULL) {
 
     myColors <- RColorBrewer::brewer.pal(3, "Set1")
     names(myColors) <- levels(plotdf$Type)
-    colScale <- ggplot2::scale_colour_manual(name = "Region", values = myColors)
+    colScale <- ggplot2::scale_colour_manual(name = "Type", values = myColors)
 
     max_measured <- max(tacs_subset$Radioactivity)
 

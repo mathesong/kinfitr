@@ -71,7 +71,8 @@ target 1TC fit.}
 \item{k2.start, k2.lower, k2.upper}{Starting value and bounds for k2.}
 
 \item{multstart_iter}{Number of starting parameter iterations for the 1TC
-fit. See \code{\link[nls.multstart]{nls_multstart}}.}
+fit. Starting values are chosen by improved Latin hypercube sampling
+rather than at random. See \code{\link[nls.multstart]{nls_multstart}}.}
 
 \item{multstart_lower, multstart_upper}{Optional named lists for multstart
 starting bounds.}

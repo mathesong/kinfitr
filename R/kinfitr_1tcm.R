@@ -51,6 +51,11 @@
 #'   is 1. For more information, see \code{\link[nls.multstart]{nls_multstart}}.
 #'   If specified as 1 for any parameters, the original starting value will be
 #'   used, and the multstart_lower and multstart_upper values ignored.
+#'   Starting values are not drawn at random: they are chosen by improved
+#'   Latin hypercube sampling (\code{lhstype = "improved"}), which spreads
+#'   them more evenly over the multstart bounds than random draws do. This
+#'   usually finds the global optimum in fewer iterations, and makes repeated
+#'   fits of the same data more consistent with one another.
 #' @param multstart_lower Optional. Lower bounds for starting parameters.
 #'   Defaults to the lower bounds. Named list of whichever parameters' starting
 #'   bounds should be altered.
@@ -184,7 +189,7 @@ onetcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL
         supp_errors = "Y",
         start_lower = multstart_lower,
         start_upper = multstart_upper,
-        iter = multstart_iter, convergence_count = FALSE,
+        iter = multstart_iter, lhstype = "improved", convergence_count = FALSE,
         lower = lower, upper = upper, modelweights = weights
       )
     }
@@ -217,7 +222,7 @@ onetcm <- function(t_tac, tac, input, weights = NULL, inpshift = NULL, vB = NULL
         supp_errors = "Y",
         start_lower = multstart_lower,
         start_upper = multstart_upper,
-        iter = multstart_iter, convergence_count = FALSE,
+        iter = multstart_iter, lhstype = "improved", convergence_count = FALSE,
         lower = lower, upper = upper, modelweights = weights
       )
     }

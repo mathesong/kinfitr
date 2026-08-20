@@ -40,7 +40,8 @@
 #' @param K1.start,K1.lower,K1.upper Starting value and bounds for K1.
 #' @param k2.start,k2.lower,k2.upper Starting value and bounds for k2.
 #' @param multstart_iter Number of starting parameter iterations for the 1TC
-#'   fit. See \code{\link[nls.multstart]{nls_multstart}}.
+#'   fit. Starting values are chosen by improved Latin hypercube sampling
+#'   rather than at random. See \code{\link[nls.multstart]{nls_multstart}}.
 #' @param multstart_lower,multstart_upper Optional named lists for multstart
 #'   starting bounds.
 #' @param derivative Method for computing \eqn{dC_T'(t)/dt}. Either
@@ -175,7 +176,7 @@ prefifs_1tcm <- function(t_tac, pref_par, roitac,
       formula, data = modeldata,
       supp_errors = "Y",
       start_lower = multstart_lower, start_upper = multstart_upper,
-      iter = multstart_iter, convergence_count = FALSE,
+      iter = multstart_iter, lhstype = "improved", convergence_count = FALSE,
       lower = lower, upper = upper, modelweights = weights
     )
   }

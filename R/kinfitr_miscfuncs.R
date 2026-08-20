@@ -388,6 +388,14 @@ plot_kinfit <- function(modelout, ...) {
 #' checks if some parameters aren't to be tried with different starting parameters, and checks
 #' the lengths of the multstart bounds
 #'
+#' @details This prepares the bounds within which starting values are drawn. The
+#'   models themselves draw those values by improved Latin hypercube sampling
+#'   (\code{lhstype = "improved"} in
+#'   \code{\link[nls.multstart]{nls_multstart}}) rather than at random, so a
+#'   given number of iterations covers the bounds more evenly. Parameters whose
+#'   \code{multstart_iter} is 1 are held at their starting value and take no
+#'   part in the sampling.
+#'
 #' @param start Original starting values for without multstart
 #' @param lower Lower fitting bounds
 #' @param upper Upper fitting bounds

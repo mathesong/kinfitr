@@ -134,7 +134,12 @@ Default is 0.5.}
 \item{multstart_iter}{Number of iterations for starting parameters. Default
 is 1. For more information, see \code{\link[nls.multstart]{nls_multstart}}.
 If specified as 1 for any parameters, the original starting value will be
-used, and the multstart_lower and multstart_upper values ignored.}
+used, and the multstart_lower and multstart_upper values ignored.
+Starting values are not drawn at random: they are chosen by improved
+Latin hypercube sampling (\code{lhstype = "improved"}), which spreads
+them more evenly over the multstart bounds than random draws do. This
+usually finds the global optimum in fewer iterations, and makes repeated
+fits of the same data more consistent with one another.}
 
 \item{multstart_lower}{Optional. Lower bounds for starting parameters.
 Defaults to the lower bounds. Named list of whichever parameters' starting

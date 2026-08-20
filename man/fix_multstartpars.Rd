@@ -34,6 +34,15 @@ Checks and fixes for inputted multstart parameters. Checks missing multstart bou
 checks if some parameters aren't to be tried with different starting parameters, and checks
 the lengths of the multstart bounds
 }
+\details{
+This prepares the bounds within which starting values are drawn. The
+  models themselves draw those values by improved Latin hypercube sampling
+  (\code{lhstype = "improved"} in
+  \code{\link[nls.multstart]{nls_multstart}}) rather than at random, so a
+  given number of iterations covers the bounds more evenly. Parameters whose
+  \code{multstart_iter} is 1 are held at their starting value and take no
+  part in the sampling.
+}
 \examples{
 start <- list(a = 1, b = 2, c = 3)
 upper <- lapply(start, function(x) x + 1)
