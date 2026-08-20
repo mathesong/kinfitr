@@ -250,15 +250,24 @@ test_that("named roiweights missing a region is rejected", {
   )
 })
 
-test_that("nesting a single region warns", {
+test_that("nesting a single region is an error", {
+  # A single-region fit would be recorded as a nested analysis while being
+  # nothing of the kind, so it is refused rather than silently allowed.
   one_region <- long_data[long_data$region == "FC", ]
 
-  expect_warning(
+  expect_error(
     nested_1tcm_delay(
       one_region$t_tac, one_region$tac, one_region$region, input,
       timeStartEnd = c(0, 5)
     ),
-    "only one region"
+    "requires at least two regions"
+  )
+  expect_error(
+    nested_2tcm(
+      one_region$t_tac, one_region$tac, one_region$region, input,
+      inpshift = 0.08
+    ),
+    "requires at least two regions"
   )
 })
 
@@ -290,22 +299,47 @@ test_that("frame weights are applied per region rather than shared", {
 
 # --- Standard errors ---
 
-test_that("nested_1tcm_delay recovers the delay SE of the unnested model", {
-  # With a single region the profile objective is the 1TCM delay likelihood,
-  # so the Hessian-based SE should agree closely with the one nls gives.
-  one_region <- long_data[long_data$region == "FC", ]
+test_that("the shared-parameter SE follows the expected scaling and calibration", {
+  # Fitting the SAME TAC as k regions makes the outer objective exactly k times
+  # the one-region objective, so both the RSS and its Hessian scale by k. The
+  # delay estimate must therefore be unchanged by k, while the variance must
+  # go as 1 / (k * n - 1 - 2 * k): k * n observations, one shared delay, and
+  # K1 and k2 per region. Rescaling each fit to its one-region equivalent
+  # recovers a single number, which pins down the degrees-of-freedom
+  # bookkeeping, and that number should match the SE that nls gives for the
+  # delay in the unnested model.
+  as_one_region <- function(k) {
+    dup <- do.call(rbind, lapply(seq_len(k), function(i) {
+      data.frame(t_tac = t_tac_single, tac = tac_wide$FC,
+                 region = paste0("R", i), stringsAsFactors = FALSE)
+    }))
 
-  nested <- suppressWarnings(nested_1tcm_delay(
-    one_region$t_tac, one_region$tac, one_region$region, input,
-    timeStartEnd = c(0, 5)
-  ))
+    out <- nested_1tcm_delay(dup$t_tac, dup$tac, dup$region, input,
+                             timeStartEnd = c(0, 5))
+
+    n <- sum(out$weights > 0) / k
+    list(
+      inpshift = out$par$inpshift[1],
+      se_one_region = out$par.se$inpshift.se[1] *
+        sqrt((k * n - 1 - 2 * k) / (n - 3))
+    )
+  }
+
+  two <- as_one_region(2)
+  three <- as_one_region(3)
+
+  # Duplicating a region must not move the estimate
+  expect_equal(two$inpshift, three$inpshift, tolerance = 1e-6)
+
+  # ... and the rescaled SEs must agree, which they only do if the degrees of
+  # freedom are counted per observation rather than, say, per region.
+  expect_equal(two$se_one_region, three$se_one_region, tolerance = 1e-3)
+
+  # Absolute calibration against the SE nls derives for the same quantity
   unnested <- onetcm(t_tac_single, tac_wide$FC, input, vB = 0.05,
                      timeStartEnd = c(0, 5))
-
-  expect_equal(nested$par$inpshift[1], unnested$par$inpshift,
-               tolerance = 1e-3)
-  expect_equal(nested$par.se$inpshift.se[1], unnested$par.se$inpshift,
-               tolerance = 0.05)
+  expect_equal(two$inpshift, unnested$par$inpshift, tolerance = 1e-3)
+  expect_equal(two$se_one_region, unnested$par.se$inpshift, tolerance = 0.05)
 })
 
 test_that("nested models report an SE for the shared parameter", {
@@ -367,4 +401,62 @@ test_that("faceted plots past three regions print as a paginated set", {
   pdf(NULL)
   expect_silent(print(p))
   dev.off()
+})
+
+
+# --- Failed inner fits must not masquerade as sharp curvature ---
+
+test_that(".nested_fit_region records failures", {
+  before <- kinfitr:::.nested_fit_failures$n
+
+  fit <- kinfitr:::.nested_fit_region(
+    "y ~ no_such_model(x, a)",
+    list(y = 1:5, x = 1:5, weights = rep(1, 5)),
+    start = c(a = 1), lower = c(a = 0), upper = c(a = 2)
+  )
+
+  expect_null(fit)
+  expect_equal(kinfitr:::.nested_fit_failures$n, before + 1L)
+})
+
+test_that(".nested_outer_se returns NA when an inner fit fails during the Hessian", {
+  # A failed inner fit adds a large but finite penalty to the objective. At a
+  # perturbed point that reads as enormous curvature, so the standard error
+  # comes out minute while passing every finiteness check -- overconfident in
+  # the one direction that matters. It must come back NA instead.
+  opt <- c(shared = 0.1)
+  optim_result <- list(par = opt, value = 5)
+
+  clean <- function(p) 100 * (p[["shared"]] - opt)^2 + 5
+
+  penalised <- function(p) {
+    if (p[["shared"]] > opt + 1e-9) {
+      # stand in for a region that will not fit at this perturbation
+      kinfitr:::.nested_fit_region(
+        "y ~ no_such_model(x, a)",
+        list(y = 1:5, x = 1:5, weights = rep(1, 5)),
+        start = c(a = 1), lower = c(a = 0), upper = c(a = 2)
+      )
+      return(1e10)
+    }
+    clean(p)
+  }
+
+  se_clean <- kinfitr:::.nested_outer_se(optim_result, clean,
+                                         n_obs = 50, n_par = 5)
+  se_penalised <- kinfitr:::.nested_outer_se(optim_result, penalised,
+                                             n_obs = 50, n_par = 5)
+
+  expect_true(is.finite(se_clean[["shared"]]))
+  expect_true(is.na(se_penalised[["shared"]]))
+})
+
+test_that("a clean nested fit still reports its shared-parameter SE", {
+  # The guard above must not fire on ordinary fits.
+  out <- nested_1tcm_delay(
+    long_data$t_tac, long_data$tac, long_data$region, input,
+    timeStartEnd = c(0, 5)
+  )
+
+  expect_true(all(is.finite(out$par.se$inpshift.se)))
 })

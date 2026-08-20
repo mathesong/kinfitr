@@ -464,7 +464,7 @@ plot_nested_2tcmfit <- function(nested_out, roiname = NULL) {
 
     myColors <- RColorBrewer::brewer.pal(3, "Set1")
     names(myColors) <- levels(plotdf$Type)
-    colScale <- ggplot2::scale_colour_manual(name = "Type", values = myColors)
+    colScale <- ggplot2::scale_colour_manual(name = NULL, values = myColors)
 
     max_measured <- max(tacs_subset$Radioactivity)
 

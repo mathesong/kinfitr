@@ -21,4 +21,12 @@ Named list of numeric vectors, one per region, in \code{regions}
 Nested models fit each region separately, so each region must be given its
 own frame weights rather than those of the first region.
 }
+\details{
+These weights stay aligned with the TACs after the timings are
+  shifted because the frame count per region does not change:
+  \code{shift_timings_df} only prepends a row when there is no zero frame,
+  and \code{tidyinput_long} has already added one by the time the nested
+  models call it. The alignment therefore depends on that ordering, and on
+  each region's frames arriving in ascending time order.
+}
 \keyword{internal}

@@ -14,7 +14,8 @@
 \item{alternative}{The unnested model to suggest for a single region.}
 }
 \value{
-The unique region labels, in order of appearance.
+The unique region labels, in order of appearance. Errors if fewer
+  than two regions are supplied.
 }
 \description{
 Validate region labels for nested models

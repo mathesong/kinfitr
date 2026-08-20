@@ -21,7 +21,7 @@
                                multstart_iter = 1,
                                multstart_lower = NULL,
                                multstart_upper = NULL) {
-  tryCatch({
+  fit <- tryCatch({
     if (prod(multstart_iter) == 1) {
       minpack.lm::nlsLM(
         as.formula(formula_str),
@@ -44,7 +44,27 @@
       )
     }
   }, error = function(e) NULL)
+
+  # Record the failure so that callers which cannot see it directly -- notably
+  # .nested_outer_se(), whose objective values pass through optim() -- can tell
+  # that a fit failed rather than only seeing the penalty it produced.
+  if (is.null(fit)) {
+    .nested_fit_failures$n <- .nested_fit_failures$n + 1L
+  }
+
+  fit
 }
+
+
+#' Tally of failed inner fits
+#'
+#' A running count of the inner fits that have failed, incremented by
+#' \code{.nested_fit_region}. Only differences in the count are meaningful:
+#' callers record it before a block of fitting and compare afterwards.
+#'
+#' @keywords internal
+.nested_fit_failures <- new.env(parent = emptyenv())
+.nested_fit_failures$n <- 0L
 
 
 #' Stop informatively when an inner fit fails
@@ -77,7 +97,8 @@
 #' @param model The name of the calling nested model.
 #' @param alternative The unnested model to suggest for a single region.
 #'
-#' @return The unique region labels, in order of appearance.
+#' @return The unique region labels, in order of appearance. Errors if fewer
+#'   than two regions are supplied.
 #' @keywords internal
 .nested_regions <- function(region, model, alternative) {
   if (anyNA(region) || any(!nzchar(region))) {
@@ -88,10 +109,11 @@
   regions <- unique(region)
 
   if (length(regions) < 2) {
-    warning(model, " was called with only one region ('", regions[1], "'). ",
-            "Nesting borrows information across regions, so with a single ",
-            "region this is simply a slower route to the same fit as ",
-            alternative, "().", call. = FALSE)
+    stop(model, " requires at least two regions, but was given only one ('",
+         regions[1], "'). Nesting works by borrowing information across ",
+         "regions: with a single region there is nothing to share, and the ",
+         "result would be recorded as a nested fit while being no such thing. ",
+         "Use ", alternative, "() instead.", call. = FALSE)
   }
 
   regions
@@ -109,6 +131,13 @@
 #'
 #' @return Named list of numeric vectors, one per region, in \code{regions}
 #'   order.
+#'
+#' @details These weights stay aligned with the TACs after the timings are
+#'   shifted because the frame count per region does not change:
+#'   \code{shift_timings_df} only prepends a row when there is no zero frame,
+#'   and \code{tidyinput_long} has already added one by the time the nested
+#'   models call it. The alignment therefore depends on that ordering, and on
+#'   each region's frames arriving in ascending time order.
 #' @keywords internal
 .nested_weights_by_region <- function(weights, region, regions) {
   out <- lapply(regions, function(r) weights[region == r])
@@ -210,7 +239,9 @@
 #'
 #' @return Named numeric vector of standard errors as a fraction of the
 #'   estimate (matching the convention of \code{get_se}), or NA values where
-#'   they could not be derived.
+#'   they could not be derived -- including where any inner fit failed while
+#'   the Hessian was being evaluated, since the penalty such a failure
+#'   contributes would otherwise masquerade as very sharp curvature.
 #' @keywords internal
 .nested_outer_se <- function(optim_result, objective, n_obs, n_par) {
   pars <- optim_result$par
@@ -222,11 +253,19 @@
 
   ndeps <- pmax(1e-3, abs(pars) * 0.01)
 
+  # A failed inner fit contributes a large but finite penalty to the objective.
+  # If one occurs at a perturbed point, the resulting curvature is enormous and
+  # the standard error comes out minute -- overconfident, and passing every
+  # finiteness check on the way. Count the failures across the Hessian
+  # evaluations and refuse to report a standard error if any occurred.
+  failures_before <- .nested_fit_failures$n
+
   hess <- tryCatch(
     stats::optimHess(pars, objective, control = list(ndeps = ndeps)),
     error = function(e) NULL
   )
   if (is.null(hess) || !all(is.finite(hess))) return(failed)
+  if (.nested_fit_failures$n > failures_before) return(failed)
 
   vcov <- tryCatch(2 * (rss / df) * solve(hess), error = function(e) NULL)
   if (is.null(vcov)) return(failed)

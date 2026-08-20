@@ -18,7 +18,9 @@
 \value{
 Named numeric vector of standard errors as a fraction of the
   estimate (matching the convention of \code{get_se}), or NA values where
-  they could not be derived.
+  they could not be derived -- including where any inner fit failed while
+  the Hessian was being evaluated, since the penalty such a failure
+  contributes would otherwise masquerade as very sharp curvature.
 }
 \description{
 The outer objective is a profile weighted residual sum of squares: the

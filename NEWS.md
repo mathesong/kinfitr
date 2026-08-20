@@ -41,16 +41,29 @@
   These per-region standard errors are conditional on the shared parameters,
   which is noted in the documentation.
 
+* **A failed inner fit can no longer masquerade as a precise shared
+  parameter.** A region that fails to fit contributes a large but finite
+  penalty to the objective. Where that happened at one of the perturbed points
+  used to derive the shared parameter's standard error, the penalty read as
+  extremely sharp curvature, and the standard error came back minute rather
+  than missing — overconfident, while passing every finiteness check. Failed
+  inner fits are now counted, and no standard error is reported for a shared
+  parameter if one occurred while its curvature was being measured.
+
 * **Clearer failures.** A per-region fit that fails at the optimised shared
   parameters now raises an error naming the region, rather than failing
   obscurely inside `coef(NULL)`. `roiweights` given as a named vector that is
   missing a region is rejected by name instead of silently becoming `NA`.
-  Nesting a single region warns and names the unnested model to use instead.
+  Nesting a single region is refused, naming the unnested model to use
+  instead: such a fit would be recorded as a nested analysis while being
+  nothing of the kind, which matters for the provenance of a reported result.
 
 * **Faceted plots past three regions print.** These return a set of pages,
   which is now a classed object with a `print()` method, so `plot()` renders
-  every page. The legend of the faceted plots is titled "Type", which is what
-  it distinguishes; the region is shown on the facet strip.
+  every page. Their legend is no longer titled "Region" — the region is shown
+  on the facet strip, and the legend distinguishes the measured data, the
+  fitted model and the input function, which its entries already name. It
+  therefore carries no title.
 
 ## BIDS parsing
 
