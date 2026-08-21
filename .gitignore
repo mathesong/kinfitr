@@ -6,3 +6,6 @@ inst/doc
 .positai
 tests/testthat/_problems/
 tests/testthat/Rplots.pdf
+
+# Local Claude Code settings (personal, not part of the package)
+.claude/settings.local.json
