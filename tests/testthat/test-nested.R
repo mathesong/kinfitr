@@ -425,7 +425,7 @@ test_that(".nested_outer_se returns NA when an inner fit fails during the Hessia
   # comes out minute while passing every finiteness check -- overconfident in
   # the one direction that matters. It must come back NA instead.
   opt <- c(shared = 0.1)
-  optim_result <- list(par = opt, value = 5)
+  optim_result <- list(par = opt, value = 5, convergence = 0)
 
   clean <- function(p) 100 * (p[["shared"]] - opt)^2 + 5
 
@@ -459,4 +459,91 @@ test_that("a clean nested fit still reports its shared-parameter SE", {
   )
 
   expect_true(all(is.finite(out$par.se$inpshift.se)))
+})
+
+
+# --- The shared-parameter SE is only reported where it means something ---
+
+test_that(".nested_outer_se judges a reported problem by where it stopped", {
+  # Curvature describes uncertainty at an optimum, so a non-zero convergence
+  # code warrants suspicion -- but it is not proof, since L-BFGS-B reports code
+  # 52 when its line search fails, which a slightly kinked profile objective
+  # provokes at the optimum itself. What settles it is whether the search
+  # stopped at the bottom, so that is what gets checked.
+  minimum_at <- 5
+  quad <- function(p) 100 * (p[["shared"]] - minimum_at)^2
+
+  se_at <- function(x, code) {
+    kinfitr:::.nested_outer_se(
+      list(par = c(shared = x), value = quad(c(shared = x)), convergence = code),
+      quad, n_obs = 50, n_par = 5
+    )[["shared"]]
+  }
+
+  # Converged: reported as usual
+  expect_true(is.finite(se_at(minimum_at, 0)))
+
+  # Reported a problem, but sitting at the minimum: still reported
+  expect_true(is.finite(se_at(minimum_at, 52)))
+  expect_true(is.finite(se_at(minimum_at, 1)))
+
+  # Reported a problem while stopped part-way down a slope: refused
+  expect_true(is.na(se_at(0.1, 52)))
+  expect_true(is.na(se_at(0.1, 1)))
+})
+
+test_that("a line-search failure at a good optimum keeps its standard error", {
+  # pbr28 measurement 6 over 0-3 minutes ends with L-BFGS-B code 52 at an
+  # optimum that is plainly sound: the estimate agrees with the 0-5 minute
+  # window, which converges cleanly. The standard error should survive too, and
+  # land near the one that window reports.
+  build <- function(meas) {
+    tw <- pbr28$tacs[[meas]]
+    do.call(rbind, lapply(selected_regions, function(r) {
+      data.frame(t_tac = tw$Times / 60, tac = tw[[r]], region = r,
+                 stringsAsFactors = FALSE)
+    }))
+  }
+  ld <- build(6)
+  inp <- pbr28$input[[6]]
+
+  short <- nested_1tcm_delay(ld$t_tac, ld$tac, ld$region, inp,
+                             timeStartEnd = c(0, 3))
+  longer <- nested_1tcm_delay(ld$t_tac, ld$tac, ld$region, inp,
+                              timeStartEnd = c(0, 5))
+
+  expect_false(isTRUE(short$fit$convergence == 0))
+  expect_true(isTRUE(longer$fit$convergence == 0))
+
+  expect_equal(short$par$inpshift[1], longer$par$inpshift[1], tolerance = 0.01)
+  expect_true(is.finite(short$par.se$inpshift.se[1]))
+  expect_equal(short$par.se$inpshift.se[1], longer$par.se$inpshift.se[1],
+               tolerance = 0.2)
+})
+
+test_that(".nested_outer_se refuses a stochastic objective", {
+  # Under a scalar multstart_iter the inner fits redraw their start design on
+  # every evaluation, so the objective is stochastic and finite differences of
+  # it are noise. The guard tests reproducibility directly rather than
+  # inferring it from the fitting settings.
+  optim_result <- list(par = c(shared = 0.1), value = 5, convergence = 0)
+
+  deterministic <- function(p) 100 * (p[["shared"]] - 0.1)^2 + 5
+
+  # Returns something different on every call, without drawing at random --
+  # non-reproducible as an objective, but deterministic as a test.
+  calls <- 0
+  noisy <- function(p) {
+    calls <<- calls + 1
+    deterministic(p) + calls * 1e-4
+  }
+
+  expect_true(is.finite(
+    kinfitr:::.nested_outer_se(optim_result, deterministic,
+                               n_obs = 50, n_par = 5)[["shared"]]
+  ))
+  expect_true(is.na(
+    kinfitr:::.nested_outer_se(optim_result, noisy,
+                               n_obs = 50, n_par = 5)[["shared"]]
+  ))
 })

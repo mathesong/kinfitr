@@ -36,9 +36,10 @@
 #'   parameters are ignored.
 #' @param optim_control Control parameters for optim().
 #' @param multstart_iter Multistart iterations for the inner (per-region) fits.
-#'   Default is 1. A single number, or one value per fitted parameter. Where
-#'   more than one iteration is used, starting values are chosen by improved
-#'   Latin hypercube sampling over the multstart bounds rather than at random.
+#'   Default is 1. A single number selects starting values by improved Latin
+#'   hypercube sampling over the multstart bounds rather than at random; one
+#'   value per fitted parameter instead builds a Cartesian grid with that many
+#'   levels per parameter.
 #' @param multstart_lower Optional. Lower bounds for multistart.
 #' @param multstart_upper Optional. Upper bounds for multistart.
 #' @param frameStartEnd Optional. Frame range c(start, end).

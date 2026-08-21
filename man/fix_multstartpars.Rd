@@ -35,13 +35,14 @@ checks if some parameters aren't to be tried with different starting parameters,
 the lengths of the multstart bounds
 }
 \details{
-This prepares the bounds within which starting values are drawn. The
-  models themselves draw those values by improved Latin hypercube sampling
-  (\code{lhstype = "improved"} in
-  \code{\link[nls.multstart]{nls_multstart}}) rather than at random, so a
-  given number of iterations covers the bounds more evenly. Parameters whose
-  \code{multstart_iter} is 1 are held at their starting value and take no
-  part in the sampling.
+This prepares the bounds within which starting values are drawn.
+  Where \code{multstart_iter} is a single number, the models draw those
+  values by improved Latin hypercube sampling (\code{lhstype = "improved"}
+  in \code{\link[nls.multstart]{nls_multstart}}) rather than at random, so
+  a given number of iterations covers the bounds more evenly. Where it is a
+  vector, \code{nls_multstart} builds a Cartesian grid over the bounds
+  instead and no sampling takes place. Parameters whose
+  \code{multstart_iter} is 1 are held at their starting value either way.
 }
 \examples{
 start <- list(a = 1, b = 2, c = 3)

@@ -95,9 +95,10 @@ parameters are ignored.}
 \item{optim_control}{Control parameters for optim().}
 
 \item{multstart_iter}{Multistart iterations for the inner (per-region) fits.
-Default is 1. A single number, or one value per fitted parameter. Where
-more than one iteration is used, starting values are chosen by improved
-Latin hypercube sampling over the multstart bounds rather than at random.}
+Default is 1. A single number selects starting values by improved Latin
+hypercube sampling over the multstart bounds rather than at random; one
+value per fitted parameter instead builds a Cartesian grid with that many
+levels per parameter.}
 
 \item{multstart_lower}{Optional. Lower bounds for multistart.}
 

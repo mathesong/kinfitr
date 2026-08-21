@@ -34,8 +34,10 @@ metab_invgamma(
 \item{multstart_upper}{Named list of the upper starting limits.}
 
 \item{multstart_iter}{Number of fits to perform before deciding on an optimal.
-Starting values are chosen by improved Latin hypercube sampling rather
-than at random. See \code{\link[nls.multstart]{nls_multstart}}.}
+Given as a single number, starting values are chosen by improved Latin
+hypercube sampling rather than at random; given as one value per
+parameter, they form a Cartesian grid.
+See \code{\link[nls.multstart]{nls_multstart}}.}
 }
 \value{
 An nls fit object.

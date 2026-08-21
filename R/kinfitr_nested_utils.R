@@ -242,6 +242,12 @@
 #'   they could not be derived -- including where any inner fit failed while
 #'   the Hessian was being evaluated, since the penalty such a failure
 #'   contributes would otherwise masquerade as very sharp curvature.
+#'
+#'   Where \code{optim()} reported a problem, a standard error is still given
+#'   if the optimum survives a direct check: no neighbouring point along any
+#'   axis is lower. This admits the common case of L-BFGS-B failing its line
+#'   search on a slightly kinked objective at the optimum, while still refusing
+#'   an optimisation that stopped part-way down a slope.
 #' @keywords internal
 .nested_outer_se <- function(optim_result, objective, n_obs, n_par) {
   pars <- optim_result$par
@@ -251,7 +257,46 @@
   df <- n_obs - n_par
   if (!is.finite(rss) || df <= 0) return(failed)
 
+  # Finite differences require a deterministic objective. With a scalar
+  # multstart_iter the inner fits draw a fresh random start design on every
+  # evaluation, so the objective is stochastic and its numerical derivatives are
+  # noise. Rather than reason about which code path is stochastic, test the
+  # property directly: evaluate twice at the optimum and compare.
+  repeated <- tryCatch(c(objective(pars), objective(pars)),
+                       error = function(e) NULL)
+  if (is.null(repeated) || !all(is.finite(repeated)) ||
+      !isTRUE(all.equal(repeated[1], repeated[2], tolerance = 1e-8))) {
+    return(failed)
+  }
+
   ndeps <- pmax(1e-3, abs(pars) * 0.01)
+
+  # Curvature only describes uncertainty at an optimum, so a reported problem
+  # from optim() is a reason for suspicion. It is not proof of one, though:
+  # L-BFGS-B returns code 52 when its line search fails, which a profile
+  # objective built from inner fits can provoke at the optimum itself, its
+  # small numerical kinks defeating the line search while the estimate is
+  # perfectly good. So rather than trust the code, check what it stands in for
+  # -- that the search really did stop at the bottom, with no neighbouring
+  # point along any axis lower than this one.
+  if (!isTRUE(optim_result$convergence == 0)) {
+    failures_before <- .nested_fit_failures$n
+
+    at_minimum <- vapply(seq_along(pars), function(j) {
+      step <- rep(0, length(pars))
+      step[j] <- ndeps[j]
+      neighbours <- tryCatch(c(objective(pars + step), objective(pars - step)),
+                             error = function(e) NULL)
+      !is.null(neighbours) && all(is.finite(neighbours)) &&
+        all(neighbours >= repeated[1])
+    }, logical(1))
+
+    # A neighbour that only looks higher because an inner fit failed there
+    # proves nothing, so treat that as a failure of the check too.
+    if (.nested_fit_failures$n > failures_before || !all(at_minimum)) {
+      return(failed)
+    }
+  }
 
   # A failed inner fit contributes a large but finite penalty to the objective.
   # If one occurs at a perturbed point, the resulting curvature is enormous and

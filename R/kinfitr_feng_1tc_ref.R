@@ -27,8 +27,9 @@
 #'   between the values, i.e. c(0,5) will select all frames with midtimes
 #'   during the first 5 minutes.
 #' @param multstart_iter Number of iterations for starting parameters. Default
-#'   is 500. Starting values are chosen by improved Latin hypercube sampling
-#'   rather than at random. For more information, see
+#'   is 500. Given as a single number, starting values are chosen by improved
+#'   Latin hypercube sampling rather than at random; given as one value per
+#'   parameter, they form a Cartesian grid. For more information, see
 #'   \code{\link[nls.multstart]{nls_multstart}}.
 #'
 #' @return A list with a data frame of the fitted parameters \code{out$par},

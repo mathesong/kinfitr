@@ -40,8 +40,10 @@
 #' @param K1.start,K1.lower,K1.upper Starting value and bounds for K1.
 #' @param k2.start,k2.lower,k2.upper Starting value and bounds for k2.
 #' @param multstart_iter Number of starting parameter iterations for the 1TC
-#'   fit. Starting values are chosen by improved Latin hypercube sampling
-#'   rather than at random. See \code{\link[nls.multstart]{nls_multstart}}.
+#'   fit. Given as a single number, starting values are chosen by improved
+#'   Latin hypercube sampling rather than at random; given as one value per
+#'   parameter, they form a Cartesian grid.
+#'   See \code{\link[nls.multstart]{nls_multstart}}.
 #' @param multstart_lower,multstart_upper Optional named lists for multstart
 #'   starting bounds.
 #' @param derivative Method for computing \eqn{dC_T'(t)/dt}. Either

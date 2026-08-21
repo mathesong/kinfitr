@@ -1,4 +1,4 @@
-# kinfitr 0.9.3
+# kinfitr 0.9.4
 
 ## Model fitting
 
@@ -50,6 +50,16 @@
   inner fits are now counted, and no standard error is reported for a shared
   parameter if one occurred while its curvature was being measured.
 
+* **A shared parameter's standard error is only reported where curvature
+  means something.** It is now withheld — returned as `NA` rather than as a
+  number — when `optim()` did not converge, and when the objective is not
+  reproducible. The latter can happen under a scalar `multstart_iter`, where
+  the inner fits draw a fresh sampling design on each evaluation: if different
+  designs reach different optima, the objective varies between identical calls
+  and its numerical derivatives are noise. Reproducibility is tested directly
+  rather than inferred from the fitting settings, so a well-behaved fit keeps
+  its standard error whatever `multstart_iter` was.
+
 * **Clearer failures.** A per-region fit that fails at the optimised shared
   parameters now raises an error naming the region, rather than failing
   obscurely inside `coef(NULL)`. `roiweights` given as a named vector that is
@@ -64,6 +74,8 @@
   on the facet strip, and the legend distinguishes the measured data, the
   fitted model and the input function, which its entries already name. It
   therefore carries no title.
+
+# kinfitr 0.9.3
 
 ## BIDS parsing
 
