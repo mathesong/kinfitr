@@ -493,10 +493,15 @@ test_that(".nested_outer_se judges a reported problem by where it stopped", {
 })
 
 test_that("a line-search failure at a good optimum keeps its standard error", {
-  # pbr28 measurement 6 over 0-3 minutes ends with L-BFGS-B code 52 at an
-  # optimum that is plainly sound: the estimate agrees with the 0-5 minute
-  # window, which converges cleanly. The standard error should survive too, and
-  # land near the one that window reports.
+  # pbr28 measurement 6 reaches the same optimum from either the 0-3 or the 0-5
+  # minute window, so both the estimate and its standard error should agree
+  # across the two. On some platforms one of the windows ends on L-BFGS-B code
+  # 52: the profile objective is slightly kinked at the optimum itself, so the
+  # line search can fail there, and which window that happens in -- if any --
+  # follows the platform's floating point rather than anything about the fit.
+  # What must hold everywhere is that a standard error survives regardless, and
+  # that the two windows agree on it. The guard's own reasoning about a reported
+  # code is pinned deterministically in the test above.
   build <- function(meas) {
     tw <- pbr28$tacs[[meas]]
     do.call(rbind, lapply(selected_regions, function(r) {
@@ -512,11 +517,9 @@ test_that("a line-search failure at a good optimum keeps its standard error", {
   longer <- nested_1tcm_delay(ld$t_tac, ld$tac, ld$region, inp,
                               timeStartEnd = c(0, 5))
 
-  expect_false(isTRUE(short$fit$convergence == 0))
-  expect_true(isTRUE(longer$fit$convergence == 0))
-
   expect_equal(short$par$inpshift[1], longer$par$inpshift[1], tolerance = 0.01)
   expect_true(is.finite(short$par.se$inpshift.se[1]))
+  expect_true(is.finite(longer$par.se$inpshift.se[1]))
   expect_equal(short$par.se$inpshift.se[1], longer$par.se$inpshift.se[1],
                tolerance = 0.2)
 })
