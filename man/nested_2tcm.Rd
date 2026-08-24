@@ -94,7 +94,11 @@ parameters are ignored.}
 
 \item{optim_control}{Control parameters for optim().}
 
-\item{multstart_iter}{Multistart iterations for inner fits. Default is 1.}
+\item{multstart_iter}{Multistart iterations for the inner (per-region) fits.
+Default is 1. A single number selects starting values by improved Latin
+hypercube sampling over the multstart bounds rather than at random; one
+value per fitted parameter instead builds a Cartesian grid with that many
+levels per parameter.}
 
 \item{multstart_lower}{Optional. Lower bounds for multistart.}
 
@@ -109,6 +113,9 @@ in \code{$fits_inner}. Default is FALSE.}
 }
 \value{
 A list with class c("nested_2tcm", "kinfit").
+  \code{par} and \code{par.se} have one row per region, with the shared
+  parameter values repeated. \code{weights} holds the full stacked vector
+  of frame weights, aligned with the rows of \code{tacs}.
 }
 \description{
 Fits the Two Tissue Compartment Model (macro parameterisation) to multiple
@@ -128,4 +135,13 @@ across regions in the outer loop:
   \item \code{"Vnd_k4"}: Both Vnd and k4 shared. Inner fits K1, BPp
     per region.
 }
+
+The standard errors in \code{par.se} follow the usual kinfitr
+  convention of being expressed as a fraction of the estimate. Those for the
+  shared (outer) parameters are derived from the curvature of the profile
+  objective at its optimum, obtained by finite differences, and are therefore
+  more approximate than those of the per-region parameters. The per-region
+  standard errors are conditional on the shared parameters: they treat
+  the shared values as known rather than estimated, and so are somewhat
+  optimistic.
 }

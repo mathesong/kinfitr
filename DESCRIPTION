@@ -1,7 +1,7 @@
 Package: kinfitr
 Title: Kinetic Modelling of PET Time Activity Curves
-Date: 2026-08-13
-Version: 0.9.3
+Date: 2026-08-20
+Version: 0.9.4
 Authors@R: person("Granville", "Matheson", email = "mathesong@gmail.com", role = c("aut", "cre"))
 Description: This package calculates outcome parameters for PET data using time activity curves (TACs). This will allow for more reproducible PET modelling research.
 Depends:
@@ -19,7 +19,7 @@ Imports:
     scales,
     ggplot2,
     dplyr,
-    nls.multstart,
+    nls.multstart (>= 2.0.0),
     tibble,
     purrr,
     broom,

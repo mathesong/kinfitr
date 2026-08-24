@@ -45,6 +45,10 @@ metab_hill_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
 #' @param multstart_lower Named list of the lower starting limits.
 #' @param multstart_upper Named list of the upper starting limits.
 #' @param multstart_iter Number of fits to perform before deciding on an optimal.
+#'   Given as a single number, starting values are chosen by improved Latin
+#'   hypercube sampling rather than at random; given as one value per
+#'   parameter, they form a Cartesian grid.
+#'   See \code{\link[nls.multstart]{nls_multstart}}.
 #'
 #' @return An nls fit object.
 #' @export
@@ -102,7 +106,7 @@ metab_hill <- function(time, parentFraction,
     upper = upper,
     start_lower = multstart_lower,
     start_upper = multstart_upper,
-    iter = multstart_iter,
+    iter = multstart_iter, lhstype = "improved",
     supp_errors = "Y"
   )
 }
@@ -246,6 +250,10 @@ metab_sigmoid_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
 #' @param multstart_lower Named list of the lower starting limits.
 #' @param multstart_upper Named list of the upper starting limits.
 #' @param multstart_iter Number of fits to perform before deciding on an optimal.
+#'   Given as a single number, starting values are chosen by improved Latin
+#'   hypercube sampling rather than at random; given as one value per
+#'   parameter, they form a Cartesian grid.
+#'   See \code{\link[nls.multstart]{nls_multstart}}.
 #'
 #' @return An nls fit object.
 #' @export
@@ -305,7 +313,7 @@ metab_sigmoid <- function(time, parentFraction,
     upper = upper,
     start_lower = multstart_lower,
     start_upper = multstart_upper,
-    iter = multstart_iter,
+    iter = multstart_iter, lhstype = "improved",
     supp_errors = "Y"
   )
 }
@@ -355,6 +363,10 @@ metab_power_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
 #' @param multstart_lower Named list of the lower starting limits.
 #' @param multstart_upper Named list of the upper starting limits.
 #' @param multstart_iter Number of fits to perform before deciding on an optimal.
+#'   Given as a single number, starting values are chosen by improved Latin
+#'   hypercube sampling rather than at random; given as one value per
+#'   parameter, they form a Cartesian grid.
+#'   See \code{\link[nls.multstart]{nls_multstart}}.
 #'
 #' @return An nls fit object.
 #' @export
@@ -412,7 +424,7 @@ metab_power <- function(time, parentFraction,
     upper = upper,
     start_lower = multstart_lower,
     start_upper = multstart_upper,
-    iter = multstart_iter,
+    iter = multstart_iter, lhstype = "improved",
     supp_errors = "Y"
   )
 }
@@ -462,6 +474,10 @@ metab_exponential_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
 #' @param multstart_lower Named list of the lower starting limits.
 #' @param multstart_upper Named list of the upper starting limits.
 #' @param multstart_iter Number of fits to perform before deciding on an optimal.
+#'   Given as a single number, starting values are chosen by improved Latin
+#'   hypercube sampling rather than at random; given as one value per
+#'   parameter, they form a Cartesian grid.
+#'   See \code{\link[nls.multstart]{nls_multstart}}.
 #'
 #' @return An nls fit object.
 #' @export
@@ -519,7 +535,7 @@ metab_exponential <- function(time, parentFraction,
     upper = upper,
     start_lower = multstart_lower,
     start_upper = multstart_upper,
-    iter = multstart_iter,
+    iter = multstart_iter, lhstype = "improved",
     supp_errors = "Y"
   )
 }
@@ -569,6 +585,10 @@ metab_invgamma_model <- function(time, a, b, c, d, delay = 0) {
 #' @param multstart_lower Named list of the lower starting limits.
 #' @param multstart_upper Named list of the upper starting limits.
 #' @param multstart_iter Number of fits to perform before deciding on an optimal.
+#'   Given as a single number, starting values are chosen by improved Latin
+#'   hypercube sampling rather than at random; given as one value per
+#'   parameter, they form a Cartesian grid.
+#'   See \code{\link[nls.multstart]{nls_multstart}}.
 #'
 #' @return An nls fit object.
 #' @export
@@ -628,7 +648,7 @@ metab_invgamma <- function(time, parentFraction,
     upper = upper,
     start_lower = multstart_lower,
     start_upper = multstart_upper,
-    iter = multstart_iter,
+    iter = multstart_iter, lhstype = "improved",
     supp_errors = "Y"
   )
 
@@ -701,6 +721,10 @@ metab_gamma_model <- function(time, a, b, c, d, delay = 0) {
 #' @param multstart_lower Named list of the lower starting limits.
 #' @param multstart_upper Named list of the upper starting limits.
 #' @param multstart_iter Number of fits to perform before deciding on an optimal.
+#'   Given as a single number, starting values are chosen by improved Latin
+#'   hypercube sampling rather than at random; given as one value per
+#'   parameter, they form a Cartesian grid.
+#'   See \code{\link[nls.multstart]{nls_multstart}}.
 #'
 #' @return An nls fit object.
 #' @export
@@ -761,7 +785,7 @@ metab_gamma <- function(time, parentFraction,
                                upper = upper,
                                start_lower = multstart_lower,
                                start_upper = multstart_upper,
-                               iter = multstart_iter,
+                               iter = multstart_iter, lhstype = "improved",
                                supp_errors = "Y"
   ))
 

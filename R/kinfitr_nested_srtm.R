@@ -35,7 +35,11 @@
 #'   another method is selected, the lower and upper limits for shared
 #'   parameters are ignored.
 #' @param optim_control Control parameters for optim().
-#' @param multstart_iter Multistart iterations for inner fits. Default is 1.
+#' @param multstart_iter Multistart iterations for the inner (per-region) fits.
+#'   Default is 1. A single number selects starting values by improved Latin
+#'   hypercube sampling over the multstart bounds rather than at random; one
+#'   value per fitted parameter instead builds a Cartesian grid with that many
+#'   levels per parameter.
 #' @param multstart_lower Optional. Lower bounds for multistart.
 #' @param multstart_upper Optional. Upper bounds for multistart.
 #' @param frameStartEnd Optional. Frame range c(start, end).
@@ -43,7 +47,19 @@
 #' @param keep_inner_fits Logical. If TRUE, store per-region nlsLM fit objects
 #'   in \code{$fits_inner}. Default is FALSE.
 #'
+#' @details The standard errors in \code{par.se} follow the usual kinfitr
+#'   convention of being expressed as a fraction of the estimate. Those for the
+#'   shared (outer) parameter are derived from the curvature of the profile
+#'   objective at its optimum, obtained by finite differences, and are therefore
+#'   more approximate than those of the per-region parameters. The per-region
+#'   standard errors are conditional on the shared parameter: they treat
+#'   the shared k2prime as known rather than estimated, and so are somewhat
+#'   optimistic.
+#'
 #' @return A list with class c("nested_srtm", "kinfit").
+#'   \code{par} and \code{par.se} have one row per region, with the shared
+#'   parameter values repeated. \code{weights} holds the full stacked vector
+#'   of frame weights, aligned with the rows of \code{tacs}.
 #'
 #' @export
 nested_srtm <- function(
@@ -63,7 +79,7 @@ nested_srtm <- function(
 
   # Convert timeStartEnd to frameStartEnd
   region <- as.character(region)
-  regions_raw <- unique(region)
+  regions_raw <- .nested_regions(region, "nested_srtm", "srtm")
 
   # Resolve roiweights against the original (pre-tidy) region vector, since a
   # per-observation roiweights vector is sized to the input TACs. tidyinput_long
@@ -92,17 +108,18 @@ nested_srtm <- function(
   weights <- tidied_roi$weights
   regions <- unique(region)
 
-  weights_per_region <- weights[region == regions[1]]
+  weights_by_region <- .nested_weights_by_region(weights, region, regions)
 
   # Inner fit parameters
   start <- c(R1 = R1.start, bp = bp.start)
   lower <- c(R1 = R1.lower, bp = bp.lower)
   upper <- c(R1 = R1.upper, bp = bp.upper)
 
-  if (multstart_iter > 1) {
-    if (is.null(multstart_lower)) multstart_lower <- lower
-    if (is.null(multstart_upper)) multstart_upper <- upper
-  }
+  multstart_bounds <- .nested_multstart_bounds(start, lower, upper,
+                                               multstart_iter,
+                                               multstart_lower, multstart_upper)
+  multstart_lower <- multstart_bounds$lower
+  multstart_upper <- multstart_bounds$upper
 
   # Outer objective function
   outer_objective <- function(outer_vals) {
@@ -118,16 +135,17 @@ nested_srtm <- function(
         roitac = roitac[region_mask],
         reftac = reftac[region_mask],
         t_tac = t_tac[region_mask],
-        weights = weights_per_region
+        weights = weights_by_region[[r]]
       )
 
       fit <- .nested_fit_region(formula_str, modeldata, start, lower, upper,
                                 multstart_iter, multstart_lower, multstart_upper)
 
       if (is.null(fit)) {
-        total_rss <- total_rss + 1e10 * roiweights[r]
+        total_rss <- total_rss + 1e10 * unname(roiweights[r])
       } else {
-        total_rss <- total_rss + sum(weights(fit) * residuals(fit)^2) * roiweights[r]
+        total_rss <- total_rss +
+          sum(weights(fit) * residuals(fit)^2) * unname(roiweights[r])
       }
     }
     return(total_rss)
@@ -167,11 +185,12 @@ nested_srtm <- function(
       roitac = region_roitac,
       reftac = region_reftac,
       t_tac = region_t,
-      weights = weights_per_region
+      weights = weights_by_region[[r]]
     )
 
     fit <- .nested_fit_region(formula_str, modeldata, start, lower, upper,
                               multstart_iter, multstart_lower, multstart_upper)
+    .nested_require_fit(fit, r, "nested_srtm")
 
     coefs <- as.list(coef(fit))
     k2a_val <- (coefs$R1 * optimal_k2prime) / (coefs$bp + 1)
@@ -185,9 +204,10 @@ nested_srtm <- function(
       stringsAsFactors = FALSE
     )
 
-    k2prime_str <- format(optimal_k2prime, digits = 10)
+    k2prime_str <- .nested_num(optimal_k2prime)
     par_se_list[[r]] <- data.frame(
       region = r,
+      k2prime.se = NA_real_,
       R1.se = get_se(fit, "R1"),
       bp.se = get_se(fit, "bp"),
       k2a.se = get_se(fit, paste0("(R1 * ", k2prime_str, ") / (bp + 1)")),
@@ -200,7 +220,7 @@ nested_srtm <- function(
       Radioactivity = region_roitac,
       Reference = region_reftac,
       Fitted = as.numeric(fitted(fit)),
-      Weights = weights_per_region,
+      Weights = weights_by_region[[r]],
       stringsAsFactors = FALSE
     )
 
@@ -210,6 +230,14 @@ nested_srtm <- function(
   par <- do.call(rbind, par_list)
   par.se <- do.call(rbind, par_se_list)
   tacs <- do.call(rbind, fitted_tacs)
+
+  # Approximate profile-based SE for the shared parameter
+  par.se$k2prime.se <- .nested_outer_se(
+    optim_result, outer_objective,
+    n_obs = sum(weights > 0),
+    n_par = 1 + length(start) * length(regions)
+  )[["k2prime"]]
+
   rownames(par) <- NULL
   rownames(par.se) <- NULL
   rownames(tacs) <- NULL
@@ -221,7 +249,7 @@ nested_srtm <- function(
     fit = optim_result,
     tacs = tacs,
     reftac = reftac[region == regions[1]],
-    weights = weights_per_region,
+    weights = weights,
     roiweights = roiweights,
     model = "nested_srtm"
   )
@@ -296,7 +324,7 @@ plot_nested_srtmfit <- function(nested_out, roiname = NULL) {
 
     myColors <- RColorBrewer::brewer.pal(3, "Set1")
     names(myColors) <- levels(plotdf$Type)
-    colScale <- ggplot2::scale_colour_manual(name = "Region", values = myColors)
+    colScale <- ggplot2::scale_colour_manual(name = NULL, values = myColors)
 
     max_measured <- max(tacs_subset$Radioactivity)
 

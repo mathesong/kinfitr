@@ -27,7 +27,9 @@
 #'   between the values, i.e. c(0,5) will select all frames with midtimes
 #'   during the first 5 minutes.
 #' @param multstart_iter Number of iterations for starting parameters. Default
-#'   is 500. For more information, see
+#'   is 500. Given as a single number, starting values are chosen by improved
+#'   Latin hypercube sampling rather than at random; given as one value per
+#'   parameter, they form a Cartesian grid. For more information, see
 #'   \code{\link[nls.multstart]{nls_multstart}}.
 #'
 #' @return A list with a data frame of the fitted parameters \code{out$par},
@@ -126,7 +128,7 @@ feng_1tc_tac <- function(t_tac, tac, weights = NULL,
     supp_errors = "Y",
     start_lower = multstart_lower,
     start_upper = multstart_upper,
-    iter = multstart_iter,
+    iter = multstart_iter, lhstype = "improved",
     convergence_count = FALSE,
     #lower = lower, upper = upper,  # These are removed to allow "wrong"
                                     # parameter values with better fits,

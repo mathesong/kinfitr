@@ -35,8 +35,11 @@
 #'   another method is selected, the lower and upper limits for shared
 #'   parameters are ignored.
 #' @param optim_control List of control parameters for optim().
-#' @param multstart_iter Number of multistart iterations for inner fits.
-#'   Default is 1.
+#' @param multstart_iter Number of multistart iterations for the inner
+#'   (per-region) fits. Default is 1. A single number selects starting values
+#'   by improved Latin hypercube sampling over the multstart bounds rather than
+#'   at random; one value per fitted parameter instead builds a Cartesian grid
+#'   with that many levels per parameter.
 #' @param multstart_lower Optional. Lower bounds for multistart starting params.
 #' @param multstart_upper Optional. Upper bounds for multistart starting params.
 #' @param frameStartEnd Optional. Frame range c(start, end). Applied per region.
@@ -49,7 +52,19 @@
 #'   to use frame weights, so as to prioritise the low radioactivity values
 #'   where the delay signal is most apparent.
 #'
+#'   The standard errors in \code{par.se} follow the usual kinfitr
+#'   convention of being expressed as a fraction of the estimate. Those for the
+#'   shared (outer) parameter are derived from the curvature of the profile
+#'   objective at its optimum, obtained by finite differences, and are therefore
+#'   more approximate than those of the per-region parameters. The per-region
+#'   standard errors are conditional on the shared parameter: they treat
+#'   the fitted delay as known rather than estimated, and so are somewhat
+#'   optimistic.
+#'
 #' @return A list with class c("nested_1tcm_delay", "kinfit").
+#'   \code{par} and \code{par.se} have one row per region, with the shared
+#'   parameter values repeated. \code{weights} holds the full stacked vector
+#'   of frame weights, aligned with the rows of \code{tacs}.
 #'
 #' @examples
 #' \dontrun{
@@ -87,8 +102,11 @@ nested_1tcm_delay <- function(
 
   optim_method <- match.arg(optim_method)
 
+  model_name <- "nested_1tcm_delay"
+  unnested_name <- "onetcm"
+
   region <- as.character(region)
-  regions_raw <- unique(region)
+  regions_raw <- .nested_regions(region, model_name, unnested_name)
 
   # Resolve roiweights against the original (pre-tidy) region vector, since a
   # per-observation roiweights vector is sized to the input TACs. tidyinput_long
@@ -108,16 +126,17 @@ nested_1tcm_delay <- function(
   weights <- tidied$weights
   regions <- unique(region)
 
-  weights_per_region <- weights[region == regions[1]]
+  weights_by_region <- .nested_weights_by_region(weights, region, regions)
 
   start <- c(K1 = K1.start, k2 = k2.start)
   lower <- c(K1 = K1.lower, k2 = k2.lower)
   upper <- c(K1 = K1.upper, k2 = k2.upper)
 
-  if (multstart_iter > 1) {
-    if (is.null(multstart_lower)) multstart_lower <- lower
-    if (is.null(multstart_upper)) multstart_upper <- upper
-  }
+  multstart_bounds <- .nested_multstart_bounds(start, lower, upper,
+                                               multstart_iter,
+                                               multstart_lower, multstart_upper)
+  multstart_lower <- multstart_bounds$lower
+  multstart_upper <- multstart_bounds$upper
 
   formula_str <- paste0("tac ~ onetcm_model(t_tac, input, K1, k2, vB=", vB, ")")
 
@@ -131,15 +150,16 @@ nested_1tcm_delay <- function(
       modeldata <- list(
         tac = shifted$tac[region_mask],
         t_tac = shifted$t_tac[region_mask],
-        weights = weights_per_region,
+        weights = weights_by_region[[r]],
         input = shifted$input
       )
       fit <- .nested_fit_region(formula_str, modeldata, start, lower, upper,
                                 multstart_iter, multstart_lower, multstart_upper)
       if (is.null(fit)) {
-        total_rss <- total_rss + 1e10 * roiweights[r]
+        total_rss <- total_rss + 1e10 * unname(roiweights[r])
       } else {
-        total_rss <- total_rss + sum(weights(fit) * residuals(fit)^2) * roiweights[r]
+        total_rss <- total_rss +
+          sum(weights(fit) * residuals(fit)^2) * unname(roiweights[r])
       }
     }
     return(total_rss)
@@ -171,10 +191,11 @@ nested_1tcm_delay <- function(
 
     modeldata <- list(
       tac = region_tac, t_tac = region_t,
-      weights = weights_per_region, input = shifted$input
+      weights = weights_by_region[[r]], input = shifted$input
     )
     fit <- .nested_fit_region(formula_str, modeldata, start, lower, upper,
                               multstart_iter, multstart_lower, multstart_upper)
+    .nested_require_fit(fit, r, model_name)
 
     coefs <- as.list(coef(fit))
     par_list[[r]] <- data.frame(
@@ -188,6 +209,7 @@ nested_1tcm_delay <- function(
 
     par_se_list[[r]] <- data.frame(
       region = r,
+      inpshift.se = NA_real_,
       K1.se = get_se(fit, "K1"),
       k2.se = get_se(fit, "k2"),
       Vt.se = get_se(fit, "K1/k2"),
@@ -198,7 +220,7 @@ nested_1tcm_delay <- function(
       Time = region_t, Region = r,
       Radioactivity = region_tac,
       Fitted = as.numeric(fitted(fit)),
-      Weights = weights_per_region,
+      Weights = weights_by_region[[r]],
       stringsAsFactors = FALSE
     )
 
@@ -208,6 +230,14 @@ nested_1tcm_delay <- function(
   par <- do.call(rbind, par_list)
   par.se <- do.call(rbind, par_se_list)
   tacs <- do.call(rbind, fitted_tacs)
+
+  # Approximate profile-based SE for the shared delay
+  par.se$inpshift.se <- .nested_outer_se(
+    optim_result, outer_objective,
+    n_obs = sum(weights > 0),
+    n_par = 1 + length(start) * length(regions)
+  )[["inpshift"]]
+
   rownames(par) <- NULL
   rownames(par.se) <- NULL
   rownames(tacs) <- NULL
@@ -219,7 +249,7 @@ nested_1tcm_delay <- function(
     fit = optim_result,
     tacs = tacs,
     input = shifted$input,
-    weights = weights_per_region,
+    weights = weights,
     roiweights = roiweights,
     vB = vB,
     model = "nested_1tcm_delay"
@@ -257,7 +287,19 @@ nested_1tcm_delay <- function(
 #'   to use frame weights, so as to prioritise the low radioactivity values
 #'   where the delay signal is most apparent.
 #'
+#'   The standard errors in \code{par.se} follow the usual kinfitr
+#'   convention of being expressed as a fraction of the estimate. Those for the
+#'   shared (outer) parameter are derived from the curvature of the profile
+#'   objective at its optimum, obtained by finite differences, and are therefore
+#'   more approximate than those of the per-region parameters. The per-region
+#'   standard errors are conditional on the shared parameter: they treat
+#'   the fitted delay as known rather than estimated, and so are somewhat
+#'   optimistic.
+#'
 #' @return A list with class c("nested_2tcm_delay", "kinfit").
+#'   \code{par} and \code{par.se} have one row per region, with the shared
+#'   parameter values repeated. \code{weights} holds the full stacked vector
+#'   of frame weights, aligned with the rows of \code{tacs}.
 #'
 #' @examples
 #' \dontrun{
@@ -297,8 +339,11 @@ nested_2tcm_delay <- function(
 
   optim_method <- match.arg(optim_method)
 
+  model_name <- "nested_2tcm_delay"
+  unnested_name <- "twotcm"
+
   region <- as.character(region)
-  regions_raw <- unique(region)
+  regions_raw <- .nested_regions(region, model_name, unnested_name)
 
   # Resolve roiweights against the original (pre-tidy) region vector, since a
   # per-observation roiweights vector is sized to the input TACs. tidyinput_long
@@ -318,16 +363,17 @@ nested_2tcm_delay <- function(
   weights <- tidied$weights
   regions <- unique(region)
 
-  weights_per_region <- weights[region == regions[1]]
+  weights_by_region <- .nested_weights_by_region(weights, region, regions)
 
   start <- c(K1 = K1.start, k2 = k2.start, k3 = k3.start, k4 = k4.start)
   lower <- c(K1 = K1.lower, k2 = k2.lower, k3 = k3.lower, k4 = k4.lower)
   upper <- c(K1 = K1.upper, k2 = k2.upper, k3 = k3.upper, k4 = k4.upper)
 
-  if (multstart_iter > 1) {
-    if (is.null(multstart_lower)) multstart_lower <- lower
-    if (is.null(multstart_upper)) multstart_upper <- upper
-  }
+  multstart_bounds <- .nested_multstart_bounds(start, lower, upper,
+                                               multstart_iter,
+                                               multstart_lower, multstart_upper)
+  multstart_lower <- multstart_bounds$lower
+  multstart_upper <- multstart_bounds$upper
 
   formula_str <- paste0("tac ~ twotcm_model(t_tac, input, K1, k2, k3, k4, vB=", vB, ")")
 
@@ -341,15 +387,16 @@ nested_2tcm_delay <- function(
       modeldata <- list(
         tac = shifted$tac[region_mask],
         t_tac = shifted$t_tac[region_mask],
-        weights = weights_per_region,
+        weights = weights_by_region[[r]],
         input = shifted$input
       )
       fit <- .nested_fit_region(formula_str, modeldata, start, lower, upper,
                                 multstart_iter, multstart_lower, multstart_upper)
       if (is.null(fit)) {
-        total_rss <- total_rss + 1e10 * roiweights[r]
+        total_rss <- total_rss + 1e10 * unname(roiweights[r])
       } else {
-        total_rss <- total_rss + sum(weights(fit) * residuals(fit)^2) * roiweights[r]
+        total_rss <- total_rss +
+          sum(weights(fit) * residuals(fit)^2) * unname(roiweights[r])
       }
     }
     return(total_rss)
@@ -381,10 +428,11 @@ nested_2tcm_delay <- function(
 
     modeldata <- list(
       tac = region_tac, t_tac = region_t,
-      weights = weights_per_region, input = shifted$input
+      weights = weights_by_region[[r]], input = shifted$input
     )
     fit <- .nested_fit_region(formula_str, modeldata, start, lower, upper,
                               multstart_iter, multstart_lower, multstart_upper)
+    .nested_require_fit(fit, r, model_name)
 
     coefs <- as.list(coef(fit))
     par_list[[r]] <- data.frame(
@@ -401,6 +449,7 @@ nested_2tcm_delay <- function(
 
     par_se_list[[r]] <- data.frame(
       region = r,
+      inpshift.se = NA_real_,
       K1.se = get_se(fit, "K1"),
       k2.se = get_se(fit, "k2"),
       k3.se = get_se(fit, "k3"),
@@ -416,7 +465,7 @@ nested_2tcm_delay <- function(
       Time = region_t, Region = r,
       Radioactivity = region_tac,
       Fitted = as.numeric(fitted(fit)),
-      Weights = weights_per_region,
+      Weights = weights_by_region[[r]],
       stringsAsFactors = FALSE
     )
 
@@ -426,6 +475,14 @@ nested_2tcm_delay <- function(
   par <- do.call(rbind, par_list)
   par.se <- do.call(rbind, par_se_list)
   tacs <- do.call(rbind, fitted_tacs)
+
+  # Approximate profile-based SE for the shared delay
+  par.se$inpshift.se <- .nested_outer_se(
+    optim_result, outer_objective,
+    n_obs = sum(weights > 0),
+    n_par = 1 + length(start) * length(regions)
+  )[["inpshift"]]
+
   rownames(par) <- NULL
   rownames(par.se) <- NULL
   rownames(tacs) <- NULL
@@ -437,7 +494,7 @@ nested_2tcm_delay <- function(
     fit = optim_result,
     tacs = tacs,
     input = shifted$input,
-    weights = weights_per_region,
+    weights = weights,
     roiweights = roiweights,
     vB = vB,
     model = "nested_2tcm_delay"

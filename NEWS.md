@@ -1,3 +1,80 @@
+# kinfitr 0.9.4
+
+## Model fitting
+
+* **Multstart starting values are now drawn by improved Latin hypercube
+  sampling rather than at random.** Every model that uses
+  `nls.multstart::nls_multstart()` now passes `lhstype = "improved"`, which
+  spreads the starting values evenly over the multstart bounds instead of
+  drawing them independently at random. Random draws can leave parts of the
+  bounds unvisited and revisit others, so a given `multstart_iter` explores the
+  space less thoroughly than its number suggests. The practical effects are
+  that the global optimum tends to be found in fewer iterations, and that
+  repeated fits of the same data agree with one another more closely. This
+  requires nls.multstart >= 2.0.0, which `DESCRIPTION` now specifies.
+
+## Nested models
+
+* **`multstart_iter` may be a vector.** `.nested_fit_region()` already
+  supported one value per fitted parameter, but all four nested models tested
+  it with `if (multstart_iter > 1)`, which errors on a vector under R >= 4.2.
+  The length is now validated against the fitted parameters, and multstart
+  bounds supplied by name are matched by name rather than by position.
+
+* **Frame weights are applied per region.** The nested models took the first
+  region's weights and used them for every region. Each region now receives its
+  own. `out$weights` correspondingly holds the full stacked vector of weights,
+  aligned with the rows of `out$tacs`, rather than one region's worth.
+
+* **Standard errors for the shared parameters.** `par.se` gains
+  `inpshift.se`, `k2prime.se`, `Vnd.se` and `k4.se` as appropriate, derived
+  from the curvature of the profile objective at its optimum and expressed as a
+  fraction of the estimate, in keeping with the rest of the package. As a
+  check, a single-region `nested_1tcm_delay()` fit reproduces the delay
+  standard error of `onetcm()` with a fitted delay to within 2%.
+
+* **Derived standard errors in `nested_2tcm()` are computed in every `shared`
+  mode.** `Vt.se`, `BPnd.se`, `k2.se` and `k3.se` were previously returned as
+  `NA` in the modes where they are nonetheless derivable. They are now obtained
+  in all three modes by substituting the optimised shared values into the delta
+  method expression, so `par.se` has the same columns whichever mode is used.
+  These per-region standard errors are conditional on the shared parameters,
+  which is noted in the documentation.
+
+* **A failed inner fit can no longer masquerade as a precise shared
+  parameter.** A region that fails to fit contributes a large but finite
+  penalty to the objective. Where that happened at one of the perturbed points
+  used to derive the shared parameter's standard error, the penalty read as
+  extremely sharp curvature, and the standard error came back minute rather
+  than missing — overconfident, while passing every finiteness check. Failed
+  inner fits are now counted, and no standard error is reported for a shared
+  parameter if one occurred while its curvature was being measured.
+
+* **A shared parameter's standard error is only reported where curvature
+  means something.** It is now withheld — returned as `NA` rather than as a
+  number — when `optim()` did not converge, and when the objective is not
+  reproducible. The latter can happen under a scalar `multstart_iter`, where
+  the inner fits draw a fresh sampling design on each evaluation: if different
+  designs reach different optima, the objective varies between identical calls
+  and its numerical derivatives are noise. Reproducibility is tested directly
+  rather than inferred from the fitting settings, so a well-behaved fit keeps
+  its standard error whatever `multstart_iter` was.
+
+* **Clearer failures.** A per-region fit that fails at the optimised shared
+  parameters now raises an error naming the region, rather than failing
+  obscurely inside `coef(NULL)`. `roiweights` given as a named vector that is
+  missing a region is rejected by name instead of silently becoming `NA`.
+  Nesting a single region is refused, naming the unnested model to use
+  instead: such a fit would be recorded as a nested analysis while being
+  nothing of the kind, which matters for the provenance of a reported result.
+
+* **Faceted plots past three regions print.** These return a set of pages,
+  which is now a classed object with a `print()` method, so `plot()` renders
+  every page. Their legend is no longer titled "Region" — the region is shown
+  on the facet strip, and the legend distinguishes the measured data, the
+  fitted model and the input function, which its entries already name. It
+  therefore carries no title.
+
 # kinfitr 0.9.3
 
 ## BIDS parsing
