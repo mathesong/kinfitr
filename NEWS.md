@@ -1,3 +1,32 @@
+# kinfitr 0.9.5
+
+## Standardised uptake values
+
+* **New: `suvr()`**, the target-to-reference AUC ratio over a frame or time
+  window. Implemented as two `suv()` calls and a ratio, with the window resolved
+  once, so both integrals are over the same frames. Reports `SUVR`, `SUV`,
+  `SUV_ref`, `SUV_AUC`, `SUV_ref_AUC`, `SUV_denominator`, `window_duration` and
+  `n_frames`. The dose cancels in the ratio, so the SUVR is correct with or
+  without one.
+
+* **`suv()` reports the mean SUV over the window**, not only its integral:
+  `par` gains `SUV`, `SUV_denominator`, `window_duration` and `n_frames`, and
+  `intSUV` becomes `SUV_AUC`.
+
+* **`suv()` returns the whole TAC** with a logical `Included` column, rather
+  than only the windowed frames plus a possible unmeasured frame at time zero.
+
+* **Fixed: a trapezoidal integral over a window included the area before it.**
+  `tidyinput_art()` previously subsetted to `frameStartEnd` and then prepends a frame at time
+  zero, so a window not starting at the first frame was integrated from the
+  origin. Unwindowed TACs and frame-duration weighted sums were unaffected.
+
+* **New: `plot_suvfit()` and `plot_suvrfit()`**, showing the whole TAC with the
+  integrated frames shaded. The shading follows the integration: one rectangle
+  per frame where durations were given, whose area is that frame's contribution;
+  the area under the curve where it was trapezoidal.
+
+
 # kinfitr 0.9.4
 
 ## Model fitting
