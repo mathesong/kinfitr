@@ -669,3 +669,120 @@ test_that("feng_1tc_tac fitted values are accessible", {
   expect_equal(length(fit$tacs$Reference_fitted), nrow(fit$tacs))
   expect_true(all(fit$tacs$Reference_fitted >= 0))
 })
+
+
+# SUVR
+
+test_that("suvr works", {
+  suvrout <- suvr(t_tac, reftac, roitac, dur = dur)
+
+  expect_equal(suvrout$par$SUVR, suvrout$par$SUV_AUC / suvrout$par$SUV_ref_AUC)
+  expect_gt(suvrout$par$SUVR, 1)
+  expect_equal(suvrout$par$n_frames, length(t_tac))
+  expect_true(all(suvrout$tacs$Included))
+  expect_equal(suvrout$model, "suvr")
+  expect_s3_class(suvrout, "kinfit")
+})
+
+test_that("suvr outcomes are consistent with SUV called directly", {
+  suvrout <- suvr(t_tac, reftac, roitac, dur = dur, frameStartEnd = c(5, 15))
+
+  suvout <- suv(roitac,
+    t_tac = t_tac, dur = dur,
+    frameStartEnd = c(5, 15)
+  )
+
+  expect_equal(suvrout$par$SUV_AUC, suvout$par$SUV_AUC)
+  expect_equal(suvrout$par$SUV, suvout$par$SUV)
+  expect_equal(suvrout$par$window_duration, sum(dur[5:15]))
+  expect_equal(suvrout$par$n_frames, 11)
+  # The mean is the integral over the duration which was integrated
+  expect_equal(suvrout$par$SUV, suvrout$par$SUV_AUC / suvrout$par$window_duration)
+  expect_equal(suvrout$par$SUV_ref, suvrout$par$SUV_ref_AUC / suvrout$par$window_duration)
+})
+
+test_that("the dose cancels in the SUVR but not in the SUV", {
+  no_dose <- suvr(t_tac, reftac, roitac, dur = dur, timeStartEnd = c(20, 60))
+  with_dose <- suvr(t_tac, reftac, roitac,
+    dur = dur, timeStartEnd = c(20, 60),
+    injRad = 150, bodymass = 85
+  )
+
+  expect_equal(no_dose$par$SUVR, with_dose$par$SUVR)
+
+  expect_equal(no_dose$par$SUV_denominator, 1)
+  expect_equal(with_dose$par$SUV_denominator, 150 / 85)
+  expect_equal(with_dose$par$SUV, no_dose$par$SUV / (150 / 85))
+  expect_equal(with_dose$par$SUV_AUC, no_dose$par$SUV_AUC / (150 / 85))
+})
+
+test_that("suvr time windows select whole frames by their midpoints", {
+  suvrout <- suvr(t_tac, reftac, roitac, dur = dur, timeStartEnd = c(20, 60))
+
+  expect_equal(suvrout$tacs$Included, t_tac >= 20 & t_tac <= 60)
+  # The whole frames count, so the duration is theirs and not the 40 minutes
+  # spanned by the request
+  expect_equal(suvrout$par$window_duration, sum(dur[t_tac >= 20 & t_tac <= 60]))
+})
+
+test_that("suvr accepts one-sided and empty windows", {
+  from_frame_5 <- suvr(t_tac, reftac, roitac, dur = dur, frameStartEnd = c(5, NA))
+  expect_equal(from_frame_5$window$start, 5L)
+  expect_equal(from_frame_5$window$end, length(t_tac))
+
+  until_frame_5 <- suvr(t_tac, reftac, roitac, dur = dur, frameStartEnd = c(NA, 5))
+  expect_equal(until_frame_5$window$start, 1L)
+  expect_equal(until_frame_5$window$end, 5L)
+
+  # c(0, 0) means no window at all
+  all_frames <- suvr(t_tac, reftac, roitac, dur = dur, timeStartEnd = c(0, 0))
+  expect_true(all(all_frames$tacs$Included))
+
+  expect_error(
+    suvr(t_tac, reftac, roitac, dur = dur, timeStartEnd = c(500, 600)),
+    "No frames fall within"
+  )
+})
+
+test_that("suvr works without durations", {
+  suvrout <- suvr(t_tac, reftac, roitac)
+
+  expect_gt(suvrout$par$SUVR, 1)
+  expect_equal(suvrout$par$SUV_AUC, suv(roitac, t_tac = t_tac)$par$SUV_AUC)
+})
+
+test_that("suvr rejects mismatched inputs", {
+  expect_error(suvr(t_tac, reftac[-1], roitac, dur = dur), "not equal")
+  expect_error(suvr(t_tac, reftac, roitac, dur = dur[-1]), "not equal")
+})
+
+test_that("plot_suvrfit shades only the included frames", {
+  suvrout <- suvr(t_tac, reftac, roitac, dur = dur, frameStartEnd = c(5, 15))
+
+  suvrplot <- plot_suvrfit(suvrout, roiname = "ROI1")
+  expect_s3_class(suvrplot, "ggplot")
+
+  # The whole TAC is drawn, and the shaded layer carries the included frames of
+  # both regions as one rectangle each
+  expect_equal(nrow(suvrplot$data), 2 * length(t_tac))
+  expect_s3_class(suvrplot$layers[[1]]$geom, "GeomRect")
+  rects <- suvrplot$layers[[1]]$data
+  expect_equal(nrow(rects), 2 * 11)
+  expect_true(all(rects$Included))
+
+  # The two sets of rectangle areas are the integrals whose ratio is the SUVR
+  areas <- tapply((rects$xmax - rects$xmin) * rects$Radioactivity, rects$Region, sum)
+  expect_equal(as.numeric(areas[["ROI1"]]), suvrout$par$SUV_AUC)
+  expect_equal(as.numeric(areas[["Reference"]]), suvrout$par$SUV_ref_AUC)
+  expect_equal(as.numeric(areas[["ROI1"]] / areas[["Reference"]]), suvrout$par$SUVR)
+
+  # And plot() dispatches to it through the kinfit method
+  expect_s3_class(plot(suvrout, roiname = "ROI1"), "ggplot")
+})
+
+test_that("plot_suvrfit shades under the curves without durations", {
+  suvrout <- suvr(t_tac, reftac, roitac, frameStartEnd = c(5, 15))
+
+  suvrplot <- plot_suvrfit(suvrout)
+  expect_s3_class(suvrplot$layers[[1]]$geom, "GeomRibbon")
+})

@@ -21,6 +21,12 @@ Named numeric vector of standard errors as a fraction of the
   they could not be derived -- including where any inner fit failed while
   the Hessian was being evaluated, since the penalty such a failure
   contributes would otherwise masquerade as very sharp curvature.
+
+  Where \code{optim()} reported a problem, a standard error is still given
+  if the optimum survives a direct check: no neighbouring point along any
+  axis is lower. This admits the common case of L-BFGS-B failing its line
+  search on a slightly kinked objective at the optimum, while still refusing
+  an optimisation that stopped part-way down a slope.
 }
 \description{
 The outer objective is a profile weighted residual sum of squares: the

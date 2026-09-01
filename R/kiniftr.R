@@ -23,5 +23,5 @@ utils::globalVariables(c(
   "task", "time", "trc", "tsvdata", "update_blooddata_bids", "value",
   "whole_blood_radioactivity", "ROI.fitted", "ROI.measured", "ROI_measured",
   "Reference", "Target.fitted", "Target.measured", "Measure", "Ki", "Kiref",
-  "Type", "Logan_Ref", "Patlak_Ref"
+  "Type", "Logan_Ref", "Patlak_Ref", "Included", "SUV", "xmin", "xmax"
 ))
