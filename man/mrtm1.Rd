@@ -41,8 +41,8 @@ and MRTM2, all frames can be used provided that the kinetics in the target
 tissue can be described by a one tissue compartment (1TC) model (like
 SRTM). If this is not the case, a t* is required. If the number of included
 frames is greater than the number of frames minus 2, then the par output
-will also include R1 and k2 values. These parameters are only applicable if
-1TC dynamics can be assumed.}
+will also include R1, k2 and k2a values. These parameters are only
+applicable if 1TC dynamics can be assumed.}
 
 \item{weights}{Optional. Numeric vector of the weights assigned to each frame
 in the fitting. We include zero at time zero: if not included, it is added.

@@ -24,8 +24,8 @@
 #'   tissue can be described by a one tissue compartment (1TC) model (like
 #'   SRTM). If this is not the case, a t* is required. If the number of included
 #'   frames is greater than the number of frames minus 2, then the par output
-#'   will also include R1 and k2 values. These parameters are only applicable if
-#'   1TC dynamics can be assumed.
+#'   will also include R1, k2 and k2a values. These parameters are only
+#'   applicable if 1TC dynamics can be assumed.
 #' @param tstar_type Either "frames" (default) or "time", specifying how to
 #'   interpret tstar.
 #' @param tstarIncludedFrames Deprecated. Use 'tstar' with 'tstar_type="frames"'
@@ -170,10 +170,17 @@ mrtm1 <- function(t_tac, reftac, roitac, tstar = NULL, weights = NULL,
 
   # Output
 
+  # Integrating the SRTM ODE from 0 to t gives
+  #   C_T = k2*int(C_R) - k2a*int(C_T) + R1*C_R
+  # so Term1 = k2, Term2 = -k2a and Term3 = R1, where k2a = k2 / (1 + BP) is
+  # the apparent efflux rate constant. k2 is therefore the first coefficient,
+  # and the negated second coefficient is k2a. This matches srtm2(), which also
+  # reports k2a alongside R1 and k2prime.
   bp <- as.numeric(-((coef(mrtm1_model)[1] / coef(mrtm1_model)[2]) + 1))
   k2prime <- as.numeric(coef(mrtm1_model)[1] / coef(mrtm1_model)[3])
   R1 <- as.numeric(coef(mrtm1_model)[3])
-  k2 <- -as.numeric(coef(mrtm1_model)[2])
+  k2 <- as.numeric(coef(mrtm1_model)[1])
+  k2a <- -as.numeric(coef(mrtm1_model)[2])
 
   par <- as.data.frame(list(bp = bp, k2prime = k2prime))
 
@@ -183,14 +190,17 @@ mrtm1 <- function(t_tac, reftac, roitac, tstar = NULL, weights = NULL,
   par.se$k2prime.se <- get_se(mrtm1_model, "Term1 / Term3")
 
   R1.se <- get_se(mrtm1_model, "Term3")
-  k2.se <- get_se(mrtm1_model, "-Term2")
+  k2.se <- get_se(mrtm1_model, "Term1")
+  k2a.se <- get_se(mrtm1_model, "-Term2")
 
   if( tstarIncludedFrames >= length(reftac) - 1 ) {
     par$R1 <- R1
     par$k2 <- k2
+    par$k2a <- k2a
 
     par.se$R1.se <- R1.se
     par.se$k2.se <- k2.se
+    par.se$k2a.se <- k2a.se
   }
 
   fit <- mrtm1_model

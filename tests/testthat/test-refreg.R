@@ -361,6 +361,74 @@ test_that("mrtm1 tstarfinder works", {
 
 # MRTM2
 
+# MRTM parameter definitions
+#
+# These check the identities that distinguish k2 from k2a, and R1 from DVR.
+# Both were previously mislabelled: mrtm1() returned k2a as k2, and mrtm2()
+# returned bp + 1 as R1.
+
+test_that("mrtm1 recovers the parameters of a simulated SRTM TAC", {
+  true_R1 <- 1.08
+  true_k2 <- 0.146
+  true_bp <- 1.85
+  simtac <- srtm_model(t_tac, reftac, R1 = true_R1, k2 = true_k2, bp = true_bp)
+
+  fit <- mrtm1(t_tac, reftac, simtac, weights = weights, dur = dur)
+
+  expect_equal(fit$par$bp, true_bp, tolerance = 0.05)
+  expect_equal(fit$par$R1, true_R1, tolerance = 0.05)
+  expect_equal(fit$par$k2, true_k2, tolerance = 0.05)
+  expect_equal(fit$par$k2prime, true_k2 / true_R1, tolerance = 0.05)
+  expect_equal(fit$par$k2a, true_k2 / (1 + true_bp), tolerance = 0.05)
+})
+
+test_that("mrtm1 parameters are internally consistent", {
+  fit <- mrtm1(t_tac, reftac, roitac, weights = weights, dur = dur)
+
+  # k2 = R1 * k2prime by definition; returning k2a as k2 breaks this.
+  expect_equal(fit$par$k2, fit$par$R1 * fit$par$k2prime)
+  # k2a = k2 / (1 + BP).
+  expect_equal(fit$par$k2a, fit$par$k2 / (1 + fit$par$bp))
+  expect_lt(fit$par$k2a, fit$par$k2)
+})
+
+test_that("mrtm2 recovers the parameters of a simulated SRTM TAC", {
+  true_R1 <- 1.08
+  true_k2 <- 0.146
+  true_bp <- 1.85
+  simtac <- srtm_model(t_tac, reftac, R1 = true_R1, k2 = true_k2, bp = true_bp)
+
+  fit <- mrtm2(t_tac, reftac, simtac,
+    k2prime = true_k2 / true_R1, weights = weights, dur = dur
+  )
+
+  expect_equal(fit$par$bp, true_bp, tolerance = 0.05)
+  expect_equal(fit$par$R1, true_R1, tolerance = 0.05)
+  expect_equal(fit$par$k2, true_k2, tolerance = 0.05)
+  expect_equal(fit$par$k2a, true_k2 / (1 + true_bp), tolerance = 0.05)
+})
+
+test_that("mrtm2 R1 is correct", {
+  k2prime <- 0.1
+  fit <- mrtm2(t_tac, reftac, roitac, k2prime, weights = weights, dur = dur)
+
+  # R1 = Term1 / (-Term2) simplifies to bp + 1 for every input.
+  expect_false(isTRUE(all.equal(fit$par$R1, fit$par$bp + 1)))
+  expect_equal(fit$par$R1, fit$par$k2 / k2prime)
+  expect_equal(fit$par$k2a, fit$par$k2 / (1 + fit$par$bp))
+})
+
+test_that("mrtm2 agrees with mrtm1 given mrtm1's own k2prime", {
+  fit1 <- mrtm1(t_tac, reftac, roitac, weights = weights, dur = dur)
+  fit2 <- mrtm2(t_tac, reftac, roitac,
+    k2prime = fit1$par$k2prime, weights = weights, dur = dur
+  )
+
+  expect_equal(fit2$par$bp, fit1$par$bp, tolerance = 0.05)
+  expect_equal(fit2$par$R1, fit1$par$R1, tolerance = 0.05)
+  expect_equal(fit2$par$k2, fit1$par$k2, tolerance = 0.05)
+})
+
 test_that("mrtm2 works", {
   mrtm2out <- mrtm2(t_tac, reftac, roitac, 0.1, weights = weights)
   expect_gt(mrtm2out$par$bp, 1.5)
