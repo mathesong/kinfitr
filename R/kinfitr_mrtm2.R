@@ -26,9 +26,9 @@
 #'   can be used provided that the kinetics in the target tissue can be
 #'   described by a one tissue compartment model (like SRTM). If this is not
 #'   the case, a t* is required. If the number of included frames is greater
-#'   than the number of frames minus 2, then the par output will also include R1
-#'   and k2 values. These parameters are only applicable if 1TC dynamics can be
-#'   assumed.
+#'   than the number of frames minus 2, then the par output will also include
+#'   R1, k2 and k2a values. These parameters are only applicable if 1TC dynamics
+#'   can be assumed.
 #' @param tstar_type Either "frames" (default) or "time", specifying how to interpret tstar.
 #' @param tstarIncludedFrames Deprecated. Use 'tstar' with 'tstar_type="frames"' instead.
 #' @param weights Optional. Numeric vector of the weights assigned to each frame
@@ -159,9 +159,15 @@ mrtm2 <- function(t_tac, reftac, roitac, k2prime, tstar = NULL, weights = NULL,
 
   # Output
 
+  # Substituting k2 = R1 * k2prime into the integrated SRTM ODE gives
+  #   C_T = R1*k2prime*(int(C_R) + C_R/k2prime) - k2a*int(C_T)
+  # so Term1 = R1 * k2prime = k2, and Term2 = -k2a, where k2a = k2 / (1 + BP).
+  # R1 therefore follows from dividing the first coefficient by the fixed
+  # k2prime; dividing it by k2a instead yields DVR = BP + 1 for every input.
   bp <- as.numeric(-((coef(mrtm2_model)[1] / coef(mrtm2_model)[2]) + 1))
-  k2 <- -as.numeric(coef(mrtm2_model)[2])
-  R1 <- as.numeric(coef(mrtm2_model)[1]) / k2
+  k2 <- as.numeric(coef(mrtm2_model)[1])
+  k2a <- -as.numeric(coef(mrtm2_model)[2])
+  R1 <- k2 / k2prime
 
   par <- as.data.frame(list(bp = bp))
 
@@ -169,15 +175,20 @@ mrtm2 <- function(t_tac, reftac, roitac, k2prime, tstar = NULL, weights = NULL,
   names(par.se) <- paste0(names(par.se), ".se")
   par.se$bp.se <- get_se(mrtm2_model, "-((Term1 / Term2) + 1)")
 
-  k2.se <- get_se(mrtm2_model, "-Term2")
-  R1.se <- get_se(mrtm2_model, "Term1 / (-Term2)")
+  k2.se <- get_se(mrtm2_model, "Term1")
+  k2a.se <- get_se(mrtm2_model, "-Term2")
+  # get_se returns a relative standard error, which dividing by the constant
+  # k2prime leaves unchanged.
+  R1.se <- get_se(mrtm2_model, "Term1")
 
   if( tstarIncludedFrames >= length(reftac) - 1 ) {
     par$R1 <- R1
     par$k2 <- k2
+    par$k2a <- k2a
 
     par.se$R1.se <- R1.se
     par.se$k2.se <- k2.se
+    par.se$k2a.se <- k2a.se
   }
 
   fit <- mrtm2_model

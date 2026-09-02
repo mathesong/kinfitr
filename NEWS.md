@@ -1,5 +1,14 @@
 # kinfitr 0.9.5
 
+## Reference tissue models
+
+* **Fixed: R1 and k2 from `mrtm1()` and `mrtm2()`.** While `bp` was 
+   unaffected, the secondary parameters (which are only returned when no t\* is
+   provided), were calculated incorrectly due to a typo in their formulation. 
+
+* **`mrtm1()` and `mrtm2()` now also report `k2a`**, the apparent efflux rate
+  constant, returned in such a way that it matches `srtm2()` outputs.
+
 ## Standardised uptake values
 
 * **New: `suvr()`**, the target-to-reference AUC ratio over a frame or time
