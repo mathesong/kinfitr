@@ -60,7 +60,7 @@ predict.blmod <- function(object, ...) {
 #'
 #' @examples
 #' \dontrun{
-#' input <- bd_getdata(blooddata)
+#' input <- bd_create_input(blooddata)
 #' plot(input)
 #' }
 #'

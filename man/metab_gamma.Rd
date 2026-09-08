@@ -47,7 +47,7 @@ This function fits the integrated gamma function to parent fraction data.
 }
 \examples{
 \dontrun{
-pf <- bd_getdata(blooddata, output = "parentFraction")
+pf <- bd_extract(blooddata, output = "parentFraction")
 metab_gamma(pf$time, pf$parentFraction)
 }
 }

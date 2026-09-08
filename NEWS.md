@@ -1,3 +1,57 @@
+# kinfitr 0.9.6
+
+## Blood models
+
+* **New: `blmod_exp(rise = "interp")`**, which describes the rise of the input
+  function by linear interpolation through the measured samples before the
+  peak, and fits the bi- or tri-exponential to the decay alone. More flexible
+  than the fitted linear rise since `t0`, `peaktime` and
+  `peakval` are then taken from the data rather than fitted. The default,
+  `rise = "linear"`, is unchanged. Fits of this kind are not fully described by
+  their parameters, so they must be added to a blooddata object with
+  `bd_addfit()` rather than `bd_addfitpars()`.
+
+* **Fixed: the blood and metabolite models returned predictions in the wrong
+  order when the times were not sorted.** The `blmod_*_model()` and
+  `metab_*_model()` functions describe the curve in segments either side of
+  `t0` and return them in ascending time order, so unsorted times were silently
+  paired with the wrong values. They now require sorted times and say so if
+  they are not. Predictions made through `bd_extract()` and
+  `bd_create_input()` were never affected.
+
+* **Fixed: a crash when the multi-start range fell outside the fitted bounds.**
+  `nls.lm` could abort the whole R session when given a starting value outside
+  `lower` and `upper`. The multi-start range is now kept within them.
+
+* **Fixed: a known `inftime` is now fixed rather than fitted.** A single
+  `inftime` given to `blmod_fengconv()` or `blmod_fengconvplus()` was treated
+  as a pair of identical limits, so `ti` was still counted as a fitted
+  parameter and cost a degree of freedom in the AIC. Two values still give the
+  limits within which `ti` is fitted, and any other number is an error.
+
+* **The bounds on `blmod_fengconvplus()`'s `slope` are now relative to the
+  length of the measurement**, rather than fixed values which only made sense
+  for time in seconds, and its starting value now lies inside them. Note that
+  `slope` is often not identifiable for particular tracers, in which case it 
+  runs to whichever upper bound it is given.
+
+* **`multstart_lower` and `multstart_upper` may name every starting
+  parameter.** Bounds covering all of the values returned by the
+  corresponding startpars function previously failed with a complaint about
+  their length; those which are not being fitted are now dropped, as they
+  already were for `lower`, `upper` and `start`. A bound which is genuinely
+  missing still errors, and now names what is absent.
+
+* **`blmod_triexp_model()` gains `risetime` and `riseval`**, the measured
+  samples through which an interpolated rise runs. Left as NULL, the rise is
+  the straight line from `t0` to the peak as before.
+
+## Blood data
+
+* **`bd_getdata()` is now defunct**, and errors with a pointer to
+  `bd_extract()` and `bd_create_input()`. It read the old PET BIDS blood
+  structure, which `update_blooddata()` exists to convert away from.
+
 # kinfitr 0.9.5
 
 ## Reference tissue models

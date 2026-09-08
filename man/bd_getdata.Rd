@@ -2,46 +2,48 @@
 % Please edit documentation in R/kinfitr_blooddata.R
 \name{bd_getdata}
 \alias{bd_getdata}
-\title{Create an input object from a blooddata object.}
+\title{Create an input object from a blooddata object}
 \usage{
 bd_getdata(
   blooddata,
   startTime = 0,
   stopTime = NULL,
   interpPoints = 6000,
-  output = c("input", "Blood", "BPR", "parentFraction", "AIF")
+  output = "input",
+  bpr_peakfrac_cutoff = 0.001
 )
 }
 \arguments{
-\item{blooddata}{A blooddata object, to which all the desired fits have been applied and added.}
+\item{blooddata}{A blooddata object.}
 
-\item{startTime}{The starting time for the interpolation. Defaults to zero. If, after application of the TimeShift value in the blooddata object, the startTime is still after zero, it will be set to zero.}
+\item{startTime}{The starting time for the interpolation.}
 
-\item{stopTime}{The end time for the interpolation. Defaults to the maximum measured time.}
+\item{stopTime}{The end time for the interpolation.}
 
-\item{interpPoints}{The number of points to interpolate over between the start and stop times.}
+\item{interpPoints}{The number of points to interpolate over.}
 
-\item{output}{The output. This defaults to an "input" object, which can be used in a kinetic model fit. But if set to "Blood", "BPR", "parentFraction" or "AIF", it yields the appropriate input for the function which will be used to model these.}
+\item{output}{The output.}
+
+\item{bpr_peakfrac_cutoff}{The cutoff for the blood-to-plasma ratio.}
 }
 \value{
-A tibble containing the output specified.
+Nothing. Called for its error.
 }
 \description{
-DEPRECATION WARNING: this function will be slowly phased out of future
-releases as it is based on the old PET BIDS standard. in favour of
-bd_extract() and bd_create_input(). blooddata objects can be updated to the
-new format using update_blooddata(), or (better) by creating it afresh from
-the source.
-}
-\details{
-This function extracts data from blooddata objects to create either an
-input object for kinetic modelling, or sets of values for modelling of
-blood-related curves.
+DEFUNCT: this function read the old PET BIDS blood structure, and has been
+replaced by \code{bd_extract()} for individual curves and
+\code{bd_create_input()} for a whole input object. Calling it is now an
+error. Blooddata objects saved in the old structure can be brought up to
+date using \code{update_blooddata()}, or better, created afresh from the
+source.
 }
 \examples{
 \dontrun{
-bd_getdata(blooddata)
-bd_getdata(blooddata, output = "parentFraction")
+# Instead of bd_getdata(blooddata), use
+bd_create_input(blooddata)
+
+# and instead of bd_getdata(blooddata, output = "parentFraction"), use
+bd_extract(blooddata, output = "parentFraction")
 }
 }
 \author{
