@@ -374,9 +374,15 @@ bd_addfit <- function(blooddata, fit, modeltype = c(
 #'
 #' This function adds the fitted parameters of a known model to the blooddata object.
 #'
+#' Each parameter must be a single value, i.e. the model must be fully described
+#' by its parameters. Models which also depend on measured data, such as
+#' \code{blmod_exp()} fits with an interpolated rise, cannot be described this
+#' way, and should be added using \code{bd_addfit()} instead.
+#'
 #' @param blooddata A blooddata object created using one of the create_blooddata_* functions.
 #' @param modelname The name of the model function which produces fitted outcomes for given parameters.
 #' @param fitpars The fitted parameters as a named list, data.frame or tibble.
+#'   Each parameter must be a single value.
 #' @param modeltype The function which the model predicts. One of the following:
 #'   Blood for models of how the blood data should be described, BPR for models
 #'   of the blood-to-plasma ratio, parentFraction for models of metabolism, and
@@ -414,7 +420,21 @@ bd_addfitpars <- function(blooddata, modelname, fitpars,
     "AIF"
   ))
 
+  # Only models which are fully described by their parameters can be stored
+  # this way: anything which also depends on measured data, such as a
+  # blmod_exp() fit with an interpolated rise, has to be added with
+  # bd_addfit() so that the fit itself is kept.
+  parlengths <- vapply(as.list(fitpars), length, integer(1))
 
+  if (any(parlengths != 1)) {
+    stop("Each of the fitpars should be a single value, but ",
+         paste(names(parlengths)[parlengths != 1], collapse = ", "),
+         ifelse(sum(parlengths != 1) > 1, " are ", " is "),
+         "longer than that. bd_addfitpars() can only be used for models which
+         are fully described by their parameters. For a model which also
+         depends on measured data, such as a blmod_exp() fit with an
+         interpolated rise, use bd_addfit() instead.")
+  }
 
   blooddata$Models[[modeltype]] <- list(
     Method = "fitpars",
@@ -951,7 +971,7 @@ bd_extract_bpr <- function(blooddata,
 
     i_bpr <- tibble::tibble(
       time = interptime,
-      activity = do.call(
+      bpr = do.call(
         what = modelname,
         args = Pars
       )
@@ -1268,7 +1288,7 @@ bd_extract_aif <- function(blooddata,
 
     i_aif <- tibble::tibble(
       time = interptime,
-      activity = do.call(
+      aif = do.call(
         what = modelname,
         args = Pars
       )
@@ -1458,512 +1478,47 @@ bd_extract <- function(blooddata,
 
 }
 
-#' Create an input object from a blooddata object.
+#' Create an input object from a blooddata object
 #'
-#' DEPRECATION WARNING: this function will be slowly phased out of future
-#' releases as it is based on the old PET BIDS standard. in favour of
-#' bd_extract() and bd_create_input(). blooddata objects can be updated to the
-#' new format using update_blooddata(), or (better) by creating it afresh from
-#' the source.
+#' DEFUNCT: this function read the old PET BIDS blood structure, and has been
+#' replaced by \code{bd_extract()} for individual curves and
+#' \code{bd_create_input()} for a whole input object. Calling it is now an
+#' error. Blooddata objects saved in the old structure can be brought up to
+#' date using \code{update_blooddata()}, or better, created afresh from the
+#' source.
 #'
-#' This function extracts data from blooddata objects to create either an
-#' input object for kinetic modelling, or sets of values for modelling of
-#' blood-related curves.
+#' @param blooddata A blooddata object.
+#' @param startTime The starting time for the interpolation.
+#' @param stopTime The end time for the interpolation.
+#' @param interpPoints The number of points to interpolate over.
+#' @param output The output.
+#' @param bpr_peakfrac_cutoff The cutoff for the blood-to-plasma ratio.
 #'
-#' @param blooddata A blooddata object, to which all the desired fits have been applied and added.
-#' @param startTime The starting time for the interpolation. Defaults to zero. If, after application of the TimeShift value in the blooddata object, the startTime is still after zero, it will be set to zero.
-#' @param stopTime The end time for the interpolation. Defaults to the maximum measured time.
-#' @param interpPoints The number of points to interpolate over between the start and stop times.
-#' @param output The output. This defaults to an "input" object, which can be used in a kinetic model fit. But if set to "Blood", "BPR", "parentFraction" or "AIF", it yields the appropriate input for the function which will be used to model these.
-#'
-#' @return A tibble containing the output specified.
+#' @return Nothing. Called for its error.
 #' @export
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
 #'
 #' @examples
 #' \dontrun{
-#' bd_getdata(blooddata)
-#' bd_getdata(blooddata, output = "parentFraction")
+#' # Instead of bd_getdata(blooddata), use
+#' bd_create_input(blooddata)
+#'
+#' # and instead of bd_getdata(blooddata, output = "parentFraction"), use
+#' bd_extract(blooddata, output = "parentFraction")
 #' }
 bd_getdata <- function(blooddata,
-                         startTime = 0,
-                         stopTime = NULL,
-                         interpPoints = 6000,
-                         output = c(
-                           "input",
-                           "Blood",
-                           "BPR",
-                           "parentFraction",
-                           "AIF"
-                         )) {
+                       startTime = 0,
+                       stopTime = NULL,
+                       interpPoints = 6000,
+                       output = "input",
+                       bpr_peakfrac_cutoff = 0.001) {
+
+  stop("bd_getdata() is defunct: it was based on the old PET BIDS blood
+       structure. Use bd_extract() for an individual curve, or
+       bd_create_input() for an input object. A blooddata object in the old
+       structure can be brought up to date with update_blooddata().")
 
-  message("DEPRECATION WARNING: based on recent changes to the PET BIDS standard,
-          this function will slowly be deprecated, in favour of bd_extract() and
-          bd_create_input(). blooddata objects can be updated to the new format
-          using update_blooddata(), or (better) by creating it afresh from
-          the source.")
-
-
-  if (is.null(stopTime)) {
-    stopTime <- max(c(
-      with(
-        blooddata$Data$Blood$Discrete$Data$Values,
-        sampleStartTime + sampleDuration
-      ),
-      with(
-        blooddata$Data$Plasma$Data$Values,
-        sampleStartTime + sampleDuration
-      ),
-      with(
-        blooddata$Data$Metabolite$Data$Values,
-        sampleStartTime + sampleDuration
-      ),
-      blooddata$Data$Blood$Continuous$Data$Values$time
-    ),
-    na.rm = T
-    )
-  }
-
-  if (startTime > blooddata$TimeShift * (-1)) {
-    startTime <- 0
-  }
-
-  interptime <- seq(startTime, stopTime, length.out = interpPoints)
-
-  output <- match.arg(output, c(
-    "input",
-    "Blood",
-    "BPR",
-    "parentFraction",
-    "AIF"
-  ))
-
-  # Blood
-
-  blood_discrete <- blooddata$Data$Blood$Discrete$Data$Values
-  blood_discrete$time <- blood_discrete$sampleStartTime +
-    0.5 * blood_discrete$sampleDuration
-  blood_discrete <- dplyr::filter(blood_discrete, !is.na(activity))
-  blood_discrete <- dplyr::arrange(blood_discrete, time)
-
-
-  blood_continuous <- blooddata$Data$Blood$Continuous$Data$Values
-  blood_continuous <- dplyr::filter(blood_continuous, !is.na(activity))
-
-  blood <- dplyr::bind_rows(blood_discrete, blood_continuous)
-  blood <- dplyr::filter(blood, !is.na(activity))
-  blood <- dplyr::arrange(blood, time)
-  blood$Method <- ifelse(is.na(blood$sampleDuration),
-                         yes = "Continuous",
-                         no = "Discrete"
-  )
-
-  if (output == "Blood") {
-    return(blood)
-  }
-
-  ## Interp
-  if (blooddata$Models$Blood$Method == "interp") {
-    blood_for_interp <- blood
-
-    ### Comment - for interpolation of blood data, I remove the discrete samples
-    ### from the first half of the overlap between discrete and continuous
-    ### samples. This is where the peak is, and where the timing of discrete
-    ### samples can mess stuff up.
-
-    if (nrow(blood_continuous) > 0) {
-      if (max(blood_continuous$time) > min(blood_discrete$time)) {
-        overlap_start <- min(blood_discrete$time)
-        overlap_stop <- max(blood_continuous$time)
-        overlap_time <- overlap_stop - overlap_start
-
-        blood_for_interp$keep <- ifelse(
-          blood_for_interp$Method == "Discrete" &
-            blood_for_interp$time <
-            (overlap_start + 0.5 * overlap_time),
-          yes = FALSE, no = TRUE
-        )
-
-        blood_for_interp <- dplyr::filter(blood_for_interp, keep == TRUE)
-      }
-    }
-
-    suppressWarnings(
-      i_blood <- tibble::tibble(
-        time = interptime,
-        activity = interpends(blood_for_interp$time,
-                              blood_for_interp$activity,
-                              interptime,
-                              method = "linear",
-                              yzero = 0
-        )
-      )
-    )
-  }
-
-  ## Fit
-  if (blooddata$Models$Blood$Method == "fit") {
-    i_blood <- tibble::tibble(
-      time = interptime,
-      activity = as.numeric(
-        predict(blooddata$Models$Blood$Data,
-                         newdata = list(time = interptime))
-      )
-    )
-
-    blood$activity <- as.numeric(
-      predict(blooddata$Models$Blood$Data,
-                              newdata = list(time = blood$time))
-    )
-  }
-
-  ## Fit pars
-  if (blooddata$Models$Blood$Method == "fitpars") {
-    modelname <- blooddata$Models$Blood$Data$Model
-    Pars <- append(
-      list(time = interptime),
-      as.list(blooddata$Models$Blood$Data$Pars)
-    )
-
-    i_blood <- tibble::tibble(
-      time = interptime,
-      activity = do.call(
-        what = modelname,
-        args = Pars
-      )
-    )
-
-    Pars <- append(
-      list(time = blood$time),
-      as.list(blooddata$Models$Blood$Data$Pars)
-    )
-
-    blood$activity <- do.call(
-      what = modelname,
-      args = Pars
-    )
-  }
-
-  ## Fitted
-  if (blooddata$Models$Blood$Method == "fitted") {
-    i_blood <- tibble::tibble(
-      time = interptime,
-      activity = interpends(blooddata$Models$Blood$Data$time,
-                            blooddata$Models$Blood$Data$predicted,
-                            interptime,
-                            method = "linear",
-                            yzero = 0
-      )
-    )
-
-    blood$activity <- interpends(blooddata$Models$Blood$Data$time,
-                                 blooddata$Models$Blood$Data$predicted,
-                                 blood$time,
-                                 method = "linear"
-    )
-  }
-
-  out <- list()
-
-  # Blood-to-Plasma Ratio
-
-  plasma <- blooddata$Data$Plasma$Data$Values
-  plasma <- dplyr::filter(plasma, !is.na(activity))
-
-  plasma$time <- plasma$sampleStartTime +
-    0.5 * plasma$sampleDuration
-  plasma <- dplyr::arrange(plasma, time)
-
-  commonvalues <- intersect(plasma$time, blood_discrete$time)
-
-  bprvec <- blood_discrete$activity[blood_discrete$time %in% commonvalues] /
-    plasma$activity[plasma$time %in% commonvalues]
-
-  if( is.nan(bprvec[1]) ) {
-    bprvec[1] <- bprvec[2]
-  }
-
-  bpr <- tibble::tibble(time = commonvalues, bpr = bprvec)
-
-  if (output == "BPR") {
-    return(bpr)
-  }
-
-  ## Interp
-  if (blooddata$Models$BPR$Method == "interp") {
-    i_bpr <- tibble::tibble(
-      time = interptime,
-      bpr = interpends(bpr$time,
-                       bpr$bpr,
-                       interptime,
-                       method = "linear"
-      )
-    )
-    blood$bpr <- interpends(bpr$time, bpr$bpr, blood$time,
-                            method = "linear"
-    )
-  }
-
-  ## Fit
-  if (blooddata$Models$BPR$Method == "fit") {
-    i_bpr <- tibble::tibble(
-      time = interptime,
-      bpr = as.numeric(predict(blooddata$Models$BPR$Data,
-                    newdata = list(time = interptime))
-      )
-    )
-
-    blood$bpr <- as.numeric(predict(blooddata$Models$BPR$Data,
-                         newdata = list(time = blood$time))
-    )
-  }
-
-  ## Fit pars
-  if (blooddata$Models$BPR$Method == "fitpars") {
-    modelname <- blooddata$Models$BPR$Data$Model
-    Pars <- append(
-      list(time = interptime),
-      as.list(blooddata$Models$BPR$Data$Pars)
-    )
-
-    i_bpr <- tibble::tibble(
-      time = interptime,
-      activity = do.call(
-        what = modelname,
-        args = Pars
-      )
-    )
-    Pars <- append(
-      list(time = blood$time),
-      as.list(blooddata$Models$BPR$Data$Pars)
-    )
-
-    blood$bpr <- do.call(
-      what = modelname,
-      args = Pars
-    )
-  }
-
-  ## Fitted
-  if (blooddata$Models$BPR$Method == "fitted") {
-    i_bpr <- tibble::tibble(
-      time = interptime,
-      bpr = interpends(blooddata$Models$BPR$Data$time,
-                       blooddata$Models$BPR$Data$predicted,
-                       interptime,
-                       method = "linear"
-      )
-    )
-
-    blood$bpr <- interpends(blooddata$Models$BPR$Data$time,
-                            blooddata$Models$BPR$Data$predicted,
-                            blood$time,
-                            method = "linear"
-    )
-  }
-
-
-  # Parent Fraction
-
-  pf <- blooddata$Data$Metabolite$Data$Values
-  pf <- dplyr::filter(pf, !is.na(parentFraction))
-  pf$time <- pf$sampleStartTime + 0.5 * pf$sampleDuration
-
-  if (output == "parentFraction") {
-    return(pf)
-  }
-
-  ## Interp
-  if (blooddata$Models$parentFraction$Method == "interp") {
-    i_pf <- tibble::tibble(
-      time = interptime,
-      parentFraction = interpends(pf$time,
-                                  pf$parentFraction,
-                                  interptime,
-                                  method = "linear",
-                                  yzero = 1
-      )
-    )
-    blood$parentFraction <- interpends(pf$time, pf$parentFraction,
-                                       blood$time,
-                                       method = "linear"
-    )
-  }
-
-  ## Fit
-  if (blooddata$Models$parentFraction$Method == "fit") {
-    i_pf <- tibble::tibble(
-      time = interptime,
-      parentFraction = as.numeric(
-        predict(blooddata$Models$parentFraction$Data,
-                               newdata = list(time = interptime))
-      )
-    )
-
-    blood$parentFraction <- as.numeric(
-      predict(blooddata$Models$parentFraction$Data,
-                                    newdata = list(time = blood$time))
-    )
-  }
-
-  ## Fit pars
-  if (blooddata$Models$parentFraction$Method == "fitpars") {
-    modelname <- blooddata$Models$parentFraction$Data$Model
-    Pars <- append(
-      list(time = interptime),
-      as.list(blooddata$Models$parentFraction$Data$Pars)
-    )
-
-    i_pf <- tibble::tibble(
-      time = interptime,
-      parentFraction = do.call(
-        what = modelname,
-        args = Pars
-      )
-    )
-
-    Pars <- append(
-      list(time = blood$time),
-      as.list(blooddata$Models$parentFraction$Data$Pars)
-    )
-
-    blood$parentFraction <- do.call(
-      what = modelname,
-      args = Pars
-    )
-  }
-
-  ## Fitted
-  if (blooddata$Models$parentFraction$Method == "fitted") {
-    i_pf <- tibble::tibble(
-      time = interptime,
-      parentFraction = interpends(
-        blooddata$Models$parentFraction$Data$time,
-        blooddata$Models$parentFraction$Data$predicted,
-        interptime,
-        method = "linear",
-        yzero = 1
-      )
-    )
-
-    blood$parentFraction <- interpends(
-      blooddata$Models$parentFraction$Data$time,
-      blooddata$Models$parentFraction$Data$predicted,
-      blood$time,
-      method = "linear",
-      yzero = 1
-    )
-  }
-
-  # AIF
-
-  aif <- blood
-  aif <- dplyr::rename(aif, blood = activity)
-  aif <- dplyr::mutate(aif,
-                       plasma_uncor = blood * (1 / bpr),
-                       aif = plasma_uncor * parentFraction
-  )
-
-  if (output == "AIF") {
-    return(aif)
-  }
-
-
-  ## Interp
-  if (blooddata$Models$AIF$Method == "interp") {
-    aif_for_interp <- aif
-
-    ### Comment - for interpolation of blood data, I remove the discrete samples
-    ### from the first half of the overlap between discrete and continuous
-    ### samples. This is where the peak is, and where the timing of discrete
-    ### samples can mess stuff up.
-
-    if (nrow(blood_continuous) > 0) {
-      if (max(blood_continuous$time) > min(blood_discrete$time)) {
-        overlap_start <- min(blood_discrete$time)
-        overlap_stop <- max(blood_continuous$time)
-        overlap_time <- overlap_stop - overlap_start
-
-        aif_for_interp$keep <- ifelse(
-          aif_for_interp$Method == "Discrete" &
-            aif_for_interp$time <
-            (overlap_start + 0.5 * overlap_time),
-          yes = FALSE, no = TRUE
-        )
-
-        aif_for_interp <- dplyr::filter(aif_for_interp, keep == TRUE)
-      }
-    }
-
-    suppressWarnings(
-      i_aif <- tibble::tibble(
-        time = interptime,
-        aif = interpends(aif_for_interp$time,
-                         aif_for_interp$aif,
-                         interptime,
-                         method = "linear",
-                         yzero = 0
-        )
-      )
-    )
-  }
-
-  ## Fit
-  if (blooddata$Models$AIF$Method == "fit") {
-    i_aif <- tibble::tibble(
-      time = interptime,
-      aif = as.numeric(
-        predict(blooddata$Models$AIF$Data,
-                    newdata = list(time = interptime))
-      )
-    )
-  }
-
-  ## Fit pars
-  if (blooddata$Models$AIF$Method == "fitpars") {
-    modelname <- blooddata$Models$AIF$Data$Model
-    Pars <- append(
-      list(time = interptime),
-      as.list(blooddata$Models$AIF$Data$Pars)
-    )
-
-    i_aif <- tibble::tibble(
-      time = interptime,
-      activity = do.call(
-        what = modelname,
-        args = Pars
-      )
-    )
-  }
-
-  ## Fitted
-  if (blooddata$Models$AIF$Method == "fitted") {
-    i_aif <- tibble::tibble(
-      time = interptime,
-      aif = interpends(
-        blooddata$Models$AIF$Data$time,
-        blooddata$Models$AIF$Data$predicted,
-        interptime,
-        method = "linear",
-        yzero = 0
-      )
-    )
-  }
-
-  if (output == "input") {
-    input <- tibble::tibble(
-      Time = (interptime + blooddata$TimeShift) / 60,
-      Blood = i_blood$activity,
-      Plasma = i_blood$activity / i_bpr$bpr,
-      ParentFraction = i_pf$parentFraction,
-      AIF = i_aif$aif
-    )
-
-    class(input) <- c("interpblood", class(input))
-
-    return(input)
-  }
 }
 
 

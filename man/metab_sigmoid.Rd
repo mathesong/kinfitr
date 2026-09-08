@@ -47,7 +47,7 @@ This function fits the sigmoid function by Guo et al. (2013) to parent fraction 
 }
 \examples{
 \dontrun{
-pf <- bd_getdata(blooddata, output = "parentFraction")
+pf <- bd_extract(blooddata, output = "parentFraction")
 metab_sigmoid(pf$time, pf$parentFraction)
 }
 }

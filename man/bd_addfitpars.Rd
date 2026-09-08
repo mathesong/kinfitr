@@ -16,7 +16,8 @@ bd_addfitpars(
 
 \item{modelname}{The name of the model function which produces fitted outcomes for given parameters.}
 
-\item{fitpars}{The fitted parameters as a named list, data.frame or tibble.}
+\item{fitpars}{The fitted parameters as a named list, data.frame or tibble.
+Each parameter must be a single value.}
 
 \item{modeltype}{The function which the model predicts. One of the following:
 Blood for models of how the blood data should be described, BPR for models
@@ -28,6 +29,12 @@ A blooddata object with the model inserted.
 }
 \description{
 This function adds the fitted parameters of a known model to the blooddata object.
+}
+\details{
+Each parameter must be a single value, i.e. the model must be fully described
+by its parameters. Models which also depend on measured data, such as
+\code{blmod_exp()} fits with an interpolated rise, cannot be described this
+way, and should be added using \code{bd_addfit()} instead.
 }
 \examples{
 \dontrun{

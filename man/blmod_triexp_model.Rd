@@ -4,7 +4,20 @@
 \alias{blmod_triexp_model}
 \title{Tri-exponential model for fitting of arterial input functions}
 \usage{
-blmod_triexp_model(time, t0, peaktime, peakval, A, alpha, B, beta, C, gamma)
+blmod_triexp_model(
+  time,
+  t0,
+  peaktime,
+  peakval,
+  A,
+  alpha,
+  B,
+  beta,
+  C,
+  gamma,
+  risetime = NULL,
+  riseval = NULL
+)
 }
 \arguments{
 \item{time}{Time of each sample.}
@@ -26,6 +39,17 @@ blmod_triexp_model(time, t0, peaktime, peakval, A, alpha, B, beta, C, gamma)
 \item{C}{The multiplier of the third exponential.}
 
 \item{gamma}{The rate of the third exponential.}
+
+\item{risetime}{Optional. The times of the measured samples through which the
+rise should be linearly interpolated. If NULL (the default), the rise is
+described instead by a straight line from \code{t0} to the peak.}
+
+\item{riseval}{Optional. The measured activity values corresponding to
+\code{risetime}. Only the samples strictly between \code{t0} and
+\code{peaktime} are used: the points \code{(t0, 0)} and
+\code{(peaktime, peakval)} are added by this function, so that the
+interpolated rise always starts at \code{t0} and meets the decay at the
+peak.}
 }
 \value{
 Model predictions
@@ -36,4 +60,8 @@ both the rise and fall are modelled together in the same nonlinear model.
 }
 \examples{
 blmod_triexp_model(1:100, 2, 5, 100, 80, 0.5, 15, 0.1, 5, 0.01)
+
+# With the rise interpolated through measured samples instead
+blmod_triexp_model(1:100, 2, 5, 100, 80, 0.5, 15, 0.1, 5, 0.01,
+                   risetime = c(3, 4), riseval = c(30, 80))
 }
