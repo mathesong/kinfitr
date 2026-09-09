@@ -15,8 +15,9 @@ optionally Reference) columns.}
 \item{max_facets}{Maximum facets per plot. Default is 3 (single row).}
 }
 \value{
-A single ggplot if <= max_facets regions, otherwise a list of
-  ggplot objects.
+A single ggplot if <= max_facets regions, otherwise a
+  \code{nested_kinfit_plots} list of ggplot objects, which prints each of
+  its plots in turn.
 }
 \description{
 If more than \code{max_facets} regions, splits into multiple ggplot objects.

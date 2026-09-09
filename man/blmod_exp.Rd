@@ -25,7 +25,8 @@ blmod_exp(
   taper_weights = TRUE,
   weightscheme = 2,
   check_startpars = FALSE,
-  expdecay_props = c(1/60, 0.1)
+  expdecay_props = c(1/60, 0.1),
+  rise = c("linear", "interp")
 )
 }
 \arguments{
@@ -77,7 +78,9 @@ they will be selected using \code{blmod_exp_startpars}.}
 
 \item{multstart_iter}{The number of fits to perform with different starting
 parameters. If set to 1, then the starting parameters will be used for a
-single fit.}
+single fit. Otherwise a single number selects the starting values by
+improved Latin hypercube sampling over the multstart bounds rather than at
+random, while one value per parameter forms a Cartesian grid.}
 
 \item{Method_weights}{If no weights provided, should the weights be divided
 by discrete and continuous samples equally (i.e. with more continuous
@@ -101,6 +104,12 @@ for debugging fits which do not work.}
 choosing starting parameters for the exponential decay. Defaults to 1/60
 and 1/10, i.e. start to 1/60, 1/60 to 1/10 and 1/10 to end. If fitting only
 two exponentials, the second value will be used.}
+
+\item{rise}{How should the rise of the curve be described? The default,
+"linear", fits a straight line from \code{t0} to the peak as part of the
+nonlinear model. With "interp", the rise is instead described by linear
+interpolation through the measured samples before the peak, and only the
+decay is fitted. This is more robust, but less flexible.}
 }
 \value{
 A model fit including all of the individual parameters, fit details,
@@ -127,6 +136,34 @@ fitting the peak value, it can be fit as a unique parameter or set using
 \code{fit_peakval}. If it is set, then it can either be set to the largest
 measured value, or it can be set to the fitted combination of \code{A+B+C},
 i.e. the initial part of the decay after the peak.
+
+With \code{rise = "interp"}, the interpolated rise passes exactly
+  through the measured samples, so it contributes nothing to the residuals,
+  and \code{t0}, \code{peaktime} and \code{peakval} cannot be identified
+  from the fit. The exponentials are therefore fitted to the samples after
+  the peak only, and \code{fit_t0}, \code{fit_peaktime} and
+  \code{fit_peakval} are all set to FALSE: the rise is interpolated from
+  (0, 0), the peak is taken from the measured data, and \code{peakval_set}
+  still chooses between the measured peak value (TRUE) and A+B+C (FALSE).
+  A copy of the peak sample, displaced marginally past the peak, is included
+  in the fitted data so that it anchors A+B+C: at the peak itself the sample
+  falls in the rise, where its residual is identically zero. This extra
+  sample is not part of the returned \code{blood}, and so does not appear
+  among the predicted values.
+
+  \code{peaktime_val} may still be set, and then defines both the end of
+  the rise and the split between the rise and the decay. Note though that
+  with \code{peakval_set = TRUE} the peak value is taken from the maximum of
+  the measured data, so setting a peaktime away from that maximum describes a
+  peak which was never measured.
+
+  Because the rise is data rather than parameters, an interpolated fit is not
+  fully described by \code{par}, whose nine values then describe only the
+  linear approximation of the same curve. The samples which the rise is
+  interpolated through are returned separately, as \code{rise_samples}. Such
+  fits must therefore be added to a blooddata object using
+  \code{bd_addfit()}, which stores the fit itself. \code{bd_addfitpars()}
+  stores only the parameters, and so cannot describe them.
 }
 \examples{
 blooddata <- pbr28$blooddata[[1]]
@@ -135,4 +172,10 @@ aif <- bd_extract(blooddata, output = "AIF")
 blood_fit <- blmod_exp(aif$time,
                            aif$aif,
                            Method = aif$Method, multstart_iter = 1)
+
+# With the rise interpolated through the measured samples
+blood_fit <- blmod_exp(aif$time,
+                           aif$aif,
+                           Method = aif$Method, multstart_iter = 1,
+                           rise = "interp")
 }

@@ -138,7 +138,7 @@ plot_residuals <- function(outputobject) {
 
   outplot <- ggplot(plotdf, aes(x = Time, y = Residuals)) +
     geom_point(aes(size = Weights)) +
-    geom_hline(aes(yintercept = 0), linetype = "dashed") + ylim(ylimits) +
+    geom_hline(aes(yintercept = 0), linetype = "dashed") + coord_cartesian(ylim = ylimits) +
     scale_size(range = c(1, 3)) + geom_line()
 
   return(outplot)
@@ -387,6 +387,15 @@ plot_kinfit <- function(modelout, ...) {
 #' Checks and fixes for inputted multstart parameters. Checks missing multstart boundaries,
 #' checks if some parameters aren't to be tried with different starting parameters, and checks
 #' the lengths of the multstart bounds
+#'
+#' @details This prepares the bounds within which starting values are drawn.
+#'   Where \code{multstart_iter} is a single number, the models draw those
+#'   values by improved Latin hypercube sampling (\code{lhstype = "improved"}
+#'   in \code{\link[nls.multstart]{nls_multstart}}) rather than at random, so
+#'   a given number of iterations covers the bounds more evenly. Where it is a
+#'   vector, \code{nls_multstart} builds a Cartesian grid over the bounds
+#'   instead and no sampling takes place. Parameters whose
+#'   \code{multstart_iter} is 1 are held at their starting value either way.
 #'
 #' @param start Original starting values for without multstart
 #' @param lower Lower fitting bounds
@@ -749,6 +758,20 @@ camel <- function(x){ #function for camel case
   paste(first, rest, collapse="")
 }
 
+#' Split a radioactivity concentration unit into its parts
+#'
+#' @description Splits a unit string such as `"kBq/mL"` or `"Bq.mL-1"` into its
+#'   radioactivity unit and its volume unit. Exported because petfit and
+#'   bloodstream both need it to reconcile the units of TACs, blood and input
+#'   functions produced by different tools.
+#'
+#' @param x A unit string, e.g. `"kBq/mL"` or `"Bq.mL-1"`.
+#'
+#' @return A list with `rad`, the radioactivity unit, and `vol`, the volume unit.
+#'
+#' @examples
+#' get_units_radioactivity("kBq/mL")
+#' @export
 get_units_radioactivity <- function(x) {
 
   rad <- gsub("[\\.\\/].*", "", x)
@@ -933,3 +956,63 @@ interpends <- function(x, y, xi, method = "linear", yzero = NULL) {
   pracma::interp1(x, y, xi, method)
 }
 
+
+# Check that times are sorted
+#
+# Several of the blood and metabolite models describe the curve in segments
+# either side of t0, and return those segments in ascending time order rather
+# than in the order of the times they were given. They are therefore only
+# correct for times which are already sorted, and this check makes that a
+# requirement rather than a silent source of mismatched predictions.
+check_time_sorted <- function(time, timename = "time") {
+  if (any(diff(time) < 0, na.rm = TRUE)) {
+    stop(timename, " should be sorted in ascending order for this model: it
+         describes the curve in segments, and returns them in time order.")
+  }
+
+  invisible(NULL)
+}
+
+
+# Keep only the parameters which are being fitted
+#
+# The bounds for the starting parameters of the blood models may name every
+# value that the corresponding startpars function returns, including any which
+# are held fixed rather than fitted. This drops those, and puts the rest into
+# the same order as the parameters themselves, so that the bounds can be passed
+# positionally.
+prune_pars <- function(pars, parnames, parsname) {
+  if (is.null(pars) || is.null(names(pars))) {
+    return(pars)
+  }
+
+  if (!all(parnames %in% names(pars))) {
+    stop(parsname, " should include a value for each of the parameters being
+         fitted (", paste(parnames, collapse = ", "), "), but does not
+         include ", paste(setdiff(parnames, names(pars)), collapse = ", "), ".")
+  }
+
+  pars[parnames]
+}
+
+
+# Put the bounds into the order the parameters appear in the model formula
+#
+# The bounds are passed to the fitting functions as positional vectors, and
+# nls_multstart takes the parameters to be estimated from the order in which
+# they appear in the formula. That is not necessarily the order in which the
+# bounds are built, so they have to be reordered to match: otherwise each
+# bound is applied to whichever parameter happens to share its position.
+order_pars <- function(pars, parorder, parsname) {
+  if (is.null(pars)) {
+    return(pars)
+  }
+
+  if (!setequal(parorder, names(pars))) {
+    stop(parsname, " must be named for each of the parameters being fitted (",
+         paste(parorder, collapse = ", "), "), so that its values can be
+         matched to them.")
+  }
+
+  pars[parorder]
+}

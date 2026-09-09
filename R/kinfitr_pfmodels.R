@@ -45,13 +45,17 @@ metab_hill_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
 #' @param multstart_lower Named list of the lower starting limits.
 #' @param multstart_upper Named list of the upper starting limits.
 #' @param multstart_iter Number of fits to perform before deciding on an optimal.
+#'   Given as a single number, starting values are chosen by improved Latin
+#'   hypercube sampling rather than at random; given as one value per
+#'   parameter, they form a Cartesian grid.
+#'   See \code{\link[nls.multstart]{nls_multstart}}.
 #'
 #' @return An nls fit object.
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' pf <- bd_getdata(blooddata, output = "parentFraction")
+#' pf <- bd_extract(blooddata, output = "parentFraction")
 #' metab_hill(pf$time, pf$parentFraction)
 #' }
 metab_hill <- function(time, parentFraction,
@@ -102,7 +106,7 @@ metab_hill <- function(time, parentFraction,
     upper = upper,
     start_lower = multstart_lower,
     start_upper = multstart_upper,
-    iter = multstart_iter,
+    iter = multstart_iter, lhstype = "improved",
     supp_errors = "Y"
   )
 }
@@ -218,6 +222,8 @@ metab_hill <- function(time, parentFraction,
 #' @examples
 #' metab_sigmoid_model(seq(0, 60 * 60, by = 120), 7, 0.6, 0.04, 1, 0)
 metab_sigmoid_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
+  check_time_sorted(time)
+
   tcorr <- time - delay
   t_before <- tcorr[ which(!(tcorr > 0)) ]
   t_after <- tcorr[ which(tcorr > 0) ]
@@ -246,6 +252,10 @@ metab_sigmoid_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
 #' @param multstart_lower Named list of the lower starting limits.
 #' @param multstart_upper Named list of the upper starting limits.
 #' @param multstart_iter Number of fits to perform before deciding on an optimal.
+#'   Given as a single number, starting values are chosen by improved Latin
+#'   hypercube sampling rather than at random; given as one value per
+#'   parameter, they form a Cartesian grid.
+#'   See \code{\link[nls.multstart]{nls_multstart}}.
 #'
 #' @return An nls fit object.
 #' @export
@@ -254,7 +264,7 @@ metab_sigmoid_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
 #'
 #' @examples
 #' \dontrun{
-#' pf <- bd_getdata(blooddata, output = "parentFraction")
+#' pf <- bd_extract(blooddata, output = "parentFraction")
 #' metab_sigmoid(pf$time, pf$parentFraction)
 #' }
 metab_sigmoid <- function(time, parentFraction,
@@ -305,7 +315,7 @@ metab_sigmoid <- function(time, parentFraction,
     upper = upper,
     start_lower = multstart_lower,
     start_upper = multstart_upper,
-    iter = multstart_iter,
+    iter = multstart_iter, lhstype = "improved",
     supp_errors = "Y"
   )
 }
@@ -329,6 +339,8 @@ metab_sigmoid <- function(time, parentFraction,
 #' @examples
 #' metab_power_model(seq(0, 60 * 60, by = 120), 0.004, 4.5, 0.27, 1, 0)
 metab_power_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
+  check_time_sorted(time)
+
   tcorr <- time - delay
   t_before <- tcorr[ which(!(tcorr > 0)) ]
   t_after <- tcorr[ which(tcorr > 0) ]
@@ -355,13 +367,17 @@ metab_power_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
 #' @param multstart_lower Named list of the lower starting limits.
 #' @param multstart_upper Named list of the upper starting limits.
 #' @param multstart_iter Number of fits to perform before deciding on an optimal.
+#'   Given as a single number, starting values are chosen by improved Latin
+#'   hypercube sampling rather than at random; given as one value per
+#'   parameter, they form a Cartesian grid.
+#'   See \code{\link[nls.multstart]{nls_multstart}}.
 #'
 #' @return An nls fit object.
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' pf <- bd_getdata(blooddata, output = "parentFraction")
+#' pf <- bd_extract(blooddata, output = "parentFraction")
 #' metab_power(pf$time, pf$parentFraction)
 #' }
 metab_power <- function(time, parentFraction,
@@ -412,7 +428,7 @@ metab_power <- function(time, parentFraction,
     upper = upper,
     start_lower = multstart_lower,
     start_upper = multstart_upper,
-    iter = multstart_iter,
+    iter = multstart_iter, lhstype = "improved",
     supp_errors = "Y"
   )
 }
@@ -435,6 +451,8 @@ metab_power <- function(time, parentFraction,
 #' @examples
 #' metab_exponential_model(seq(0, 60 * 60, by = 120), 0.02, 0, 0.001, 1, 0)
 metab_exponential_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
+  check_time_sorted(time)
+
   tcorr <- time - delay
   t_before <- tcorr[ which(!(tcorr > 0)) ]
   t_after <- tcorr[ which(tcorr > 0) ]
@@ -462,13 +480,17 @@ metab_exponential_model <- function(time, a, b, c, ppf0 = 1, delay = 0) {
 #' @param multstart_lower Named list of the lower starting limits.
 #' @param multstart_upper Named list of the upper starting limits.
 #' @param multstart_iter Number of fits to perform before deciding on an optimal.
+#'   Given as a single number, starting values are chosen by improved Latin
+#'   hypercube sampling rather than at random; given as one value per
+#'   parameter, they form a Cartesian grid.
+#'   See \code{\link[nls.multstart]{nls_multstart}}.
 #'
 #' @return An nls fit object.
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' pf <- bd_getdata(blooddata, output = "parentFraction")
+#' pf <- bd_extract(blooddata, output = "parentFraction")
 #' metab_exponential(pf$time, pf$parentFraction)
 #' }
 metab_exponential <- function(time, parentFraction,
@@ -519,7 +541,7 @@ metab_exponential <- function(time, parentFraction,
     upper = upper,
     start_lower = multstart_lower,
     start_upper = multstart_upper,
-    iter = multstart_iter,
+    iter = multstart_iter, lhstype = "improved",
     supp_errors = "Y"
   )
 }
@@ -542,6 +564,8 @@ metab_exponential <- function(time, parentFraction,
 #' @examples
 #' metab_invgamma_model(seq(0, 60 * 60, by = 120), 1, 0.95, 1.97, 708, 0)
 metab_invgamma_model <- function(time, a, b, c, d, delay = 0) {
+  check_time_sorted(time)
+
   tcorr <- time - delay
   t_before <- tcorr[ which(!(tcorr > 0)) ]
   t_after <- tcorr[ which(tcorr > 0) ]
@@ -569,6 +593,10 @@ metab_invgamma_model <- function(time, a, b, c, d, delay = 0) {
 #' @param multstart_lower Named list of the lower starting limits.
 #' @param multstart_upper Named list of the upper starting limits.
 #' @param multstart_iter Number of fits to perform before deciding on an optimal.
+#'   Given as a single number, starting values are chosen by improved Latin
+#'   hypercube sampling rather than at random; given as one value per
+#'   parameter, they form a Cartesian grid.
+#'   See \code{\link[nls.multstart]{nls_multstart}}.
 #'
 #' @return An nls fit object.
 #' @export
@@ -577,7 +605,7 @@ metab_invgamma_model <- function(time, a, b, c, d, delay = 0) {
 #'
 #' @examples
 #' \dontrun{
-#' pf <- bd_getdata(blooddata, output = "parentFraction")
+#' pf <- bd_extract(blooddata, output = "parentFraction")
 #' metab_invgamma(pf$time, pf$parentFraction)
 #' }
 metab_invgamma <- function(time, parentFraction,
@@ -628,7 +656,7 @@ metab_invgamma <- function(time, parentFraction,
     upper = upper,
     start_lower = multstart_lower,
     start_upper = multstart_upper,
-    iter = multstart_iter,
+    iter = multstart_iter, lhstype = "improved",
     supp_errors = "Y"
   )
 
@@ -674,6 +702,8 @@ metab_invgamma <- function(time, parentFraction,
 #' @examples
 #' metab_gamma_model(seq(0, 60 * 60, by = 120), 1.97, 708, 1, 0)
 metab_gamma_model <- function(time, a, b, c, d, delay = 0) {
+  check_time_sorted(time)
+
   tcorr <- time - delay
   t_before <- tcorr[ which(!(tcorr > 0)) ]
   t_after <- tcorr[ which(tcorr > 0) ]
@@ -701,6 +731,10 @@ metab_gamma_model <- function(time, a, b, c, d, delay = 0) {
 #' @param multstart_lower Named list of the lower starting limits.
 #' @param multstart_upper Named list of the upper starting limits.
 #' @param multstart_iter Number of fits to perform before deciding on an optimal.
+#'   Given as a single number, starting values are chosen by improved Latin
+#'   hypercube sampling rather than at random; given as one value per
+#'   parameter, they form a Cartesian grid.
+#'   See \code{\link[nls.multstart]{nls_multstart}}.
 #'
 #' @return An nls fit object.
 #' @export
@@ -709,7 +743,7 @@ metab_gamma_model <- function(time, a, b, c, d, delay = 0) {
 #'
 #' @examples
 #' \dontrun{
-#' pf <- bd_getdata(blooddata, output = "parentFraction")
+#' pf <- bd_extract(blooddata, output = "parentFraction")
 #' metab_gamma(pf$time, pf$parentFraction)
 #' }
 metab_gamma <- function(time, parentFraction,
@@ -761,7 +795,7 @@ metab_gamma <- function(time, parentFraction,
                                upper = upper,
                                start_lower = multstart_lower,
                                start_upper = multstart_upper,
-                               iter = multstart_iter,
+                               iter = multstart_iter, lhstype = "improved",
                                supp_errors = "Y"
   ))
 

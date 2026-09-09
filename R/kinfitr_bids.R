@@ -1,3 +1,42 @@
+# Warn about entity labels that differ only in case.
+#
+# BIDS labels are case-sensitive, so trc-PF974 and trc-pf974 are two different
+# tracers as far as any tool is concerned -- which is almost never what was
+# meant, and produces confusing duplicate measurements.
+#
+# Warn, never error: a collision simply yields two distinct measurements, so
+# refusing the dataset would only turn away work that can be done correctly.
+bids_warn_case_collisions <- function(attributes) {
+
+  entity_cols <- setdiff(colnames(attributes),
+                         c("path", "path_absolute", "extension", "measurement"))
+
+  for (entity in entity_cols) {
+
+    values <- unique(attributes[[entity]])
+    values <- values[!is.na(values)]
+    if (length(values) < 2) next
+
+    collided <- split(values, tolower(values))
+    collided <- collided[vapply(collided, length, integer(1)) > 1]
+    if (length(collided) == 0) next
+
+    groups <- vapply(collided, function(v) {
+      paste(paste0(entity, "-", v), collapse = " / ")
+    }, character(1))
+
+    warning("Entity labels differing only in case: ",
+            paste(groups, collapse = "; "),
+            ". BIDS labels are case-sensitive, so these are treated as ",
+            "distinct measurements. If that was not intended, run the BIDS ",
+            "validator (https://bids-standard.github.io/bids-validator/) and ",
+            "correct the filenames.",
+            call. = FALSE)
+  }
+
+  invisible(attributes)
+}
+
 #' Extract the filenames from a PET BIDS study
 #'
 #' This function returns a data frame of the files for each measurement in a
@@ -15,6 +54,12 @@
 #' filedata <- bids_parse_files(studypath)
 #' }
 bids_parse_files <- function(studypath) {
+
+  warning(
+    "bids_parse_files() is deprecated in favour of bids_parse_filenames(), ",
+    "and will be removed in 2027.",
+    call. = FALSE)
+
 
   extensions = paste(c('*.nii.gz', "*.tsv", "*.json"), collapse="|")
 
@@ -35,6 +80,10 @@ bids_parse_files <- function(studypath) {
                                       grepl(".nii.gz", path),
                                       "nii.gz", extension)) %>%
     dplyr::filter(!is.na(measurement))
+
+  # Check before the defaults below are filled in, so that synthetic values
+  # such as trc = "trc" cannot themselves collide.
+  bids_warn_case_collisions(attributes)
 
   if(!("sub" %in% colnames(attributes))) {
     attributes$sub <- "01"
@@ -238,8 +287,11 @@ bids_parse_files <- function(studypath) {
 #'    "sub-01/ses-01/pet/sub-01_ses-01_recording-continuous_blood.json")
 bids_filename_attributes <- function(filename) {
 
-  attr <- stringr::str_match_all(filename, "([a-z0-9]*-[a-zA-Z0-9]*)[/_]")[[1]]
-  attr_val <- stringr::str_match(attr[,2], "([a-z0-9]*)-([a-zA-Z0-9]*)")
+  # "+" is a legal character in a BIDS entity label. Without it here the entity
+  # does not merely lose the label -- the whole key-value pair fails to match and
+  # is dropped, so "task-A+B" parses as no task at all rather than as task "A".
+  attr <- stringr::str_match_all(filename, "([a-z0-9]*-[a-zA-Z0-9+]*)[/_]")[[1]]
+  attr_val <- stringr::str_match(attr[,2], "([a-z0-9]*)-([a-zA-Z0-9+]*)")
   attr_vals <- tibble::tibble(
     attribute = attr_val[,2],
     value = attr_val[,3]
@@ -279,29 +331,60 @@ bids_parse_blood <- function(filedata) {
     dplyr::filter(measurement=="pet" & extension=="json") %>%
     dplyr::pull(path_absolute)
 
-  json_blood_discrete <- filedata %>%
-    dplyr::filter(measurement=="blood" &
-                    extension=="json" &
-                    recording=="manual") %>%
-    dplyr::pull(path_absolute)
+  # Which blood belongs to this acquisition, and is it resolvable? Selecting the
+  # files here rather than filtering inline gets the checks that filtering never
+  # did: that blood sits in pet/, that it carries a recording entity, and that
+  # two files do not both claim to be the same recording. Filtering also matched
+  # only the two labels named below, silently ignoring any other.
+  # bids_associate_blood() refuses blood outside pet/, blood with no recording
+  # entity, and two files both claiming one recording. Report and skip: this
+  # runs once per acquisition, so raising would end the whole study parse.
+  blood <- tryCatch(
+    bids_associate_blood(filedata),
+    error = function(e) {
+      warning(conditionMessage(e),
+              "\nThe blood for this acquisition was skipped. The acquisition ",
+              "itself is unaffected, as is the rest of the study.",
+              call. = FALSE)
+      NULL
+    })
 
-  tsv_blood_discrete <- filedata %>%
-    dplyr::filter(measurement=="blood" &
-                    extension=="tsv" &
-                    recording=="manual") %>%
-    dplyr::pull(path_absolute)
+  if (is.null(blood) || nrow(blood) == 0) {
+    # An acquisition with no blood files at all is ordinary and passes in
+    # silence. Blood that is present but unusable has already been warned
+    # about, per recording, by bids_associate_blood() itself.
+    return(NA)
+  }
 
-  json_blood_cont <- filedata %>%
-    dplyr::filter(measurement=="blood" &
-                    extension=="json" &
-                    recording=="autosampler") %>%
-    dplyr::pull(path_absolute)
+  pick <- function(recording, extension) {
+    row <- blood[blood$recording == recording, , drop = FALSE]
+    if (nrow(row) == 0) return(character(0))
+    row[[extension]]
+  }
 
-  tsv_blood_cont <- filedata %>%
-    dplyr::filter(measurement=="blood" &
-                    extension=="tsv" &
-                    recording=="autosampler") %>%
-    dplyr::pull(path_absolute)
+  json_blood_discrete <- pick("manual", "json")
+  tsv_blood_discrete  <- pick("manual", "tsv")
+  json_blood_cont     <- pick("autosampler", "json")
+  tsv_blood_cont      <- pick("autosampler", "tsv")
+
+  # The reader below understands manual and autosampler recordings. Any other
+  # label is carried by bids_associate_blood() but cannot be interpreted here,
+  # so say so rather than dropping it without comment.
+  unhandled <- setdiff(blood$recording, c("manual", "autosampler"))
+  if (length(unhandled) > 0) {
+    warning("Blood recording", if (length(unhandled) > 1) "s" else "", " ",
+            paste0("recording-", unhandled, collapse = ", "),
+            " for ", attr(filedata, "pet_key") %||% "this acquisition",
+            " could not be read: only manual and autosampler are understood.",
+            call. = FALSE)
+  }
+
+  if (length(json_blood_discrete) == 0) {
+    warning("No manual blood recording for ",
+            attr(filedata, "pet_key") %||% "this acquisition",
+            "; its blood could not be read.", call. = FALSE)
+    return(NA)
+  }
 
 
 
@@ -309,7 +392,12 @@ bids_parse_blood <- function(filedata) {
 
   ### Get the data ###
 
-  jsondat_blood_discrete <- jsonlite::fromJSON(json_blood_discrete)
+  jsondat_blood_discrete <- bids_read_sidecar(json_blood_discrete, filedata,
+                                             "manual blood sidecar")
+
+  if (is.null(jsondat_blood_discrete)) {
+    return(NA)
+  }
 
   # Read data
 
@@ -681,6 +769,58 @@ bids_create_blooddata <- function(filedata) {
 
 }
 
+# A short label naming a measurement, for use in messages. Prefers the PET
+# file's relative path.
+bids_describe_measurement <- function(filedata) {
+
+  paths <- filedata$path[filedata$measurement == "pet"]
+  if (length(paths) == 0) {
+    paths <- filedata$path
+  }
+  if (length(paths) == 0) {
+    return("this measurement")
+  }
+
+  paths[1]
+}
+
+# Read a JSON sidecar, returning NULL and reporting against the acquisition if it
+# cannot be parsed. Each caller runs once per acquisition, so raising would end
+# the whole study parse.
+bids_read_sidecar <- function(path, filedata, what) {
+  tryCatch(jsonlite::fromJSON(path), error = function(e) {
+    warning("The ", what, " for ", bids_describe_measurement(filedata),
+            " could not be read: ", conditionMessage(e),
+            call. = FALSE)
+    NULL
+  })
+}
+
+# Resolve the sidecars applying to one acquisition.
+#
+# bids_resolve_sidecars() raises when the dataset breaks the inheritance
+# principle -- more than one metadata file applicable at one directory level,
+# which the BIDS spec forbids outright. That is the right thing to refuse, but
+# it must cost one acquisition rather than the whole study: this runs once per
+# acquisition, so raising here would take every unrelated subject down with the
+# offending one. Same treatment as bids_associate_blood().
+bids_resolve_sidecars_for <- function(data_path, sidecar_paths, filedata) {
+  empty <- list(values = list(), provenance = character(0))
+  tryCatch(
+    bids_resolve_sidecars(data_path, sidecar_paths,
+                          sidecar_root = attr(filedata, "study_root")),
+    error = function(e) {
+      warning(conditionMessage(e),
+              "\nThe metadata for ", bids_describe_measurement(filedata),
+              " could not be resolved, so this measurement is excluded. The ",
+              "rest of the study is unaffected. Correcting the dataset is the ",
+              "fix: the BIDS inheritance principle allows at most one ",
+              "applicable metadata file per directory level.",
+              call. = FALSE)
+      empty
+    })
+}
+
 bids_parse_pettimes <- function(filedata) {
 
   if(!("pet" %in% filedata$measurement)) {
@@ -690,14 +830,43 @@ bids_parse_pettimes <- function(filedata) {
   ### Get the filenames ###
 
   json_pet <- filedata %>%
-    dplyr::filter(measurement=="pet" & extension=="json") %>%
-    dplyr::mutate(jsondat_pet = purrr::map(
-      path_absolute, jsonlite::fromJSON
-    ))
+    dplyr::filter(measurement=="pet" & extension=="json")
+
+  # Frame times come from the _pet.json sidecar. Report an acquisition that has
+  # none and return NA so it is dropped: this is mapped over every measurement,
+  # so raising would end the whole parse.
+  if (nrow(json_pet) == 0) {
+    warning("No _pet.json sidecar found for ", bids_describe_measurement(filedata),
+            ". Frame times cannot be determined, so this measurement is ",
+            "excluded. Every PET image needs an accompanying _pet.json.",
+            call. = FALSE)
+    return(NA)
+  }
 
   ### Extract the data ###
 
-  jsondat_pet <- purrr::flatten(json_pet$jsondat_pet)
+  # Merge the applicable sidecars nearest-last rather than flattening them, so a
+  # field set close to the data file wins and the result does not depend on the
+  # order the files were listed in.
+  data_file <- filedata$path[filedata$measurement == "pet" &
+                               filedata$extension %in% c("nii", "nii.gz")]
+  if (length(data_file) == 0) data_file <- json_pet$path
+  resolved <- bids_resolve_sidecars_for(data_file[1], json_pet$path, filedata)
+  jsondat_pet <- resolved$values
+
+  if (length(jsondat_pet) == 0) {
+    return(NA)
+  }
+
+  missing_fields <- setdiff(c("FrameTimesStart", "FrameDuration"),
+                            names(jsondat_pet))
+  if (length(missing_fields) > 0) {
+    warning("The _pet.json for ", bids_describe_measurement(filedata),
+            " is missing ", paste(missing_fields, collapse = " and "),
+            ". Frame times cannot be determined, so this measurement is ",
+            "excluded.", call. = FALSE)
+    return(NA)
+  }
 
   tacdata <- tibble::tibble(
     start = jsondat_pet$FrameTimesStart,
@@ -718,15 +887,31 @@ bids_parse_petinfo <- function(filedata) {
 
   ### Get the filenames ###
 
-  json_pet <- filedata %>%
-    dplyr::filter(measurement=="pet" & extension=="json") %>%
-    dplyr::mutate(jsondat_pet = purrr::map(
-      path_absolute, jsonlite::fromJSON
-    ))
+  json_pet <- dplyr::filter(filedata,
+                            measurement == "pet" & extension == "json")
+
+  if (nrow(json_pet) == 0) {
+    warning("No _pet.json sidecar found for ",
+            bids_describe_measurement(filedata),
+            ". This acquisition has no metadata; the rest of the study is ",
+            "unaffected.", call. = FALSE)
+    return(NA)
+  }
 
   ### Extract the data ###
 
-  jsondat_pet <- purrr::flatten(json_pet$jsondat_pet)
+  # Merge the applicable sidecars nearest-last rather than flattening them, so a
+  # field set close to the data file wins and the result does not depend on the
+  # order the files were listed in.
+  data_file <- filedata$path[filedata$measurement == "pet" &
+                               filedata$extension %in% c("nii", "nii.gz")]
+  if (length(data_file) == 0) data_file <- json_pet$path
+  resolved <- bids_resolve_sidecars_for(data_file[1], json_pet$path, filedata)
+  jsondat_pet <- resolved$values
+
+  if (length(jsondat_pet) == 0) {
+    return(NA)
+  }
 
   return(jsondat_pet)
 
@@ -750,8 +935,14 @@ bids_parse_petinfo <- function(filedata) {
 #' }
 bids_parse_study <- function(studypath) {
 
-  measurements <- bids_parse_files(studypath) %>%
-    dplyr::group_by(ses, sub, task, acq)
+  # One row per acquisition actually on disk. Grouping is by whichever selector
+  # entities this study uses -- naming them literally would fail on a study that
+  # has no task or no acq, which the previous parser hid by fabricating both.
+  measurements <- bids_parse_filenames(studypath)
+
+  grouping <- intersect(bids_selector_entities(), colnames(measurements))
+  measurements <- dplyr::group_by(measurements,
+                                  dplyr::across(dplyr::all_of(grouping)))
 
 
   measurements$petinfo <- purrr::map(measurements$filedata,
@@ -790,3 +981,779 @@ bids_parse_study <- function(studypath) {
 #     tidyr::unnest(matchdata)
 # }
 
+
+
+# --- Derivative parsing -------------------------------------------------------
+#
+# A derivatives folder is not a normal BIDS folder: with no PET images, there are
+# no acquisitions to enumerate, and the raw parser's inheritance and entity
+# grid do not apply to it. Using bids_parse_files() on one produces fabricated
+# entities -- a subject with no session directory comes back carrying ses-test.
+# These functions do filename grouping and nothing else.
+
+# The BIDS PET filename template, and thus the entities that identify which
+# acquisition a derivative belongs to. Deliberately hard-coded rather than
+# derived: an entity added here changes what counts as the same measurement.
+bids_selector_entities <- function() {
+  c("sub", "ses", "task", "trc", "rec", "run")
+}
+
+# Every "key-label" pair in a path or filename, in order of appearance.
+bids_path_entities <- function(x) {
+  m <- stringr::str_match_all(x, "(?:^|[_/])([a-z0-9]+)-([a-zA-Z0-9+]+)")[[1]]
+  if (nrow(m) == 0) {
+    return(stats::setNames(character(0), character(0)))
+  }
+  stats::setNames(m[, 3], m[, 2])
+}
+
+# The trailing token of a filename stem: "kinpar" in
+# sub-01_model-2TCM_desc-model1_kinpar.tsv. A stem whose last token is itself an
+# entity pair has no suffix.
+bids_filename_suffix <- function(basename) {
+  stem <- stringr::str_remove(basename, "\\.(tsv|json|nii\\.gz|nii)$")
+  last <- stringr::str_extract(stem, "[^_]+$")
+  if (is.na(last) || stringr::str_detect(last, "-")) NA_character_ else last
+}
+
+bids_compose_key <- function(entities, keys) {
+  keys <- keys[keys %in% names(entities)]
+  if (length(keys) == 0) {
+    return(NA_character_)
+  }
+  paste(paste0(keys, "-", entities[keys]), collapse = "_")
+}
+
+#' Parse the derivative files of a PET BIDS derivatives folder
+#'
+#' @description Returns one row per derivative file, with the keys needed to
+#'   join it to the acquisition it came from and to group the files that make up
+#'   a single product.
+#'
+#'   This is deliberately a narrower contract than BIDS Derivatives. It groups
+#'   by filename and does no inheritance, no entity grid and no acquisition
+#'   enumeration, because a derivatives folder contains no PET images to
+#'   enumerate. Running the raw parser over one instead invents entities: a
+#'   subject stored without a session directory comes back carrying whichever
+#'   session its neighbours happen to use, and then fails to join.
+#'
+#'   Three keys are returned per file:
+#'
+#'   \describe{
+#'     \item{`source_key`}{*Which acquisition?* The selector entities
+#'       (`sub`, `ses`, `task`, `trc`, `rec`, `run`) the file carries, with the
+#'       directory supplying any the filename omits. `NA` for group-level files.}
+#'     \item{`artifact_key`}{*Which product?* The source key plus every
+#'       remaining entity plus the suffix. A `.tsv` and its `.json` sidecar
+#'       describe one product and so share an artifact key.}
+#'     \item{`analysis_scope_key`}{*Which analysis?* Set for group-level files,
+#'       `NA` otherwise.}
+#'   }
+#'
+#'   Files with no `sub` are group-level results. They get no `source_key`, so
+#'   they cannot be joined to an acquisition by accident.
+#'
+#'   `.html` reports and any other non-data file are ignored: they are output
+#'   for people to read, not artifacts to join on, and they carry no entities to
+#'   tell them apart.
+#'
+#' @param path Path to the derivatives folder, e.g. a petfit analysis folder.
+#'
+#' @return A tibble with one row per derivative file: `path`, `path_absolute`,
+#'   `extension`, `suffix`, the three keys above, and a column per entity found.
+#' @export
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @examples
+#' \dontrun{
+#' derivatives <- bids_parse_derivatives("derivatives/petfit/analysis3")
+#' }
+bids_parse_derivatives <- function(path) {
+
+  if (!dir.exists(path)) {
+    stop("Derivatives folder not found: ", path, call. = FALSE)
+  }
+
+  relative <- list.files(path, recursive = TRUE)
+
+  # Data files only. Reports and other non-data files carry no entities, so
+  # every one of them would key identically to the rest.
+  relative <- relative[stringr::str_detect(relative, "\\.(tsv|json|nii\\.gz|nii)$")]
+
+  # Resolved once, outside the row loop: tibble() evaluates its arguments in its
+  # own scope, so referring to `path` there would pick up the path column rather
+  # than this argument.
+  root <- normalizePath(path, mustWork = FALSE)
+  scope <- basename(root)
+  selectors <- bids_selector_entities()
+
+  if (length(relative) == 0) {
+    return(tibble::tibble(
+      path = character(0), path_absolute = character(0),
+      extension = character(0), suffix = character(0),
+      source_key = character(0), artifact_key = character(0),
+      analysis_scope_key = character(0)
+    ))
+  }
+
+  parsed <- purrr::map(relative, function(rel) {
+
+    base <- basename(rel)
+    file_entities <- bids_path_entities(base)
+    dir_entities <- bids_path_entities(paste0(dirname(rel), "/"))
+
+    # A filename that names an entity outranks the directory it sits in.
+    conflicting <- intersect(names(file_entities), names(dir_entities))
+    conflicting <- conflicting[file_entities[conflicting] != dir_entities[conflicting]]
+
+    # The directory completes what the filename omits: petfit's derivatives put
+    # ses in the path but not the filename, and a filename-only key would not
+    # join for the subjects that have sessions.
+    #
+    # An entity a file does not name imposes no constraint on it: a weights file
+    # called sub-01_desc-weights_weights.tsv sitting beside trc-A and trc-B
+    # results applies to both. source_key is therefore whatever the file itself
+    # specifies, and matching it against acquisitions is a subset test rather
+    # than string equality. A derivatives folder holds no PET images, so that
+    # match cannot be resolved here.
+    completed <- file_entities
+    for (entity in names(dir_entities)) {
+      if (!entity %in% names(completed)) {
+        completed[entity] <- dir_entities[entity]
+      }
+    }
+
+    list(
+      rel = rel,
+      entities = completed,
+      conflicting = conflicting,
+      from_directory = setdiff(names(dir_entities), names(file_entities)),
+      extension = stringr::str_extract(base, "(nii\\.gz|tsv|json|nii)$"),
+      suffix = bids_filename_suffix(base)
+    )
+  })
+
+  conflicts <- purrr::keep(parsed, ~ length(.x$conflicting) > 0)
+  if (length(conflicts) > 0) {
+    detail <- purrr::map_chr(conflicts, function(p) {
+      paste0("  ", p$rel, " (disagrees on: ",
+             paste(p$conflicting, collapse = ", "), ")")
+    })
+    stop("A filename and the directory holding it name different values for ",
+         "the same entity, so the acquisition it belongs to is ambiguous:\n",
+         paste(detail, collapse = "\n"), call. = FALSE)
+  }
+
+  out <- purrr::map_dfr(parsed, function(p) {
+
+    entities <- p$entities
+    is_group <- !("sub" %in% names(entities))
+
+    source_key <- if (is_group) {
+      NA_character_
+    } else {
+      bids_compose_key(entities, selectors)
+    }
+
+    # Every remaining entity, so that an unfamiliar but valid one still
+    # separates two files rather than collapsing them into one identity.
+    qualifiers <- sort(setdiff(names(entities), selectors))
+
+    # The directories between the parse root and the subject folder. A
+    # derivatives tree can hold several analyses of the same acquisition, and
+    # without this they would be one artifact rather than several.
+    parts <- strsplit(p$rel, "/", fixed = TRUE)[[1]]
+    subject_at <- which(startsWith(parts, "sub-"))
+    path_scope <- if (length(subject_at) > 0) {
+      if (subject_at[1] > 1) paste(parts[seq_len(subject_at[1] - 1)], collapse = "/") else NA_character_
+    } else {
+      if (length(parts) > 1) paste(utils::head(parts, -1), collapse = "/") else NA_character_
+    }
+
+    artifact_key <- paste(stats::na.omit(c(
+      if (!is.na(path_scope)) path_scope else if (is_group) scope else NA_character_,
+      if (is_group) NA_character_ else source_key,
+      bids_compose_key(entities, qualifiers),
+      p$suffix
+    )), collapse = "_")
+
+    row <- tibble::tibble(
+      path = p$rel,
+      path_absolute = file.path(root, p$rel),
+      extension = p$extension,
+      suffix = p$suffix,
+      source_key = source_key,
+      artifact_key = artifact_key,
+      # The analysis a group-level file belongs to is the directory holding it
+      # within the parse root, not the root itself: parsing a parent of
+      # several analyses must not give their configs one shared scope.
+      analysis_scope_key = if (is_group) {
+        if (!is.na(path_scope)) path_scope else scope
+      } else {
+        NA_character_
+      }
+    )
+
+    for (entity in names(entities)) {
+      row[[entity]] <- unname(entities[entity])
+    }
+
+    row
+  })
+
+
+  out
+}
+
+
+
+# --- Measurement enumeration --------------------------------------------------
+
+# Does a file belong to a given acquisition?
+#
+# The subset rule: every selector entity the *file* names must match the
+# acquisition's value for it. A selector the file leaves out imposes no
+# constraint, so blood recorded once for a subject reaches both of that
+# subject's reconstructions, and a sidecar naming fewer entities than an image
+# applies to it -- ordinary inheritance. A file naming a selector the
+# acquisition does not have at all does not belong to it: blood claiming rec-A
+# cannot attach to an acquisition with no rec, and a task-ABC sidecar does not
+# describe an image that names no task. That last point is a settled decision
+# (14 Aug 2026): a sidecar specific enough to name an entity applies only to
+# data that names it too, per the BIDS inheritance principle.
+bids_file_belongs_to <- function(file_entities, pet_entities, selectors) {
+
+  claimed <- intersect(names(file_entities), selectors)
+
+  for (entity in claimed) {
+    if (!entity %in% names(pet_entities)) return(FALSE)
+    if (!identical(unname(file_entities[entity]),
+                   unname(pet_entities[entity]))) return(FALSE)
+  }
+
+  TRUE
+}
+
+#' Extract the measurements of a PET BIDS study from its filenames
+#'
+#' @description Returns one row per PET acquisition found on disk, with the
+#'   files belonging to it nested in `filedata`.
+#'
+#'   An acquisition's entities are exactly those its filename and directory
+#'   carry. Nothing is filled in: a study whose files name no `trc` has no `trc`
+#'   column, rather than a fabricated one. This matters because the previous
+#'   behaviour built a grid of every entity value against every other and kept
+#'   the combinations that matched a file, which invents acquisitions that do
+#'   not exist -- on a deliberately ragged 12-acquisition fixture it returns 192
+#'   measurements, giving subjects sessions and tracers belonging to their
+#'   neighbours.
+#'
+#'   An acquisition is any `_pet.nii`, `_pet.nii.gz` or `_pet.json` inside a
+#'   `pet/` directory; the image and its sidecar count once. Requiring `pet/`
+#'   excludes study-level inheritance sidecars such as `task-rest_pet.json`. A
+#'   `_pet.json` that applies as an inheritance sidecar to another acquisition
+#'   -- `sub-01_pet.json` beside `run-01` and `run-02` images -- is metadata for
+#'   those acquisitions, not one of its own. One that applies to no other
+#'   acquisition does count on its own, so a `_pet.json` whose image is not
+#'   found still yields a measurement -- most commonly one whose blood is
+#'   collected before the image is available.
+#'
+#'   Files are attached by the subset rule: every selector entity a file names
+#'   must match, and one it omits imposes no constraint. Blood recorded once
+#'   per subject therefore reaches every reconstruction of it, and a
+#'   study-level sidecar naming no entities reaches every image beneath it --
+#'   while blood naming a `rec` no acquisition has attaches to nothing, and a
+#'   `task-rest_pet.json` does not describe an image that names no task. The
+#'   rule is the same for data files and metadata: a file specific enough to
+#'   name an entity applies only to acquisitions that name it too.
+#'
+#' @param studypath The BIDS study path for the main study.
+#'
+#' @return A tibble with one row per acquisition: a column per entity the study
+#'   actually uses, and `filedata` holding that acquisition's files.
+#' @export
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @examples
+#' \dontrun{
+#' measurements <- bids_parse_filenames(studypath)
+#' }
+bids_parse_filenames <- function(studypath) {
+
+  selectors <- bids_selector_entities()
+  study_root <- normalizePath(studypath, mustWork = FALSE)
+
+  extensions <- paste(c("*.nii.gz", "*.nii", "*.tsv", "*.json"), collapse = "|")
+  files <- fs::dir_info(studypath, recurse = TRUE, type = "file",
+                        glob = extensions)
+
+  filedata <- tibble::tibble(
+    path_absolute = as.character(files$path),
+    path = as.character(fs::path_rel(files$path, studypath))
+  )
+
+  filedata <- filedata[!stringr::str_detect(
+    filedata$path, "^(derivatives|code|phenotype|sourcedata)/"), , drop = FALSE]
+
+  if (nrow(filedata) == 0) {
+    return(tibble::tibble())
+  }
+
+  filedata$extension <- ifelse(
+    stringr::str_detect(filedata$path, "\\.nii\\.gz$"), "nii.gz",
+    fs::path_ext(filedata$path))
+  filedata$measurement <- purrr::map_chr(basename(filedata$path),
+                                         ~ bids_filename_suffix(.x) %||% NA_character_)
+  filedata <- filedata[!is.na(filedata$measurement), , drop = FALSE]
+
+  file_entities <- purrr::map(filedata$path, bids_path_entities)
+
+  # filedata carries the entities describing the file rather than the
+  # acquisition: recording, desc, seg and the like. Consumers filter on them --
+  # bids_parse_blood() needs `recording`. The selectors are on the measurement
+  # row itself.
+  qualifiers <- setdiff(unique(unlist(lapply(file_entities, names))), selectors)
+  for (entity in qualifiers) {
+    filedata[[entity]] <- purrr::map_chr(file_entities, function(e) {
+      if (entity %in% names(e)) unname(e[entity]) else NA_character_
+    })
+  }
+
+  # One column per entity, so labels are compared entity by entity.
+  all_entities <- unique(unlist(lapply(file_entities, names)))
+  entity_table <- tibble::tibble(.rows = length(file_entities))
+  for (entity in all_entities) {
+    entity_table[[entity]] <- purrr::map_chr(file_entities, function(e) {
+      if (entity %in% names(e)) unname(e[entity]) else NA_character_
+    })
+  }
+  bids_warn_case_collisions(entity_table)
+
+  # An acquisition is a _pet.* file inside pet/. The image and its sidecar are
+  # the same acquisition, so they collapse to one entry.
+  is_pet <- filedata$measurement == "pet" &
+    stringr::str_detect(filedata$path, "(^|/)pet/") &
+    filedata$extension %in% c("nii", "nii.gz", "json")
+
+  if (!any(is_pet)) {
+    return(tibble::tibble())
+  }
+
+  pet_entities <- file_entities[is_pet]
+  pet_keys <- purrr::map_chr(pet_entities, function(e) {
+    bids_compose_key(e, selectors[selectors %in% names(e)])
+  })
+
+  # Two images for one acquisition cannot be told apart, so refuse rather than
+  # keeping whichever comes first.
+  images <- filedata$extension[is_pet] %in% c("nii", "nii.gz")
+  duplicated_images <- unique(pet_keys[images][duplicated(pet_keys[images])])
+  if (length(duplicated_images) > 0) {
+    offenders <- filedata$path[is_pet][images][pet_keys[images] %in% duplicated_images]
+    stop("More than one PET image describes the same acquisition:\n",
+         paste0("  ", offenders, collapse = "\n"),
+         "\nEach acquisition needs entities that tell it apart from the others.",
+         call. = FALSE)
+  }
+
+  keep <- !duplicated(pet_keys)
+  measurements_entities <- pet_entities[keep]
+  measurement_keys <- pet_keys[keep]
+  has_image <- measurement_keys %in% pet_keys[images]
+
+  # A _pet.json inside pet/ is not necessarily an acquisition: BIDS inheritance
+  # lets one sidecar serve several images, so sub-01_pet.json beside run-01 and
+  # run-02 describes both runs rather than a third, run-less scan. A json-only
+  # entry is therefore an acquisition only if it does not apply as a sidecar to
+  # another acquisition -- one with an image, or a json-only one it is less
+  # specific than. A _pet.json matching no image at all still counts: an
+  # acquisition whose image is not found (most commonly, blood collected
+  # before the image is available) remains a measurement.
+  selector_count <- vapply(measurements_entities, function(e) {
+    length(intersect(names(e), selectors))
+  }, integer(1))
+
+  is_inherited_sidecar <- vapply(seq_along(measurements_entities), function(i) {
+    if (has_image[i]) return(FALSE)
+    for (j in seq_along(measurements_entities)) {
+      if (j == i) next
+      if (!has_image[j] && selector_count[j] <= selector_count[i]) next
+      if (bids_file_belongs_to(measurements_entities[[i]],
+                               measurements_entities[[j]], selectors)) {
+        return(TRUE)
+      }
+    }
+    FALSE
+  }, logical(1))
+
+  measurements_entities <- measurements_entities[!is_inherited_sidecar]
+
+  used <- unique(unlist(lapply(measurements_entities, names)))
+  used <- selectors[selectors %in% used]
+
+  pet_paths <- filedata$path[is_pet]
+
+  out <- purrr::map_dfr(seq_along(measurements_entities), function(i) {
+
+    entities <- measurements_entities[[i]]
+
+    row <- tibble::tibble(.rows = 1)
+    for (entity in used) {
+      row[[entity]] <- if (entity %in% names(entities)) {
+        unname(entities[entity])
+      } else {
+        NA_character_
+      }
+    }
+
+    belongs <- purrr::map_lgl(file_entities,
+                              bids_file_belongs_to, entities, selectors)
+
+    # The acquisition's identity travels with its files as attributes, so
+    # bids_create_blooddata() keeps taking a bare table. A hand-built one works
+    # too; it simply has no key to name itself with in messages.
+    acquisition_files <- filedata[belongs, , drop = FALSE]
+    key <- bids_compose_key(entities, selectors[selectors %in% names(entities)])
+    attr(acquisition_files, "pet_key") <- key
+    attr(acquisition_files, "study_root") <- study_root
+
+    # The directory anchoring this acquisition's blood: where its *own* _pet.*
+    # files sit (the image's directory when there is one). Inferring it later
+    # from every attached pet file would include inherited sidecars from
+    # parent scopes, letting subject-level blood pass for a session
+    # acquisition.
+    own <- !is.na(pet_keys) & pet_keys == key
+    anchor <- if (any(own & images)) {
+      pet_paths[own & images]
+    } else {
+      pet_paths[own]
+    }
+    attr(acquisition_files, "pet_dir") <- unique(dirname(anchor))
+
+    row$filedata <- list(acquisition_files)
+
+    row
+  })
+
+  out
+}
+
+
+# --- Blood association --------------------------------------------------------
+
+#' Associate blood files with a PET acquisition
+#'
+#' @description Works out which blood files belong to one acquisition, and
+#'   refuses the combinations that cannot be resolved.
+#'
+#'   BIDS requires blood to live beside the PET data it belongs to -- the same
+#'   `pet/` directory as the acquisition's own `_pet.*` files, not merely some
+#'   `pet/` directory -- and to carry a `recording` entity, so both are
+#'   enforced here. Several recordings for one acquisition are normal and
+#'   expected -- manual samples alongside an autosampler is explicitly
+#'   permitted -- but two complete file pairs claiming the *same* recording
+#'   cannot both be it, and a json pairs with a tsv only if every entity the
+#'   json names is named by the tsv with the same value.
+#'
+#'   For an acquisition with no blood, the
+#'   returned table is simply empty, and its `excluded` attribute says what was
+#'   left out of the *blood association*, so that "this scan has no blood" can
+#'   be told apart from "this scan's blood failed to attach".
+#'
+#' @param filedata The files belonging to one acquisition, as nested by
+#'   [bids_parse_filenames()]. Its `pet_key` attribute, if present, is used to
+#'   name the acquisition in messages.
+#'
+#' @return A tibble with one row per recording: `recording`, `tsv`, `json`. Zero
+#'   rows when the acquisition has no usable blood, carrying an `excluded`
+#'   attribute explaining which case it is. That refers to the blood, not the
+#'   acquisition, which remains perfectly usable without it.
+#' @export
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @examples
+#' \dontrun{
+#' blood <- bids_associate_blood(measurements$filedata[[1]])
+#' }
+bids_associate_blood <- function(filedata) {
+
+  key <- attr(filedata, "pet_key")
+  if (is.null(key) || is.na(key)) key <- "this acquisition"
+
+  empty <- function(reason) {
+    out <- tibble::tibble(recording = character(0),
+                          tsv = character(0),
+                          json = character(0))
+    attr(out, "excluded") <- reason
+    out
+  }
+
+  if (is.null(filedata) || nrow(filedata) == 0 ||
+      !("blood" %in% filedata$measurement)) {
+    return(empty("no blood files"))
+  }
+
+  blood <- filedata[filedata$measurement == "blood", , drop = FALSE]
+
+  # Spec-mandated: blood belongs in the acquisition's pet/ directory.
+  misplaced <- blood$path[!stringr::str_detect(blood$path, "(^|/)pet/")]
+  if (length(misplaced) > 0) {
+    stop("Blood files for ", key, " are outside a pet/ directory:\n",
+         paste0("  ", misplaced, collapse = "\n"),
+         "\nBIDS places blood recordings alongside the PET data they belong to.",
+         call. = FALSE)
+  }
+
+  # And not merely any pet/ directory: the one holding this acquisition's own
+  # _pet.* files. Without this, subject-level blood under sub-01/pet/ attaches
+  # to an acquisition under sub-01/ses-01/pet/, silently crossing scope. The
+  # anchor comes from bids_parse_filenames(), which knows which pet files are
+  # the acquisition's own; inferring it here from every attached pet file
+  # would count inherited sidecars from parent scopes as anchors too.
+  pet_dirs <- attr(filedata, "pet_dir")
+  if (is.null(pet_dirs) || length(pet_dirs) == 0) {
+    # A hand-built table carries no anchor attribute; fall back to the pet
+    # files it holds.
+    pet_dirs <- unique(dirname(filedata$path[filedata$measurement == "pet"]))
+    pet_dirs <- pet_dirs[stringr::str_detect(pet_dirs, "(^|/)pet$")]
+  }
+  if (length(pet_dirs) > 0) {
+    astray <- blood$path[!dirname(blood$path) %in% pet_dirs]
+    if (length(astray) > 0) {
+      stop("Blood files for ", key, " are not beside its PET data (",
+           paste(pet_dirs, collapse = ", "), "):\n",
+           paste0("  ", astray, collapse = "\n"),
+           "\nBIDS places blood recordings alongside the PET data they belong ",
+           "to, in the same directory.", call. = FALSE)
+    }
+  }
+
+  # Spec-mandated: recording distinguishes one blood recording from another.
+  if (!"recording" %in% colnames(blood)) {
+    blood$recording <- NA_character_
+  }
+  unlabelled <- blood$path[is.na(blood$recording)]
+  if (length(unlabelled) > 0) {
+    stop("Blood files for ", key, " carry no recording entity:\n",
+         paste0("  ", unlabelled, collapse = "\n"),
+         "\nWithout it there is no way to tell one recording from another.",
+         call. = FALSE)
+  }
+
+  recordings <- sort(unique(blood$recording))
+
+  pairs <- purrr::map_dfr(recordings, function(recording) {
+
+    this <- blood[blood$recording == recording, , drop = FALSE]
+    tsv <- this$path_absolute[this$extension == "tsv"]
+    json <- this$path_absolute[this$extension == "json"]
+
+    # Several recordings per acquisition are fine, and so are files that differ
+    # by a selector entity: run-01 and run-02 blood belong to different
+    # acquisitions and are never compared here, because filedata holds one
+    # acquisition's files. What cannot be resolved is two files claiming the
+    # same recording of the *same* acquisition.
+    if (length(tsv) > 1 || length(json) > 1) {
+      stop("More than one blood file pair for ", key,
+           " claims recording-", recording, ":\n",
+           paste0("  ", this$path, collapse = "\n"),
+           "\nGive them distinct recording labels.", call. = FALSE)
+    }
+
+    # A sidecar describes the tsv it names: every entity the json carries must
+    # be carried by the tsv with the same value (naming fewer is fine). A
+    # rec-A json beside a tsv that names no rec may describe different data,
+    # so recording alone is not enough to pair them.
+    if (length(tsv) == 1 && length(json) == 1) {
+      tsv_entities <- bids_path_entities(basename(this$path[this$extension == "tsv"]))
+      json_entities <- bids_path_entities(basename(this$path[this$extension == "json"]))
+      extra <- setdiff(names(json_entities), names(tsv_entities))
+      shared <- intersect(names(json_entities), names(tsv_entities))
+      mismatched <- shared[json_entities[shared] != tsv_entities[shared]]
+      disagreeing <- c(extra, mismatched)
+      if (length(disagreeing) > 0) {
+        warning("The blood json for ", key, ", recording-", recording,
+                " names ", paste(disagreeing, collapse = ", "),
+                " differently from its tsv, so it is not treated as that ",
+                "tsv's sidecar:\n",
+                paste0("  ", this$path, collapse = "\n"),
+                call. = FALSE)
+        json <- character(0)
+      }
+    }
+
+    tibble::tibble(
+      recording = recording,
+      tsv = if (length(tsv)) tsv else NA_character_,
+      json = if (length(json)) json else NA_character_
+    )
+  })
+
+  # Every incomplete recording is reported, whether or not another recording is
+  # complete: an autosampler tsv missing its json must not vanish in silence
+  # just because the manual samples are fine.
+  incomplete <- pairs[is.na(pairs$tsv) | is.na(pairs$json), , drop = FALSE]
+  if (nrow(incomplete) > 0) {
+    warning("Blood for ", key,
+            " without a complete tsv/json pair, skipped:\n",
+            paste0("  recording-", incomplete$recording,
+                   ifelse(is.na(incomplete$tsv), " missing tsv", " missing json"),
+                   collapse = "\n"), call. = FALSE)
+  }
+
+  complete <- pairs[!is.na(pairs$tsv) & !is.na(pairs$json), , drop = FALSE]
+
+  if (nrow(complete) == 0) {
+    return(empty(paste0(
+      "blood files present but no complete tsv/json pair (",
+      paste0("recording-", pairs$recording,
+             ifelse(is.na(pairs$tsv), " missing tsv", " missing json"),
+             collapse = "; "), ")")))
+  }
+
+  complete
+}
+
+
+# --- Sidecar resolution -------------------------------------------------------
+
+# Is a sidecar applicable to a data file?
+#
+# Three conditions: the same suffix, a directory that is an ancestor of the data
+# file's, and every entity the sidecar names also named by the data file with the
+# same value.
+#
+# The last condition can be relaxed for the entities in `lenient`, an opt-in
+# that defaults to none: per the BIDS inheritance principle -- and the settled
+# decision (14 Aug 2026) -- a sidecar specific enough to name an entity
+# applies only to data that names it too. Attaching e.g. the wrong tracer's
+# sidecar would silently supply the wrong half-life and injected dose.
+bids_sidecar_applies <- function(sidecar_path, data_path, lenient) {
+
+  if (!identical(bids_filename_suffix(basename(sidecar_path)),
+                 bids_filename_suffix(basename(data_path)))) {
+    return("suffix differs")
+  }
+
+  sidecar_dir <- dirname(sidecar_path)
+  data_dir <- dirname(data_path)
+  ancestor <- sidecar_dir == "." || sidecar_dir == data_dir ||
+    startsWith(paste0(data_dir, "/"), paste0(sidecar_dir, "/"))
+  if (!ancestor) {
+    return("not in a parent directory of the data file")
+  }
+
+  sidecar_entities <- bids_path_entities(sidecar_path)
+  data_entities <- bids_path_entities(data_path)
+
+  for (entity in names(sidecar_entities)) {
+    if (!entity %in% names(data_entities)) {
+      if (entity %in% lenient) next
+      return(paste0("names ", entity, "-", sidecar_entities[entity],
+                    ", which the data file does not"))
+    }
+    if (!identical(unname(sidecar_entities[entity]),
+                   unname(data_entities[entity]))) {
+      return(paste0("names ", entity, "-", sidecar_entities[entity],
+                    " but the data file names ", entity, "-",
+                    data_entities[entity]))
+    }
+  }
+
+  NA_character_
+}
+
+#' Resolve the metadata sidecars applying to a data file
+#'
+#' @description Merge the JSON sidecars that apply to one data file, nearest
+#'   directory last, and report where each field came from.
+#'
+#'   Merging is key by key from the study root inwards, so a field set close to
+#'   the data file overrides the same field set further out, and fields set only
+#'   at the root are inherited. Two applicable sidecars in the same directory are
+#'   refused: nothing distinguishes them, and picking by enumeration order makes
+#'   the frame times depend on how the filesystem happens to list files.
+#'
+#'   Every sidecar that does not apply is reported, with the reason.
+#'
+#' @param data_path Path of the data file, relative to the study root.
+#' @param sidecar_paths Candidate sidecar paths, relative to the same root.
+#' @param sidecar_root Optional directory to prepend when reading the files.
+#' @param lenient Entities a sidecar may name that the data file does not.
+#'   Defaults to none: per the BIDS inheritance principle, a sidecar applies
+#'   only to data that names every entity the sidecar names. Pass e.g.
+#'   `c("task", "rec")` to opt in for a study that needs it.
+#'
+#' @return A list with `values`, the merged fields, and `provenance`, naming the
+#'   sidecar each field came from.
+#' @export
+#'
+#' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @examples
+#' \dontrun{
+#' bids_resolve_sidecars("sub-01/ses-test/pet/sub-01_ses-test_pet.nii.gz",
+#'                       c("task-rest_pet.json",
+#'                         "sub-01/ses-test/pet/sub-01_ses-test_pet.json"))
+#' }
+bids_resolve_sidecars <- function(data_path, sidecar_paths, sidecar_root = NULL,
+                                  lenient = character(0)) {
+
+  empty <- list(values = list(), provenance = character(0))
+
+  if (length(sidecar_paths) == 0) {
+    return(empty)
+  }
+
+  reasons <- vapply(sidecar_paths, bids_sidecar_applies, character(1),
+                    data_path, lenient, USE.NAMES = FALSE)
+
+  skipped <- !is.na(reasons)
+  if (any(skipped)) {
+    warning("Sidecars not applied to ", data_path, ":\n",
+            paste0("  ", sidecar_paths[skipped], " -- ", reasons[skipped],
+                   collapse = "\n"), call. = FALSE)
+  }
+
+  applicable <- sidecar_paths[!skipped]
+  if (length(applicable) == 0) {
+    return(empty)
+  }
+
+  depth <- lengths(strsplit(applicable, "/", fixed = TRUE))
+
+  duplicated_depth <- unique(depth[duplicated(depth)])
+  if (length(duplicated_depth) > 0) {
+    clashing <- applicable[depth %in% duplicated_depth]
+    stop("More than one sidecar applies to ", data_path,
+         " from the same directory:\n",
+         paste0("  ", clashing, collapse = "\n"),
+         "\nNothing distinguishes them, so which one wins would depend on the ",
+         "order the files are listed in.", call. = FALSE)
+  }
+
+  applicable <- applicable[order(depth)]
+
+  values <- list()
+  provenance <- character(0)
+
+  for (sidecar in applicable) {
+    full <- if (is.null(sidecar_root)) sidecar else file.path(sidecar_root, sidecar)
+    fields <- tryCatch(jsonlite::fromJSON(full), error = function(e) {
+      warning("The sidecar ", sidecar, " could not be read: ",
+              conditionMessage(e), call. = FALSE)
+      NULL
+    })
+    if (is.null(fields) || length(fields) == 0) next
+
+    for (key in names(fields)) {
+      values[[key]] <- fields[[key]]
+      provenance[key] <- sidecar
+    }
+  }
+
+  list(values = values, provenance = provenance)
+}

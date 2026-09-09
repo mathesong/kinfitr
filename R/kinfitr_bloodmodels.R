@@ -725,7 +725,9 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
 #' @param multstart_upper Optional. The upper limits of the starting parameters.
 #' @param multstart_iter The number of fits to perform with different starting
 #'   parameters. If set to 1, then the starting parameters will be used for a
-#'   single fit.
+#'   single fit. Otherwise a single number selects the starting values by
+#'   improved Latin hypercube sampling over the multstart bounds rather than at
+#'   random, while one value per parameter forms a Cartesian grid.
 #' @param Method_weights If no weights provided, should the weights be divided
 #'   by discrete and continuous samples equally (i.e. with more continuous
 #'   samples, the continuous samples each get less weight). Default is TRUE.
@@ -744,6 +746,39 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
 #'   choosing starting parameters for the exponential decay. Defaults to 1/60
 #'   and 1/10, i.e. start to 1/60, 1/60 to 1/10 and 1/10 to end. If fitting only
 #'   two exponentials, the second value will be used.
+#' @param rise How should the rise of the curve be described? The default,
+#'   "linear", fits a straight line from \code{t0} to the peak as part of the
+#'   nonlinear model. With "interp", the rise is instead described by linear
+#'   interpolation through the measured samples before the peak, and only the
+#'   decay is fitted. This is more robust, but less flexible.
+#'
+#' @details With \code{rise = "interp"}, the interpolated rise passes exactly
+#'   through the measured samples, so it contributes nothing to the residuals,
+#'   and \code{t0}, \code{peaktime} and \code{peakval} cannot be identified
+#'   from the fit. The exponentials are therefore fitted to the samples after
+#'   the peak only, and \code{fit_t0}, \code{fit_peaktime} and
+#'   \code{fit_peakval} are all set to FALSE: the rise is interpolated from
+#'   (0, 0), the peak is taken from the measured data, and \code{peakval_set}
+#'   still chooses between the measured peak value (TRUE) and A+B+C (FALSE).
+#'   A copy of the peak sample, displaced marginally past the peak, is included
+#'   in the fitted data so that it anchors A+B+C: at the peak itself the sample
+#'   falls in the rise, where its residual is identically zero. This extra
+#'   sample is not part of the returned \code{blood}, and so does not appear
+#'   among the predicted values.
+#'
+#'   \code{peaktime_val} may still be set, and then defines both the end of
+#'   the rise and the split between the rise and the decay. Note though that
+#'   with \code{peakval_set = TRUE} the peak value is taken from the maximum of
+#'   the measured data, so setting a peaktime away from that maximum describes a
+#'   peak which was never measured.
+#'
+#'   Because the rise is data rather than parameters, an interpolated fit is not
+#'   fully described by \code{par}, whose nine values then describe only the
+#'   linear approximation of the same curve. The samples which the rise is
+#'   interpolated through are returned separately, as \code{rise_samples}. Such
+#'   fits must therefore be added to a blooddata object using
+#'   \code{bd_addfit()}, which stores the fit itself. \code{bd_addfitpars()}
+#'   stores only the parameters, and so cannot describe them.
 #'
 #' @return A model fit including all of the individual parameters, fit details,
 #'   and model fit object of class blood_exp.
@@ -756,6 +791,12 @@ blmod_exp_startpars <- function(time, activity, fit_exp3=TRUE,
 #' blood_fit <- blmod_exp(aif$time,
 #'                            aif$aif,
 #'                            Method = aif$Method, multstart_iter = 1)
+#'
+#' # With the rise interpolated through the measured samples
+#' blood_fit <- blmod_exp(aif$time,
+#'                            aif$aif,
+#'                            Method = aif$Method, multstart_iter = 1,
+#'                            rise = "interp")
 blmod_exp <- function(time, activity, Method = NULL,
                          weights = NULL,
                          fit_t0=TRUE, fit_exp3=TRUE,
@@ -771,7 +812,30 @@ blmod_exp <- function(time, activity, Method = NULL,
                          taper_weights = TRUE,
                          weightscheme=2,
                          check_startpars = FALSE,
-                         expdecay_props = c(1/60, 0.1)) {
+                         expdecay_props = c(1/60, 0.1),
+                         rise = c("linear", "interp")) {
+
+  rise <- match.arg(rise)
+
+  # The interpolated rise passes exactly through the measured samples, so it
+  # contributes nothing to the residuals: only the decay is fitted, and t0,
+  # peaktime and peakval cannot be identified from it.
+  if (rise == "interp") {
+    if (fit_peaktime) {
+      warning("fit_peaktime is not possible with rise = \"interp\", since the
+              peak is taken from the measured data. Setting it to FALSE.")
+      fit_peaktime <- FALSE
+    }
+
+    if (fit_peakval) {
+      warning("fit_peakval is not possible with rise = \"interp\". Setting it
+              to FALSE: use peakval_set to choose between the measured peak
+              value (TRUE) and A+B+C (FALSE).")
+      fit_peakval <- FALSE
+    }
+
+    fit_t0 <- FALSE  # the rise is interpolated from (0, 0)
+  }
 
 
   # Tidy up
@@ -782,6 +846,14 @@ blmod_exp <- function(time, activity, Method = NULL,
                                           Method_weights = Method_weights,
                                           taper_weights = taper_weights,
                                           weightscheme = weightscheme)
+  }
+
+  # Checked here, before the starting parameters, which would otherwise fail
+  # first and less helpfully
+  if (rise == "interp" &&
+      !any(blood$time > blood$time[which.max(blood$activity)])) {
+    stop("There are no samples after the peak, so there is no decay to fit.
+         Fitting with rise = \"interp\" requires samples after the peak.")
   }
 
 
@@ -810,6 +882,13 @@ blmod_exp <- function(time, activity, Method = NULL,
   if(is.null(upper)) {
     upper <- purrr::map(startvals, ~(.x + abs(.x*2)))
     upper$t0 <- startvals$peaktime
+
+    # A is bounded below at half of the peak value, which three times the
+    # peeled starting value can fall short of. The peak is the natural scale
+    # for the amplitudes, so it is used as the ceiling when it is the larger
+    # of the two: otherwise the bounds cross, and A is silently pinned to one
+    # of them rather than being fitted.
+    upper$A <- max(upper$A, startvals$peakval)
   }
 
 
@@ -851,25 +930,75 @@ blmod_exp <- function(time, activity, Method = NULL,
     start$peakval <- NULL
   }
 
-  if(is.null(multstart_lower)) {
-    multstart_lower <- lower
+
+  # Set up the data to be fitted, and the samples the rise runs through
+  fitdata <- blood
+  rise_samples <- NULL
+
+  if (rise == "interp") {
+
+    ## The rise is interpolated through the measured samples before the peak.
+    ## As in blmod_splines() and
+    ## blood_weights_create(), pre-peak discrete samples are not trusted when
+    ## continuous sampling is available.
+    prepeak <- blood[blood$time < peaktime_val, ]
+
+    if (all(c("Continuous", "Discrete") %in% blood$Method)) {
+      prepeak <- prepeak[prepeak$Method == "Continuous", ]
+    }
+
+    prepeak <- prepeak[order(prepeak$time), ]
+    prepeak <- prepeak[!duplicated(prepeak$time), ]  # interp1 warns on ties
+
+    rise_samples <- tibble::tibble(time = prepeak$time,
+                                   activity = prepeak$activity)
+
+    ## Only the decay is fitted
+    postpeak <- blood[blood$time > peaktime_val, ]
+
+    if (nrow(postpeak) < (length(start) + 1)) {
+      stop("There are only ", nrow(postpeak), " samples after the peak, which
+           is too few to fit ", length(start), " decay parameters. Consider
+           fit_exp3 = FALSE, or rise = \"linear\".")
+    }
+
+    ## Re-use the peak sample in the decay so that it anchors A+B+C: at the
+    ## peak itself, the sample falls in the rise, where its residual is
+    ## identically zero (cf. the -0.001 nudge in blmod_splines). One row only,
+    ## since duplicating the peak from both Methods would double-weight it,
+    ## and the continuous sample is preferred because its weight is untapered
+    ## at the peak, where peakfrac is 0.
+    peakrow <- blood[blood$time == peaktime_val, ]
+
+    if (nrow(peakrow) == 0) {
+      peakrow <- blood[which.min(abs(blood$time - peaktime_val)), ]
+    }
+
+    if (nrow(peakrow) > 1 && any(peakrow$Method == "Continuous")) {
+      peakrow <- peakrow[peakrow$Method == "Continuous", ]
+    }
+
+    peakrow <- peakrow[which.max(peakrow$activity), ]
+
+    ## peakval is taken from the maximum of the measured data, so a peaktime
+    ## set away from it describes a peak which was never measured.
+    if (peakval_set && peakrow$activity < max(blood$activity)) {
+      warning("peaktime_val is not the time of the maximum of the measured
+              data, but peakval is taken from that maximum: the interpolated
+              rise will therefore rise to a peak which was not measured.
+              Consider peakval_set = FALSE.")
+    }
+
+    peakrow$time <- peaktime_val +
+      min(0.001, 0.1 * (min(postpeak$time) - peaktime_val))
+
+    fitdata <- rbind(peakrow, postpeak)
+    fitdata <- fitdata[order(fitdata$time), ]
   }
 
-  if(is.null(multstart_upper)) {
-    multstart_upper <- upper
-  }
 
-  lower <- as.numeric(as.data.frame(lower))
-  upper <- as.numeric(as.data.frame(upper))
-
-  multstart_lower <- as.numeric(as.data.frame(multstart_lower))
-  multstart_upper <- as.numeric(as.data.frame(multstart_upper))
-
-
-  if(check_startpars) {
-    out <- list(start = start, startvals = startvals)
-    return(out)
-  }
+  multstart_lower <- prune_pars(multstart_lower, names(start), "multstart_lower")
+  multstart_upper <- prune_pars(multstart_upper, names(start), "multstart_upper")
 
 
   # Set up the formula
@@ -885,10 +1014,63 @@ blmod_exp <- function(time, activity, Method = NULL,
                    sep = "")
 
 
+  # The bounds are passed to the fitting functions as positional vectors, and
+  # nls_multstart takes the parameters to be estimated from the order in which
+  # they appear in the formula. That is not the order in which
+  # blmod_exp_startpars() returns them when peakval is defined as A+B+C, which
+  # puts A, B and C ahead of the rates, so the bounds are put into formula
+  # order here. A no-op whenever the two orders already agree, which is the
+  # case for every other combination of arguments.
+  parorder <- all.vars(as.formula(formula)[[3]])
+  parorder <- parorder[parorder %in% names(start)]
+
+  if (!identical(parorder, names(start))) {
+    start <- order_pars(start, parorder, "start")
+    lower <- order_pars(lower, parorder, "lower")
+    upper <- order_pars(upper, parorder, "upper")
+    multstart_lower <- order_pars(multstart_lower, parorder, "multstart_lower")
+    multstart_upper <- order_pars(multstart_upper, parorder, "multstart_upper")
+  }
+
+
+  if(is.null(multstart_lower)) {
+    multstart_lower <- lower
+  }
+
+  if(is.null(multstart_upper)) {
+    multstart_upper <- upper
+  }
+
+  lower <- as.numeric(as.data.frame(lower))
+  upper <- as.numeric(as.data.frame(upper))
+
+  multstart_lower <- as.numeric(as.data.frame(multstart_lower))
+  multstart_upper <- as.numeric(as.data.frame(multstart_upper))
+
+  if (any(upper < lower)) {
+    stop("The upper bounds for ",
+         paste(names(start)[upper < lower], collapse = ", "),
+         " are below their lower bounds. Parameters bounded this way are not
+         fitted, but silently pinned to one of the bounds.")
+  }
+
+  # The starting parameters are drawn from between multstart_lower and
+  # multstart_upper, and have to fall inside the bounds which the fit itself is
+  # given: nls.lm can crash outright when handed a starting value outside them.
+  multstart_lower <- pmax(multstart_lower, lower)
+  multstart_upper <- pmin(multstart_upper, upper)
+
+
+  if(check_startpars) {
+    out <- list(start = start, startvals = startvals)
+    return(out)
+  }
+
+
   # Fit the model, with normal NLS or with multstart
   if( multstart_iter == 1 ) {
     modelout <- minpack.lm::nlsLM(as.formula(formula),
-                      data = blood,
+                      data = fitdata,
                       lower = lower,
                       upper = upper,
                       start = start,
@@ -896,7 +1078,7 @@ blmod_exp <- function(time, activity, Method = NULL,
   } else {
 
     modelout_single <- try(minpack.lm::nlsLM(as.formula(formula),
-                                  data = blood,
+                                  data = fitdata,
                                   lower = lower,
                                   upper = upper,
                                   start = start,
@@ -910,7 +1092,7 @@ blmod_exp <- function(time, activity, Method = NULL,
 
     multmodelout_multi <- nls.multstart::nls_multstart(
       formula = as.formula(formula), modelweights = weights,
-      data = blood, iter = multstart_iter,
+      data = fitdata, iter = multstart_iter, lhstype = "improved",
       start_lower = multstart_lower, start_upper = multstart_upper,
       supp_errors = "Y", lower = lower, upper = upper)
 
@@ -972,7 +1154,8 @@ blmod_exp <- function(time, activity, Method = NULL,
       fit_exp3 = fit_exp3,
       fit_peaktime = fit_peaktime,
       fit_peakval = fit_peakval,
-      peakval_set = peakval_set
+      peakval_set = peakval_set,
+      rise = rise
     ))
 
   out <- list(
@@ -982,6 +1165,7 @@ blmod_exp <- function(time, activity, Method = NULL,
     lower = lower,
     upper = upper,
     fit_details = fit_details,
+    rise_samples = rise_samples,
     blood = blood
   )
 
@@ -1262,14 +1446,30 @@ blmod_exp <- function(time, activity, Method = NULL,
 #' @param beta The rate of the second exponential.
 #' @param C The multiplier of the third exponential.
 #' @param gamma The rate of the third exponential.
+#' @param risetime Optional. The times of the measured samples through which the
+#'   rise should be linearly interpolated. If NULL (the default), the rise is
+#'   described instead by a straight line from \code{t0} to the peak.
+#' @param riseval Optional. The measured activity values corresponding to
+#'   \code{risetime}. Only the samples strictly between \code{t0} and
+#'   \code{peaktime} are used: the points \code{(t0, 0)} and
+#'   \code{(peaktime, peakval)} are added by this function, so that the
+#'   interpolated rise always starts at \code{t0} and meets the decay at the
+#'   peak.
 #'
 #' @return Model predictions
 #' @export
 #'
 #' @examples
 #' blmod_triexp_model(1:100, 2, 5, 100, 80, 0.5, 15, 0.1, 5, 0.01)
+#'
+#' # With the rise interpolated through measured samples instead
+#' blmod_triexp_model(1:100, 2, 5, 100, 80, 0.5, 15, 0.1, 5, 0.01,
+#'                    risetime = c(3, 4), riseval = c(30, 80))
 blmod_triexp_model <- function(time, t0, peaktime, peakval, A, alpha,
-                               B, beta, C, gamma) {
+                               B, beta, C, gamma,
+                               risetime = NULL, riseval = NULL) {
+
+  check_time_sorted(time)
 
   tcorr <- time - t0
   peaktime <- peaktime - t0
@@ -1285,7 +1485,40 @@ blmod_triexp_model <- function(time, t0, peaktime, peakval, A, alpha,
   Cpl_0_t0 <- rep(0, length.out = length(t_before))
 
   # Rise to the peak
-  Cpl_t0_peaktime <- (peakval / peaktime) * t_beforepeak
+  ## Note: peaktime and t_beforepeak are in t0-shifted coordinates here.
+  if (length(risetime) == 0) {
+    Cpl_t0_peaktime <- (peakval / peaktime) * t_beforepeak
+  } else if (length(t_beforepeak) == 0) {
+    Cpl_t0_peaktime <- numeric(0)
+  } else {
+    ## Only the samples strictly inside the rise are used: (0, 0) and
+    ## (peaktime, peakval) are added here, so that the interpolated rise
+    ## always starts at t0 and meets the decay at the peak, whether peakval is
+    ## the measured maximum or A+B+C.
+    risetime_corr <- risetime - t0
+    keep <- risetime_corr > 0 & risetime_corr < peaktime
+    rise_t <- c(0, risetime_corr[keep], peaktime)
+    rise_a <- c(0, riseval[keep], peakval)
+
+    ## interp1() stops on unsorted or tied times
+    rise_order <- order(rise_t)
+    rise_t <- rise_t[rise_order]
+    rise_a <- rise_a[rise_order]
+
+    rise_dup <- duplicated(rise_t)
+    rise_t <- rise_t[!rise_dup]
+    rise_a <- rise_a[!rise_dup]
+
+    if (length(rise_t) < 2) {  # i.e. peaktime == t0
+      Cpl_t0_peaktime <- rep(peakval, length.out = length(t_beforepeak))
+    } else {
+      ## interp1() stops rather than extrapolating beyond the measured samples
+      Cpl_t0_peaktime <- pracma::interp1(
+        rise_t, rise_a,
+        pmin(pmax(t_beforepeak, 0), peaktime),
+        method = "linear")
+    }
+  }
 
   # Descent
   Cpl_peaktime_end <-
@@ -1335,7 +1568,9 @@ predict_blood_exp <- function(object, newdata = NULL) {
                      B = pars$B,
                      beta = pars$beta,
                      C = pars$C,
-                     gamma = pars$gamma)
+                     gamma = pars$gamma,
+                     risetime = object$rise_samples$time,
+                     riseval = object$rise_samples$activity)
 
 }
 
@@ -1629,7 +1864,9 @@ blmod_feng_startpars <- function(time, activity,
 #' @param multstart_upper Optional. The upper limits of the starting parameters.
 #' @param multstart_iter The number of fits to perform with different starting
 #'   parameters. If set to 1, then the starting parameters will be used for a
-#'   single fit.
+#'   single fit. Otherwise a single number selects the starting values by
+#'   improved Latin hypercube sampling over the multstart bounds rather than at
+#'   random, while one value per parameter forms a Cartesian grid.
 #' @param Method_weights If no weights provided, should the weights be divided
 #'   by discrete and continuous samples equally (i.e. with more continuous
 #'   samples, the continuous samples each get less weight). Default is TRUE.
@@ -1746,11 +1983,47 @@ blmod_feng <- function(time, activity, Method = NULL,
     multstart_upper <- upper
   }
 
+  multstart_lower <- prune_pars(multstart_lower, names(start), "multstart_lower")
+  multstart_upper <- prune_pars(multstart_upper, names(start), "multstart_upper")
+
+  # Set up the formula
+  formula <- paste("activity ~ blmod_feng_model(time, ",
+                   "t0", ifelse(fit_t0, "", "=0"),", ",
+                   "A, alpha, B, beta, C, gamma)",
+                   sep = "")
+
+  # nls_multstart takes the parameters to be estimated from the order in which
+  # they appear in the formula, and pairs them positionally with the bounds,
+  # which are not necessarily built in that order.
+  parorder <- all.vars(as.formula(formula)[[3]])
+  parorder <- parorder[parorder %in% names(start)]
+
+  if (!identical(parorder, names(start))) {
+    start <- order_pars(start, parorder, "start")
+    lower <- order_pars(lower, parorder, "lower")
+    upper <- order_pars(upper, parorder, "upper")
+    multstart_lower <- order_pars(multstart_lower, parorder, "multstart_lower")
+    multstart_upper <- order_pars(multstart_upper, parorder, "multstart_upper")
+  }
+
   lower <- as.numeric(as.data.frame(lower))
   upper <- as.numeric(as.data.frame(upper))
 
   multstart_lower <- as.numeric(as.data.frame(multstart_lower))
   multstart_upper <- as.numeric(as.data.frame(multstart_upper))
+
+  if (any(upper < lower)) {
+    stop("The upper bounds for ",
+         paste(names(start)[upper < lower], collapse = ", "),
+         " are below their lower bounds. Parameters bounded this way are not
+         fitted, but silently pinned to one of the bounds.")
+  }
+
+  # The starting parameters are drawn from between multstart_lower and
+  # multstart_upper, and have to fall inside the bounds which the fit itself is
+  # given: nls.lm can crash outright when handed a starting value outside them.
+  multstart_lower <- pmax(multstart_lower, lower)
+  multstart_upper <- pmin(multstart_upper, upper)
 
 
   if(check_startpars) {
@@ -1759,11 +2032,6 @@ blmod_feng <- function(time, activity, Method = NULL,
   }
 
 
-  # Set up the formula
-  formula <- paste("activity ~ blmod_feng_model(time, ",
-                   "t0", ifelse(fit_t0, "", "=0"),", ",
-                   "A, alpha, B, beta, C, gamma)",
-                   sep = "")
 
 
   # Fit the model, with normal NLS or with multstart
@@ -1791,7 +2059,7 @@ blmod_feng <- function(time, activity, Method = NULL,
 
     multmodelout_multi <- nls.multstart::nls_multstart(
       formula = as.formula(formula), modelweights = weights,
-      data = blood, iter = multstart_iter,
+      data = blood, iter = multstart_iter, lhstype = "improved",
       start_lower = multstart_lower, start_upper = multstart_upper,
       supp_errors = "Y", lower = lower, upper = upper)
 
@@ -1869,6 +2137,8 @@ blmod_feng <- function(time, activity, Method = NULL,
 #' @examples
 #' blmod_feng_model(1:1000, 30, 7, 0.02, 2, 0.005, 4.5, 0.0005)
 blmod_feng_model <- function(time, t0, A, alpha, B, beta, C, gamma) {
+
+  check_time_sorted(time)
 
   tcorr <- time - t0
 
@@ -1961,7 +2231,9 @@ predict_blood_feng <- function(object, newdata = NULL) {
 #' @param multstart_upper Optional. The upper limits of the starting parameters.
 #' @param multstart_iter The number of fits to perform with different starting
 #'   parameters. If set to 1, then the starting parameters will be used for a
-#'   single fit.
+#'   single fit. Otherwise a single number selects the starting values by
+#'   improved Latin hypercube sampling over the multstart bounds rather than at
+#'   random, while one value per parameter forms a Cartesian grid.
 #' @param Method_weights If no weights provided, should the weights be divided
 #'   by discrete and continuous samples equally (i.e. with more continuous
 #'   samples, the continuous samples each get less weight). Default is TRUE.
@@ -2057,7 +2329,7 @@ blmod_fengconv <- function(time, activity, inftime = NULL,
   }
 
   if(is.null(upper)) {
-    upper <- purrr::map(startvals, ~(100*.x))
+    upper <- purrr::map(startvals, ~(100*abs(.x)))
     upper$t0 <- startvals$peaktime
   }
 
@@ -2095,7 +2367,15 @@ blmod_fengconv <- function(time, activity, inftime = NULL,
     }
   }
 
-  if(length(inftime == 2)) {
+  if (!is.null(inftime) && !(length(inftime) %in% c(1, 2))) {
+    stop("inftime should be a single value, for a known infusion time, or two
+         values, giving the limits within which it should be fitted.")
+  }
+
+  # Two values are limits for fitting ti, so it stays a fitted parameter and
+  # inftime is dropped. A single value is a known infusion time, and is left in
+  # place to be substituted into the formula instead.
+  if (length(inftime) == 2) {
 
     lower$ti <- min(inftime)
     upper$ti <- max(inftime)
@@ -2113,11 +2393,48 @@ blmod_fengconv <- function(time, activity, inftime = NULL,
     multstart_upper <- upper
   }
 
+  multstart_lower <- prune_pars(multstart_lower, names(start), "multstart_lower")
+  multstart_upper <- prune_pars(multstart_upper, names(start), "multstart_upper")
+
+  # Set up the formula
+  formula <- paste("activity ~ blmod_fengconv_model(time, ",
+                   "t0", ifelse(fit_t0, "", "=0"),", ",
+                   "A, alpha, B, beta, C, gamma, ",
+                   "ti", ifelse(is.null(inftime), "", paste0("=", inftime)),")",
+                   sep = "")
+
+  # nls_multstart takes the parameters to be estimated from the order in which
+  # they appear in the formula, and pairs them positionally with the bounds,
+  # which are not necessarily built in that order.
+  parorder <- all.vars(as.formula(formula)[[3]])
+  parorder <- parorder[parorder %in% names(start)]
+
+  if (!identical(parorder, names(start))) {
+    start <- order_pars(start, parorder, "start")
+    lower <- order_pars(lower, parorder, "lower")
+    upper <- order_pars(upper, parorder, "upper")
+    multstart_lower <- order_pars(multstart_lower, parorder, "multstart_lower")
+    multstart_upper <- order_pars(multstart_upper, parorder, "multstart_upper")
+  }
+
   lower <- as.numeric(as.data.frame(lower))
   upper <- as.numeric(as.data.frame(upper))
 
   multstart_lower <- as.numeric(as.data.frame(multstart_lower))
   multstart_upper <- as.numeric(as.data.frame(multstart_upper))
+
+  if (any(upper < lower)) {
+    stop("The upper bounds for ",
+         paste(names(start)[upper < lower], collapse = ", "),
+         " are below their lower bounds. Parameters bounded this way are not
+         fitted, but silently pinned to one of the bounds.")
+  }
+
+  # The starting parameters are drawn from between multstart_lower and
+  # multstart_upper, and have to fall inside the bounds which the fit itself is
+  # given: nls.lm can crash outright when handed a starting value outside them.
+  multstart_lower <- pmax(multstart_lower, lower)
+  multstart_upper <- pmin(multstart_upper, upper)
 
 
   if(check_startpars) {
@@ -2126,12 +2443,6 @@ blmod_fengconv <- function(time, activity, inftime = NULL,
   }
 
 
-  # Set up the formula
-  formula <- paste("activity ~ blmod_fengconv_model(time, ",
-                   "t0", ifelse(fit_t0, "", "=0"),", ",
-                   "A, alpha, B, beta, C, gamma, ",
-                   "ti", ifelse(is.null(inftime), "", paste0("=", inftime)),")",
-                   sep = "")
 
 
   # Fit the model, with normal NLS or with multstart
@@ -2162,7 +2473,7 @@ blmod_fengconv <- function(time, activity, inftime = NULL,
 
     multmodelout_multi <- nls.multstart::nls_multstart(
       formula = as.formula(formula), modelweights = weights,
-      data = blood, iter = multstart_iter,
+      data = blood, iter = multstart_iter, lhstype = "improved",
       start_lower = multstart_lower, start_upper = multstart_upper,
       supp_errors = "Y",
       lower = lower, upper = upper,
@@ -2250,6 +2561,8 @@ blmod_fengconv <- function(time, activity, inftime = NULL,
 #' @examples
 #' blmod_fengconv_model(1:1000, 30, 220, 0.4, 100, 0.05, 22, 0.003, 30)
 blmod_fengconv_model <- function(time, t0, A, alpha, B, beta, C, gamma, ti) {
+
+  check_time_sorted(time)
 
   # Integral
   g <- function(time, A, alpha, B, beta, C, gamma) {
@@ -2376,7 +2689,9 @@ predict_blood_fengconv <- function(object, newdata = NULL) {
 #' @param multstart_upper Optional. The upper limits of the starting parameters.
 #' @param multstart_iter The number of fits to perform with different starting
 #'   parameters. If set to 1, then the starting parameters will be used for a
-#'   single fit.
+#'   single fit. Otherwise a single number selects the starting values by
+#'   improved Latin hypercube sampling over the multstart bounds rather than at
+#'   random, while one value per parameter forms a Cartesian grid.
 #' @param Method_weights If no weights provided, should the weights be divided
 #'   by discrete and continuous samples equally (i.e. with more continuous
 #'   samples, the continuous samples each get less weight). Default is TRUE.
@@ -2468,17 +2783,38 @@ blmod_fengconvplus <- function(time, activity, inftime = NULL,
     lower$slope <- 0
   }
 
+  # risefunc rises from 0 at t0 towards asymptote, reaching half of it
+  # log(3)/slope later. The bounds for slope are set through that half-rise
+  # time, as a fraction of the measurement, so that they do not depend on the
+  # units of time: a rise completing within a hundredth of the measurement is
+  # already immediate, and one taking the whole measurement is barely a rise
+  # at all.
+  risedur <- max(blood$time) - startvals$t0
+
+  if (!is.finite(risedur) || risedur <= 0) {
+    risedur <- max(blood$time)
+  }
+
+  tailactivity <- median(tail(blood$activity, 3))
+
   if(is.null(upper)) {
-    upper <- purrr::map(startvals, ~(100*.x))
+    upper <- purrr::map(startvals, ~(100*abs(.x)))
     upper$t0 <- startvals$peaktime
 
-    upper$asymptote <- 20*median(tail(activity, 3))
-    upper$slope <- 0.05
+    upper$asymptote <- 20*tailactivity
+    upper$slope <- log(3) / (0.01*risedur)
   }
 
 
-  start$asymptote <- 0.5*median(tail(activity, 3))
-  start$slope <- 0.1
+  # startvals does not include these two, so they are added here. Values which
+  # the user has given are kept.
+  if (is.null(start$asymptote)) {
+    start$asymptote <- 0.5*tailactivity
+  }
+
+  if (is.null(start$slope)) {
+    start$slope <- log(3) / (0.1*risedur)
+  }
 
   lower$peaktime <- NULL
   upper$peaktime <- NULL
@@ -2500,7 +2836,15 @@ blmod_fengconvplus <- function(time, activity, inftime = NULL,
     upper$ti <- 300
   }
 
-  if(length(inftime == 2)) {
+  if (!is.null(inftime) && !(length(inftime) %in% c(1, 2))) {
+    stop("inftime should be a single value, for a known infusion time, or two
+         values, giving the limits within which it should be fitted.")
+  }
+
+  # Two values are limits for fitting ti, so it stays a fitted parameter and
+  # inftime is dropped. A single value is a known infusion time, and is left in
+  # place to be substituted into the formula instead.
+  if (length(inftime) == 2) {
 
     lower$ti <- min(inftime)
     upper$ti <- max(inftime)
@@ -2518,18 +2862,8 @@ blmod_fengconvplus <- function(time, activity, inftime = NULL,
     multstart_upper <- upper
   }
 
-  lower <- as.numeric(as.data.frame(lower))
-  upper <- as.numeric(as.data.frame(upper))
-
-  multstart_lower <- as.numeric(as.data.frame(multstart_lower))
-  multstart_upper <- as.numeric(as.data.frame(multstart_upper))
-
-
-  if(check_startpars) {
-    out <- list(start = start, startvals = startvals)
-    return(out)
-  }
-
+  multstart_lower <- prune_pars(multstart_lower, names(start), "multstart_lower")
+  multstart_upper <- prune_pars(multstart_upper, names(start), "multstart_upper")
 
   # Set up the formula
   formula <- paste("activity ~ blmod_fengconvplus_model(time, ",
@@ -2538,6 +2872,47 @@ blmod_fengconvplus <- function(time, activity, inftime = NULL,
                    "ti", ifelse(is.null(inftime), "", paste0("=", inftime)),", ",
                    "asymptote, slope",")",
                    sep = "")
+
+  # nls_multstart takes the parameters to be estimated from the order in which
+  # they appear in the formula, and pairs them positionally with the bounds,
+  # which are not necessarily built in that order.
+  parorder <- all.vars(as.formula(formula)[[3]])
+  parorder <- parorder[parorder %in% names(start)]
+
+  if (!identical(parorder, names(start))) {
+    start <- order_pars(start, parorder, "start")
+    lower <- order_pars(lower, parorder, "lower")
+    upper <- order_pars(upper, parorder, "upper")
+    multstart_lower <- order_pars(multstart_lower, parorder, "multstart_lower")
+    multstart_upper <- order_pars(multstart_upper, parorder, "multstart_upper")
+  }
+
+  lower <- as.numeric(as.data.frame(lower))
+  upper <- as.numeric(as.data.frame(upper))
+
+  multstart_lower <- as.numeric(as.data.frame(multstart_lower))
+  multstart_upper <- as.numeric(as.data.frame(multstart_upper))
+
+  if (any(upper < lower)) {
+    stop("The upper bounds for ",
+         paste(names(start)[upper < lower], collapse = ", "),
+         " are below their lower bounds. Parameters bounded this way are not
+         fitted, but silently pinned to one of the bounds.")
+  }
+
+  # The starting parameters are drawn from between multstart_lower and
+  # multstart_upper, and have to fall inside the bounds which the fit itself is
+  # given: nls.lm can crash outright when handed a starting value outside them.
+  multstart_lower <- pmax(multstart_lower, lower)
+  multstart_upper <- pmin(multstart_upper, upper)
+
+
+  if(check_startpars) {
+    out <- list(start = start, startvals = startvals)
+    return(out)
+  }
+
+
 
 
   # Fit the model, with normal NLS or with multstart
@@ -2568,7 +2943,7 @@ blmod_fengconvplus <- function(time, activity, inftime = NULL,
 
     multmodelout_multi <- nls.multstart::nls_multstart(
       formula = as.formula(formula), modelweights = weights,
-      data = blood, iter = multstart_iter,
+      data = blood, iter = multstart_iter, lhstype = "improved",
       start_lower = multstart_lower, start_upper = multstart_upper,
       supp_errors = "Y", lower = lower, upper = upper,
       convergence_count = FALSE,
@@ -2658,6 +3033,8 @@ blmod_fengconvplus <- function(time, activity, inftime = NULL,
 #' blmod_fengconvplus_model(1:1000, 30, 220, 0.4, 100, 0.05, 22, 0.003, 30, 40, 0.001)
 blmod_fengconvplus_model <- function(time, t0, A, alpha, B, beta, C, gamma, ti,
                                      asymptote, slope) {
+
+  check_time_sorted(time)
 
   fengconv_out <- blmod_fengconv_model(time, t0, A, alpha, B, beta, C, gamma, ti)
 
