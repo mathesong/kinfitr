@@ -12,6 +12,7 @@ metab_hgam(
   formula = NULL,
   monotone = c("none", "soft", "hard"),
   family = mgcv::betar(link = "logit"),
+  theta_time = FALSE,
   n_grid = 60,
   max_iter = 6,
   tol = 1e-04,
@@ -25,8 +26,12 @@ metab_hgam(
 \item{data}{A data frame in long format containing (at least) the columns
 named by \code{time_var}, \code{parentFraction_var}, and \code{group_var}.}
 
-\item{time_var}{Name of the time column. Time is conventionally in seconds in
-\pkg{kinfitr}. Default \code{"time"}.}
+\item{time_var}{Name of the time column. Either seconds or minutes works,
+because the penalty is scaled to be dimensionless, so the
+\code{hard_lambda_*} defaults suit both. The ramp is not invariant to the
+unit, though: the same data may converge at a different lambda in seconds
+than in minutes. \code{hard_tol} is unit-dependent, being a slope. Default
+\code{"time"}.}
 
 \item{parentFraction_var}{Name of the measured parent fraction column. Default
 \code{"parentFraction"}.}
@@ -39,18 +44,29 @@ default hierarchical formula is built from the column-name arguments (see
 Details).}
 
 \item{monotone}{One of \code{"none"} (default), \code{"soft"}, or
-\code{"hard"}. See Details.}
+\code{"hard"}. See Details. Note that \code{"soft"} guarantees nothing:
+REML weighs the monotonicity penalty against the data and routinely shrinks
+it, so on data that genuinely increases the effect is often under 1 per cent
+of the unconstrained slope. Use \code{"hard"} when you need the constraint
+to hold.}
 
 \item{family}{An \pkg{mgcv} family. Defaults to
 \code{\link[mgcv]{betar}(link = "logit")} for responses bounded in (0, 1).}
 
-\item{n_grid}{Number of time points at which to evaluate the slope. Default 60.}
+\item{theta_time}{If \code{TRUE}, let the log of the beta precision change
+linearly across the scan instead of holding it constant. Requires a beta
+\code{family}. See Details. Default \code{FALSE}.}
+
+\item{n_grid}{Number of time points at which to evaluate the slope, and hence
+the number of points at which monotonicity is enforced. Default 60.}
 
 \item{max_iter}{Maximum IRLS iterations per penalty pass. Default 6.}
 
 \item{tol}{Coefficient convergence tolerance for IRLS. Default 1e-4.}
 
-\item{hard_tol}{Maximum allowed positive slope under \code{monotone = "hard"}.
+\item{hard_tol}{Maximum allowed positive slope of the linear predictor under
+\code{monotone = "hard"}, in units of per unit of \code{time_var}. Scale it
+with your time unit: a tolerance of 1e-6 per minute is 1.67e-8 per second.
 Default 1e-6.}
 
 \item{hard_lambda_init}{Starting smoothing parameter for \code{"hard"} mode.
@@ -63,9 +79,34 @@ Default 1e4.}
 \code{FALSE}.}
 }
 \value{
-An object of class \code{"gam"}, identical in structure to the output
-  of \code{\link[mgcv]{gam}}. Downstream tools such as \code{predict},
-  \code{summary}, and \code{\link[mgcv]{k.check}} work unchanged.
+An object of class \code{"gam"}, as returned by
+  \code{\link[mgcv]{gam}}, so \code{predict}, \code{summary} and
+  \code{\link[mgcv]{k.check}} work unchanged. One extra element,
+  \code{$metab_hgam}, records what the constraint actually achieved, so code
+  looping over many measurements can check the outcome without catching
+  warnings:
+  \itemize{
+    \item \code{monotone}: the mode requested.
+    \item \code{converged}: \code{TRUE} if \code{"hard"} met
+      \code{hard_tol}; \code{FALSE} if it fell back to the closest fit it
+      obtained; and \code{NA} for \code{"none"}, and for \code{"soft"} when
+      it succeeded, since neither has a tolerance to meet. A \code{"soft"}
+      fit that failed numerically reports \code{FALSE}.
+    \item \code{max_slope}: the largest positive slope on the grid, for the
+      fit that is actually returned.
+    \item \code{lambda}: the final penalty smoothing parameter tried.
+    \item \code{iterations}: the index of the IRLS iterate returned. Because
+      the best iterate is kept rather than the last, this is not necessarily
+      the number of iterations run.
+    \item \code{hard_tol}, \code{n_grid}: the settings used.
+    \item \code{theta_time}, \code{theta}: whether a linear precision was
+      fitted, and its \code{intercept} and \code{slope} on the log scale.
+    \item \code{theta_identified}: \code{FALSE} if the fitted precision sat
+      at its cap for every observation, in which case \code{theta} is
+      meaningless. \code{NA} when \code{theta_time = FALSE}.
+    \item \code{error}: the underlying error message if a fit failed.
+  }
+  Always check \code{converged} before trusting a \code{"hard"} fit.
 }
 \description{
 Fits a hierarchical generalised additive model (GAM) to time-varying
@@ -98,6 +139,108 @@ constructed from the column-name arguments:
 Power users can pass any \pkg{mgcv}-style \code{formula} instead;
 \code{time_var} and \code{group_var} are still required because they define the
 grid on which the derivative (and hence the monotonicity penalty) is evaluated.
+A \code{formula} that does not depend on \code{time_var} is rejected in the
+constrained modes, because the derivative grid would then be identically zero
+and an increasing curve would be reported as monotone.
+
+\strong{What the constraint does and does not guarantee.} Three limits are
+worth knowing:
+\itemize{
+  \item The slope is constrained at \code{n_grid} points, not everywhere, so
+    a dense evaluation can show a small excess between grid points. Raise
+    \code{n_grid} if that matters.
+  \item The constraint acts on the linear predictor. With the default logit
+    link the response is a monotone increasing function of it, so the two
+    agree. With a decreasing link (for example \code{Gamma(link =
+    "inverse")}) they do not, and the response can increase while the linear
+    predictor decreases.
+  \item Monotonicity holds over the observed range of \code{time_var} only.
+    \code{predict} beyond that range extrapolates and can increase.
+  \item The derivative grid takes every variable other than
+    \code{time_var} from each group's first row. If a custom
+    \code{formula} uses a predictor that varies \emph{within} a level of
+    \code{group_var}, the constraint is applied only at that first row's
+    value, and reordering the rows can change the result. Keep such
+    predictors constant within \code{group_var}, or add them to
+    \code{group_var}.
+}
+
+The grid limit can bite hard with an oscillating custom \code{formula}: if
+the oscillation happens to be non-increasing at all \code{n_grid} points, the
+fit is reported as satisfying the constraint while rising steeply between
+them. The default penalised-spline formula cannot alias this way, but an
+arbitrary parametric one can.
+
+\strong{Time-varying precision.} Parent fraction is usually measured less
+precisely late in a scan than early, but \code{\link[mgcv]{betar}} carries a
+single scalar precision that has to compromise between the two. Setting
+\code{theta_time = TRUE} replaces it with a family whose log precision changes
+linearly across the scan, \code{log(theta_i) = a + b * t_std}, where
+\code{t_std} runs from 0 at the first observed time to 1 at the last. A
+negative \code{b} means the precision falls over the scan. Both parameters are
+estimated by REML alongside everything else, and \code{b = 0} reproduces the
+constant-precision fit, so the option only adds flexibility. The monotonicity
+machinery is unaffected, because the precision does not enter the mean's linear
+predictor.
+
+Two conditions apply. Every variable in \code{formula} must be a column of
+\code{data}, because the precision covariate is built before fitting and has
+to line up with the rows mgcv keeps. And the log precision is capped at plus
+or minus 20; if the fitted precision reaches that cap for every observation
+then the slope cannot affect the likelihood, so \code{metab_hgam} warns and
+sets \code{$metab_hgam$theta_identified} to \code{FALSE}. Check that flag
+before interpreting \code{theta}.
+
+\strong{What slope to expect.} Because \code{log(theta)} is linear in time,
+\code{theta} itself changes by a constant proportion per unit time, which is
+how radioactive decay behaves. If every sample has the same volume and
+counting time, counts track activity, activity decays as
+\code{exp(-lambda * t)}, and a counted proportion out of \code{n} has
+precision of roughly \code{n}. The slope should therefore be about the
+negative decay constant:
+
+\deqn{b \approx -\log(2) \times T / t_{1/2}}{b = -log(2) * T / half_life}
+
+where \code{T} is the time span of the data, \code{diff(range(time_var))},
+in the same units as the half-life. For carbon-11 (20.4 min) over an hour
+that is about -2, and for fluorine-18 (109.8 min) about -0.37. Comparing the
+fitted slope with this value gives an external check that no model comparison
+provides.
+
+Two things loosen the prediction. Simulations recovered it without bias at
+moderate sample sizes, but showed a steepening of roughly 10 per cent with few
+measurements or low late-scan counts, so do not read a small deviation as
+meaningful. And HPLC noise from peak integration and baseline does not decay,
+so once it dominates, the real \code{log(theta)} flattens rather than
+continuing to fall. Unequal sample volumes or counting times break the
+derivation outright.
+
+\strong{Standard errors.} \code{predict(se.fit = TRUE)}, and anything built
+on it such as \code{gratia::fitted_values}, reports intervals from the
+penalised covariance matrix \code{Vp}. Under \code{monotone = "hard"} those
+intervals are conditional on a smoothing parameter that was \emph{chosen by
+a search} in order to satisfy \code{hard_tol}, and they do not account for
+that search. They are therefore too narrow wherever the constraint binds,
+which is exactly where the data disagreed with monotonicity. Use
+\code{monotone = "none"} for uncertainty, or resample, and keep the
+constrained fit for the point estimate. The precision parameters' own
+uncertainty is not propagated either, as with a scalar
+\code{\link[mgcv]{betar}} theta.
+
+\strong{Parent fractions of exactly 0 or 1.} These are accepted, because
+values of exactly 1 are common at the first sample, but a beta likelihood has
+no density at the boundary. \code{\link[mgcv]{betar}} nudges them inwards by
+its \code{eps}, which can leave the reported deviance negative and produce
+repeated \dQuote{saturated likelihood may be inaccurate} warnings. If that
+matters, nudge them yourself before fitting. Values outside [0, 1] and
+non-finite values are rejected outright.
+
+\strong{Relationship to \code{bd_addfit}.} The returned object is not a
+drop-in replacement for the single-curve parent fraction fits accepted by
+\code{\link{bd_addfit}}. \code{\link{bd_getdata}} calls \code{predict} with
+a time vector alone, which fails here because the model also needs
+\code{group_var}. Predict per measurement and pass the fitted values on
+instead.
 }
 \examples{
 \dontrun{
@@ -116,6 +259,14 @@ f0 <- metab_hgam(d)
 # Soft and hard monotonicity
 f1 <- metab_hgam(d, monotone = "soft")
 f2 <- metab_hgam(d, monotone = "hard")
+
+# Always check the outcome before trusting a hard fit
+f2$metab_hgam$converged
+f2$metab_hgam$max_slope
+
+# Let the beta precision fall across the scan
+f3 <- metab_hgam(d, monotone = "hard", theta_time = TRUE)
+f3$metab_hgam$theta
 }
 
 }

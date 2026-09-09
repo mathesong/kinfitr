@@ -326,7 +326,11 @@ create_blooddata_bids <- function(bids_data, TimeShift = 0) {
 #' @param blooddata A blooddata object created using one of the
 #'   create_blooddata_* functions.
 #' @param fit A model fit object, for which the predict function can be used for
-#'   new data.
+#'   new data. The fit must predict from time alone, because that is how
+#'   \code{\link{bd_getdata}} calls it. Fits that model many measurements
+#'   jointly and so need a grouping variable, such as
+#'   \code{\link{metab_hgam}}, cannot be stored this way; predict for the
+#'   measurement in question and use \code{\link{bd_addfitted}} instead.
 #' @param modeltype The function which the model predicts. One of the following:
 #'   Blood for models of how the blood data should be described, BPR for models
 #'   of the blood-to-plasma ratio, parentFraction for models of metabolism, and
@@ -336,6 +340,10 @@ create_blooddata_bids <- function(bids_data, TimeShift = 0) {
 #' @export
 #'
 #' @author Granville J Matheson, \email{mathesong@@gmail.com}
+#'
+#' @seealso \code{\link{bd_addfitted}} for models whose predictions must be
+#'   supplied as values, and \code{\link{bd_addfitpars}} for models fully
+#'   described by their parameters.
 #'
 #' @examples
 #' \dontrun{
@@ -347,6 +355,26 @@ bd_addfit <- function(blooddata, fit, modeltype = c(
                            "parentFraction",
                            "AIF"
                          )) {
+
+  # A metab_hgam() fit describes many measurements jointly, so it cannot be
+  # stored here. bd_getdata() predicts with a time vector alone, whereas this
+  # model also needs its grouping variable, so the fit would pass the check
+  # below and then fail inside bd_getdata() with an error naming the missing
+  # grouping column.
+  # Test the class first: `fit$metab_hgam` on an atomic vector would otherwise
+  # error with "$ operator is invalid for atomic vectors" instead of letting the
+  # more informative predict() check below report the problem.
+  if (inherits(fit, "gam") && !is.null(fit$metab_hgam)) {
+    stop("This is a metab_hgam() fit, which models many measurements jointly ",
+         "and needs its grouping variable in order to predict. bd_addfit() ",
+         "stores fits that predict from time alone, so this fit would be ",
+         "accepted here and then fail in bd_getdata(). Predict for this ",
+         "measurement and add the values with bd_addfitted() instead:\n",
+         "  pred <- predict(fit, newdata = data.frame(time = times, ",
+         "pet = this_measurement), type = \"response\")\n",
+         "  blooddata <- bd_addfitted(blooddata, times, pred, ",
+         "\"parentFraction\")")
+  }
 
   # Verify fit object
   if (!(length(as.numeric(predict(fit))) > 1)) {
