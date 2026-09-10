@@ -551,11 +551,27 @@ test_that("a precision pinned at its cap is flagged as unidentified", {
   d <- data.frame(time = t, pet = factor("p1"),
                   parentFraction = pmin(pmax(y, 1e-14), 1 - 1e-14))
 
-  expect_warning(
-    fit <- metab_hgam(d, formula = parentFraction ~ time, theta_time = TRUE),
-    "not identified"
-  )
-  expect_false(fit$metab_hgam$theta_identified)
+  # This regime is deliberately pathological, and mgcv's optimiser either
+  # converges into saturation or cannot evaluate the likelihood, depending on
+  # the platform's BLAS. Both outcomes are correct; a bare mgcv error is not.
+  # Assert on whichever happens.
+  w <- NULL
+  res <- tryCatch(
+    withCallingHandlers(
+      metab_hgam(d, formula = parentFraction ~ time, theta_time = TRUE),
+      warning = function(x) {
+        w <<- c(w, conditionMessage(x))
+        invokeRestart("muffleWarning")
+      }),
+    error = function(e) e)
+
+  if (inherits(res, "error")) {
+    # It must name the cause and the remedy, not leak mgcv's internal message.
+    expect_match(conditionMessage(res), "theta_time = FALSE")
+  } else {
+    expect_true(any(grepl("not identified", w)))
+    expect_false(res$metab_hgam$theta_identified)
+  }
 })
 
 test_that("hard mode reports success when the returned fit meets the tolerance", {

@@ -17,6 +17,12 @@ quiet_repeated_smooth <- function(expr) {
   )
 }
 
+# Largest absolute log precision the linear-precision family allows. The
+# replacement saturated.ll below was checked against optimize() up to this
+# value; beyond about 25 its bounded Newton iteration is no longer reliable at
+# boundary responses.
+.lt_cap <- 20
+
 # Internal: beta regression whose log precision changes linearly in a supplied
 # covariate, so that log(theta_i) = th[1] + th[2] * t_std[i].
 #
@@ -40,8 +46,8 @@ betar_lintheta <- function(t_std, ini = c(0, 0), link = "logit",
   # log precision of 20; beyond about 25 its bounded Newton iteration is no
   # longer reliable at boundary responses. Cap well inside the verified range,
   # which is far above any plausible parent-fraction precision.
-  .lt_min <- -20   # theta ~ 2e-9
-  .lt_max <-  20   # theta ~ 4.9e8
+  .lt_min <- -.lt_cap   # theta ~ 2e-9
+  .lt_max <-  .lt_cap   # theta ~ 4.9e8
 
   base_Dd  <- base$Dd
   base_dev <- base$dev.resids
@@ -623,8 +629,26 @@ metab_hgam <- function(data,
     family <- betar_lintheta(t_std = t_std, link = family$link)
   }
 
-  fit <- quiet_repeated_smooth(
-    mgcv::gam(formula, data = data, family = family, method = "REML"))
+  # A linear log precision gives mgcv's outer optimiser two extra parameters to
+  # search over, and it can reach a region where the beta likelihood cannot be
+  # evaluated. mgcv then stops with "missing value where TRUE/FALSE needed",
+  # which says nothing about the cause, so name it here.
+  fit <- tryCatch(
+    quiet_repeated_smooth(
+      mgcv::gam(formula, data = data, family = family, method = "REML")),
+    error = function(e) e)
+  if (inherits(fit, "error")) {
+    if (!identical(theta_time, FALSE)) {
+      stop("The model failed to fit with 'theta_time = TRUE': ",
+           conditionMessage(fit), ". Estimating a precision that changes over ",
+           "time gives the optimiser more room to reach a point where the ",
+           "likelihood cannot be evaluated. This is most likely when the ",
+           "precision is very high (the log precision is capped at ",
+           .lt_cap, ") or when many responses sit close to 0 or 1. Refit with ",
+           "'theta_time = FALSE'.")
+    }
+    stop(fit)
+  }
   # ---- Keep a stored fit's precision consistent with its coefficients ----
   # Every refit is handed the same `family` object, and an extended family
   # keeps its theta in a mutable environment. A fit stored from an earlier

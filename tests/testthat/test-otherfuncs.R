@@ -227,6 +227,16 @@ test_that("weights_create default works", {
   expect_true(sum(is.na(w)) == 0)
 })
 
+test_that("weights_create rescales weights between minweight and 1", {
+  t_start <- s1$StartTime/60
+  t_end <- (s1$StartTime + s1$Duration)/60
+  w <- weights_create(t_start, t_end, radioisotope = "C11",
+                      tac = s1$WB, minweight = 0.5)
+
+  expect_equal(min(w[t_end > t_start]), 0.5)
+  expect_equal(max(w), 1)
+})
+
 test_that("weights_create other options work", {
   w <- weights_create(
     s1$StartTime/60,

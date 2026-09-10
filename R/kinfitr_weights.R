@@ -131,7 +131,7 @@ weights_create <- function(t_start, t_end, tac,
     min_calcweight <- min(calcweights[durations!=0], na.rm=TRUE)
 
     # scale 0 - 1
-    calcweights <- calcweights - min_calcweight / (1- min_calcweight)
+    calcweights <- (calcweights - min_calcweight) / (1 - min_calcweight)
 
     # proportion
     calcweights <- minweights + calcweights * (1-minweights)

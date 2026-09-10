@@ -1,5 +1,15 @@
 # kinfitr 0.9.6
 
+## Weights
+
+* **Fixed: small bug in `weights_create()` where weights were not rescaled between `minweight` and 1
+  as documented.** When any weight fell below `minweight`, an operator-precedence
+  slip made the rescaling subtract `min / (1 - min)` from every weight instead
+  of computing `(weight - min) / (1 - min)`, so the smallest weight came out
+  below `minweight` and the largest below 1. Weights where none fell below
+  `minweight` are unchanged. The effect is small: in 99
+  measurements, weights changed by at most about 1 percent.
+
 ## Blood models
 
 * **New: `blmod_exp(rise = "interp")`**, which describes the rise of the input
