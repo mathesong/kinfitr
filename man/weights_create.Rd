@@ -31,7 +31,8 @@ represents duration / tac. 4 represents sqrt(durations). 5 represents
 durations * exp((-ln(2)) / halflife ). 6 represents durations /
 tac. 7 represents durations. 8 represents duration^2 / tac_uncor.
 9 represents((durations^2 / (durations*tac))*corrections^2) (courtesy of
-Claus Svarer).
+Claus Svarer). 10 represents durations*tac_uncorrected, i.e. method 2
+without the square root.
 Uncorrected refers to decay correction.}
 
 \item{minweight}{The minimum weight. Weights will be calculated as a fraction

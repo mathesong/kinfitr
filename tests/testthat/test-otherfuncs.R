@@ -317,4 +317,26 @@ test_that("weights_create other options work", {
 
   expect_true(all(is.numeric(w)))
   expect_true(sum(is.na(w)) == 0)
+
+  w <- weights_create(
+    s1$StartTime/60,
+    (s1$StartTime + s1$Duration)/60,
+    radioisotope = "C11",
+    tac = s1$WB, minweight_risetopeak=FALSE,
+    method = 9)
+
+  expect_true(all(is.numeric(w)))
+  expect_true(sum(is.na(w)) == 0)
+
+  w <- weights_create(
+    s1$StartTime/60,
+    (s1$StartTime + s1$Duration)/60,
+    radioisotope = "C11",
+    tac = s1$WB, minweight_risetopeak=FALSE,
+    method = 10)
+
+  expect_true(all(is.numeric(w)))
+  expect_true(sum(is.na(w)) == 0)
 })
+
+
