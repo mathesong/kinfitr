@@ -1,6 +1,16 @@
-# kinfitr 0.9.6
+# kinfitr 0.9.7
+
+## Metabolites
+
+* **New: `metab_hgam()`**, which fits a hierarchical generalised additive model
+  to the parent fraction samples of many measurements, with optional soft or
+  hard monotonicity constraints. It returns an `mgcv::gam` object, with a
+  `$metab_hgam` element recording what the constraint actually achieved.
 
 ## Weights
+
+* **New: weighting method 10 in `weights_create()`**, `durations * tac_uncor`
+  (courtesy of Jeih-San Liow).
 
 * **Fixed: small bug in `weights_create()` where weights were not rescaled between `minweight` and 1
   as documented.** When any weight fell below `minweight`, an operator-precedence
@@ -9,6 +19,8 @@
   below `minweight` and the largest below 1. Weights where none fell below
   `minweight` are unchanged. The effect is small: in 99
   measurements, weights changed by at most about 1 percent.
+
+# kinfitr 0.9.6
 
 ## Blood models
 
