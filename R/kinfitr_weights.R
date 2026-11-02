@@ -15,8 +15,8 @@
 #'   durations * exp((-ln(2)) / halflife ). 6 represents durations /
 #'   tac. 7 represents durations. 8 represents duration^2 / tac_uncor.
 #'   9 represents((durations^2 / (durations*tac))*corrections^2) (courtesy of
-#'   Claus Svarer).
-#'   Uncorrected refers to decay correction.
+#'   Claus Svarer). 10 represents durations*tac_uncorrected (courtesy of
+#'   Jeih-San Liow). Uncorrected refers to decay correction.
 #' @param minweight The minimum weight. Weights will be calculated as a fraction
 #'   between this value and 1. A zero frame with duration=0 will be set to 0
 #'   though.
@@ -90,7 +90,8 @@ weights_create <- function(t_start, t_end, tac,
     method == 7 ~ durations,
     method == 8 ~ durations^2 / pmax(tac_uncor, 0.01*max(tac_uncor, na.rm=TRUE), na.rm=TRUE),
     # method == 9 ~ (durations^2 / pmax(tac*durations, 0.01*max(tac*durations))) * corrections^2
-    method == 9 ~ (durations^2 / pmax(tac, 0.01*max(tac), na.rm=TRUE) * durations) * corrections^2
+    method == 9 ~ (durations^2 / pmax(tac, 0.01*max(tac), na.rm=TRUE) * durations) * corrections^2,
+    method == 10 ~ durations * tac_uncor
   )
 
   # Fixing before checking
@@ -131,7 +132,7 @@ weights_create <- function(t_start, t_end, tac,
     min_calcweight <- min(calcweights[durations!=0], na.rm=TRUE)
 
     # scale 0 - 1
-    calcweights <- calcweights - min_calcweight / (1- min_calcweight)
+    calcweights <- (calcweights - min_calcweight) / (1 - min_calcweight)
 
     # proportion
     calcweights <- minweights + calcweights * (1-minweights)

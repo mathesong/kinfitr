@@ -15,7 +15,11 @@ bd_addfit(
 create_blooddata_* functions.}
 
 \item{fit}{A model fit object, for which the predict function can be used for
-new data.}
+new data. The fit must predict from time alone, because that is how
+\code{\link{bd_getdata}} calls it. Fits that model many measurements
+jointly and so need a grouping variable, such as
+\code{\link{metab_hgam}}, cannot be stored this way; predict for the
+measurement in question and use \code{\link{bd_addfitted}} instead.}
 
 \item{modeltype}{The function which the model predicts. One of the following:
 Blood for models of how the blood data should be described, BPR for models
@@ -33,6 +37,11 @@ object
 \dontrun{
 blooddata <- bd_addfit(blooddata, hillfit, "parentFraction")
 }
+}
+\seealso{
+\code{\link{bd_addfitted}} for models whose predictions must be
+  supplied as values, and \code{\link{bd_addfitpars}} for models fully
+  described by their parameters.
 }
 \author{
 Granville J Matheson, \email{mathesong@gmail.com}
