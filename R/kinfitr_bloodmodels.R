@@ -17,7 +17,8 @@ fit_spline <- function(formula, data, weights, bs) {
                  data = data[keep, , drop = FALSE],
                  weights = weights[keep]))
   } else {
-    mgcv::gam(formula, data = data, weights = weights)
+    mgcv::gam(formula, data = data, weights = weights,
+              method="REML")
   }
 }
 
